@@ -86,6 +86,11 @@ details summary { cursor:pointer; color:var(--ink2); margin:8px 0; font-size:12p
 .log { font:12px var(--mono); white-space:pre-wrap; color:var(--ink2); max-height:200px; overflow:auto }
 .themebtn { background:transparent; color:var(--ink); border-color:var(--line) }
 .empty { color:var(--muted); padding:20px 0 }
+dialog { background:var(--card); color:var(--ink); border:1px solid var(--critical); padding:22px; max-width:560px; width:92vw }
+dialog::backdrop { background:rgba(0,0,0,.55) } dialog h2 { margin:0 0 10px; font-size:18px } dialog label { display:block; margin:10px 0 4px; font-size:12px; color:var(--ink2) }
+dialog input { width:100% } dialog ul { margin:6px 0; padding-left:18px; color:var(--ink2) }
+button.danger { background:var(--critical); border-color:var(--critical); color:#fff } button.plain { background:transparent; color:var(--ink); border-color:var(--line) }
+button:disabled { opacity:.4; cursor:not-allowed }
 </style>
 </head>
 <body>
@@ -101,6 +106,14 @@ details summary { cursor:pointer; color:var(--ink2); margin:8px 0; font-size:12p
 <div class="alertbar mono" id="alertbar"><span class="dot"></span><a href="#alerts" id="alerttext">Loading alerts…</a></div>
 <main id="view"></main>
 <div class="tip" id="tip" role="tooltip"></div>
+<dialog id="delDlg" aria-labelledby="delTitle"><form method="dialog" id="delForm">
+  <h2 id="delTitle">Delete data</h2><div id="delBody"></div>
+  <label for="delUser">Your name or role (recorded in the audit log)</label><input id="delUser" required autocomplete="name">
+  <label for="delReason">Reason (optional)</label><input id="delReason" placeholder="e.g. wrong file version loaded">
+  <label for="delConfirm">Type <b id="delPhrase"></b> to confirm</label><input id="delConfirm" autocomplete="off" spellcheck="false">
+  <div id="delErr" style="color:var(--critical);margin-top:8px"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:16px"><button type="button" class="plain" id="delCancel">Cancel</button><button type="button" class="danger" id="delGo" disabled>Delete permanently</button></div>
+</form></dialog>
 
 
 <script>
@@ -401,6 +414,10 @@ async function viewConfig(v) {
         <input name="username" placeholder="Username"><input name="password" type="password" placeholder="Password"><input name="token" placeholder="Bearer token"><input name="records_path" placeholder="Records path, e.g. d.results">
         <button>Pull</button></form><div id="apiOut" style="margin-top:8px;color:var(--ink2)"></div>
       <p style="color:var(--ink2);font-size:13px;margin-bottom:0">IoT devices and gateways: <code>POST /api/ingest/iot/&lt;source&gt;</code> with JSON readings, or subscribe to an MQTT broker with <code>POST /api/ingest/mqtt/start</code>.</p></div>
+    <div class="panel"><div class="row" style="justify-content:space-between"><h2 class="mono" style="margin:0">Loaded data</h2>
+      <button class="danger" id="delAll">Delete all data…</button></div>
+      <p style="color:var(--ink2);font-size:13px">Deleting a source removes it from every layer (the original file, Silver records, Gold products and its quarantine items). It cannot be undone; the deletion itself is kept in the audit log.</p>
+      <div id="sources"></div></div>
     <div class="panel"><h2 class="mono">Recent loads</h2><div id="recent"></div>
       <p style="color:var(--ink2);font-size:13px;margin-bottom:0">Quality, quarantine and lineage for every load: <a href="/governance">Data governance</a>.</p></div>
     <div class="panel"><h2 class="mono">Ask Maestro · AI/ML engine</h2><form id="ask" class="row"><input id="q" style="flex:1" placeholder="e.g. Which aircraft are at risk of missing AMREP and which gate is the constraint?"><button>Ask</button></form><div id="ans" style="margin-top:10px"></div></div>`;
@@ -435,7 +452,45 @@ async function viewConfig(v) {
     const list = (t, xs) => xs && xs.length ? `<p class="mono" style="margin:10px 0 4px">${t}</p><ul>${xs.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
     const g = (j.decision || {}).gate || {};
     $("#ans").innerHTML = `<p class="mono" style="color:var(--accent)">${esc((g.verdict || "").replaceAll("_", " "))} · ${esc(g.reason || "")} · <a href="/governance#overview">review in governance</a></p><p>${esc(j.answer)}</p>` + list("Key findings", j.key_findings) + list("Recommended actions", j.recommended_actions); };
+  const sources = async () => {
+    const ss = await api("/api/data/sources");
+    $("#sources").innerHTML = ss.length ? `<table><tr><th>Source</th><th>Contains</th><th class="n">Records</th><th class="n">Loads</th><th>Last loaded</th><th></th></tr>${ss.map(x => `<tr>
+      <td>${esc(x.source_id)}${x.files ? "" : ' <span style="color:var(--muted)">(API / IoT)</span>'}</td>
+      <td>${esc(x.entities.join(", ") || "—")}${x.sheets.length ? `<div style="color:var(--muted);font-size:12px">${esc(x.sheets.slice(0, 6).join(", "))}${x.sheets.length > 6 ? ` +${x.sheets.length - 6} more` : ""}</div>` : ""}</td>
+      <td class="n">${num(x.records, 0)}${x.by_layer.history || x.by_layer.duplicate ? `<div style="color:var(--muted);font-size:12px">${num((x.by_layer.history || 0) + (x.by_layer.duplicate || 0), 0)} superseded</div>` : ""}</td>
+      <td class="n">${x.batches}</td><td>${dt(x.last_loaded)}</td>
+      <td><button class="plain" data-del="${esc(x.source_id)}">Delete…</button></td></tr>`).join("")}</table>` : '<p class="empty">No data loaded.</p>';
+    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => confirmDelete(b.dataset.del));
+  };
+  const confirmDelete = async source => {
+    const pv = await api("/api/data/delete-preview" + (source ? "?source=" + encodeURIComponent(source) : ""));
+    const dlg = $("#delDlg");
+    $("#delTitle").textContent = source ? `Delete "${source}"?` : "Delete ALL loaded data?";
+    $("#delBody").innerHTML = `<p>This permanently removes:</p><ul><li>${num(pv.records, 0)} records (Silver, Gold, history)</li><li>${num(pv.batches, 0)} load${pv.batches === 1 ? "" : "s"} and ${num(pv.files, 0)} original file${pv.files === 1 ? "" : "s"} from Bronze</li>
+      <li>${num(pv.quarantine_items, 0)} quarantine item(s)</li></ul>
+      ${pv.products_affected.length ? `<p>Affected Gold products (their certification is withdrawn and must be renewed): <b>${esc(pv.products_affected.join(", "))}</b></p>` : ""}
+      ${source ? "<p style='color:var(--ink2);font-size:13px'>If an older load of the same records exists, it becomes the current version again.</p>" : ""}`;
+    $("#delPhrase").textContent = pv.confirm_with; $("#delConfirm").value = ""; $("#delErr").textContent = "";
+    $("#delUser").value = localStorage.govUser || ""; $("#delReason").value = "";
+    const check = () => $("#delGo").disabled = !($("#delConfirm").value.trim() === pv.confirm_with && $("#delUser").value.trim());
+    $("#delConfirm").oninput = check; $("#delUser").oninput = check; check();
+    $("#delCancel").onclick = () => dlg.close();
+    $("#delGo").onclick = async () => {
+      $("#delGo").disabled = true; $("#delGo").textContent = "Deleting…";
+      const url = source ? `/api/data/sources/${encodeURIComponent(source)}/delete` : "/api/data/delete-all";
+      const r = await fetch(url, {method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({confirm: $("#delConfirm").value.trim(), user: $("#delUser").value.trim(), reason: $("#delReason").value})});
+      const j = await r.json(); $("#delGo").textContent = "Delete permanently";
+      if (!r.ok) { $("#delErr").textContent = j.detail; check(); return; }
+      localStorage.govUser = $("#delUser").value.trim(); dlg.close();
+      $("#apiOut").innerHTML = ""; sources(); recent(); loadAlerts();
+    };
+    dlg.showModal(); $("#delConfirm").focus();
+  };
+  $("#delAll").onclick = () => confirmDelete(null);
+  sources();
   recent();
+  const reload = $("#up").onclick; $("#up").onclick = async () => { await reload(); sources(); };
 }
 
 async function viewSupply(v) {

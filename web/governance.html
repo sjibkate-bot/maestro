@@ -216,7 +216,8 @@ const VIEWS = {
       <div class="fact"><div class="lab">Rows received / to Silver</div><div>${num(b.rows_received)} / ${num(b.records_stored)}</div></div>
       <div class="fact"><div class="lab">Payload SHA-256</div><div class="mono">${esc((b.payload_sha256 || "").slice(0, 24))}…</div></div></div>
       ${m.mapping ? `<details style="margin-top:10px"><summary class="muted">Column mapping</summary><table>${Object.entries(m.mapping).map(([c, f]) => `<tr><td>${esc(c)}</td><td>→ ${esc(f || "kept as attribute")}</td></tr>`).join("")}</table></details>` : ""}
-      ${b.records_stored ? `<p><a class="dl" href="#drill?batch=${b.batch_id}">Open the ${num(b.records_stored)} records from this batch</a></p>` : ""}</div>
+      ${b.records_stored ? `<p><a class="dl" href="#drill?batch=${b.batch_id}">Open the ${num(b.records_stored)} records from this batch</a></p>` : ""}
+      <p class="muted" style="font-size:12px">To remove this source, use <a class="dl" href="/maestro#config">Configuration → Loaded data</a>.</p></div>
       <div class="card" style="overflow:auto"><div class="lab"><b>Content</b>${b.truncated ? " · first 200 rows" : ""}</div>${rows}</div>`;
   },
   async overview(v, o) {

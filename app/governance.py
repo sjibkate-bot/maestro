@@ -993,3 +993,88 @@ def diagnose(entities: list[str]) -> dict:
         reasons.append(f"{blocked} uploaded tables were blocked at Gate 1 (schema not recognised).")
     return {"entities": entities, "gold_records": gold, "layers": dict(layers), "silver_grades": dict(grades),
             "top_issues": dict(issues.most_common(5)), "blocked_batches": blocked, "reasons": reasons}
+
+
+# ---------------------------------------------------------------- managing loaded data
+
+DELETE_ALL_PHRASE = "DELETE ALL"
+
+
+def sources_summary() -> list[dict]:
+    """Every loaded source with what deleting it would remove."""
+    db = get_db()
+    out = {}
+    for b in db.raw.find({}, {"payload": 0}):
+        s = out.setdefault(b["source_id"], {"source_id": b["source_id"], "source_type": b.get("source_type"),
+                                            "batches": 0, "rows": 0, "first_loaded": b["received_at"],
+                                            "last_loaded": b["received_at"], "sheets": set(), "entities": set()})
+        s["batches"] += 1
+        s["rows"] += b.get("rows_received") or 0
+        s["first_loaded"] = min(s["first_loaded"], b["received_at"])
+        s["last_loaded"] = max(s["last_loaded"], b["received_at"])
+        m = b.get("meta") or {}
+        if m.get("sheet"):
+            s["sheets"].add(m["sheet"])
+        if m.get("record_type"):
+            s["entities"].add(m["record_type"])
+    layers = defaultdict(Counter)
+    for r in db.records.find({}, {"source_id": 1, "layer": 1}):
+        layers[r.get("source_id")][r.get("layer") or "unscored"] += 1
+    files = Counter(f["source_id"] for f in db.bronze_files.find({}, {"source_id": 1}))
+    for sid, s in out.items():
+        s["sheets"], s["entities"] = sorted(s["sheets"]), sorted(s["entities"])
+        s["records"] = sum(layers[sid].values())
+        s["by_layer"] = dict(layers[sid])
+        s["files"] = files.get(sid, 0)
+        s["open_quarantine"] = db.quarantine.count_documents({"source_id": sid, "status": "open"})
+    return sorted(out.values(), key=lambda s: s["last_loaded"], reverse=True)
+
+
+def delete_preview(source_id: Optional[str]) -> dict:
+    db = get_db()
+    q = {"source_id": source_id} if source_id else {}
+    rts = sorted({r["record_type"] for r in db.records.find(q, {"record_type": 1})})
+    cfg = config()
+    return {"source_id": source_id, "all": source_id is None,
+            "records": db.records.count_documents(q), "batches": db.raw.count_documents(q),
+            "files": db.bronze_files.count_documents(q),
+            "quarantine_items": db.quarantine.count_documents(q),
+            "entities": rts,
+            "products_affected": [p["name"] for p in cfg["products"] if set(p["entities"]) & set(rts)],
+            "confirm_with": DELETE_ALL_PHRASE if source_id is None else source_id}
+
+
+def delete_data(source_id: Optional[str], confirm: str, user: str, reason: str = "") -> dict:
+    """Delete one source (or everything) from Bronze, Silver and Gold. Requires the
+    caller to repeat the source name (or DELETE ALL) and to say who they are."""
+    if not (user or "").strip():
+        raise ValueError("Say who is deleting (your name or role)")
+    expected = DELETE_ALL_PHRASE if source_id is None else source_id
+    if (confirm or "").strip() != expected:
+        raise ValueError(f"Confirmation does not match: type {expected!r} to delete")
+    db = get_db()
+    preview = delete_preview(source_id)
+    if source_id is not None and preview["batches"] == 0 and preview["records"] == 0:
+        raise KeyError(source_id)
+    q = {"source_id": source_id} if source_id else {}
+    db.records.delete_many(q)
+    db.raw.delete_many(q)
+    db.bronze_files.delete_many(q)
+    db.quarantine.delete_many(q)
+    if source_id:
+        db.sources.delete_one({"_id": source_id})
+    else:
+        for c in ("sources", "drift", "mappings"):
+            db[c].delete_many({})
+    # Gold built on removed data must be re-certified by its owner.
+    pids = [p["id"] for p in config()["products"] if p["name"] in preview["products_affected"]]
+    if pids:
+        db.certifications.delete_many({"_id": {"$in": pids}})
+    audit("data_delete", user.strip(), {k: preview[k] for k in ("source_id", "all", "records", "batches", "files",
+                                                                  "quarantine_items", "entities", "products_affected")}
+          | {"reason": reason, "certifications_withdrawn": pids})
+    if preview["entities"] and get_db().records.count_documents({}):
+        run(set(preview["entities"]))   # older versions of the same keys become current again
+    else:
+        _detect_drift(config())
+    return {"deleted": preview, "certifications_withdrawn": pids}

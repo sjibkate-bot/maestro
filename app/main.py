@@ -157,13 +157,42 @@ def records(record_type: Optional[RecordType] = None, sku: Optional[str] = None,
             "items": list(db.records.find(q, {"_id": 0}).skip(skip).limit(limit))}
 
 
-@app.delete("/api/sources/{source}")
-def delete_source(source: str):
-    db = get_db()
-    n = db.records.delete_many({"source_id": source}).deleted_count
-    db.raw.delete_many({"source_id": source})
-    db.sources.delete_one({"_id": source})
-    return {"deleted_records": n}
+@app.get("/api/data/sources")
+def data_sources():
+    """Loaded sources with what each holds (Configuration -> Loaded data)."""
+    return governance.sources_summary()
+
+
+@app.get("/api/data/delete-preview")
+def data_delete_preview(source: Optional[str] = None):
+    return governance.delete_preview(source)
+
+
+class DeleteRequest(BaseModel):
+    confirm: str
+    user: str
+    reason: str = ""
+
+
+def _delete(source: Optional[str], body: DeleteRequest):
+    try:
+        return governance.delete_data(source, body.confirm, body.user, body.reason)
+    except KeyError:
+        raise HTTPException(404, "Unknown source")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.post("/api/data/sources/{source}/delete")
+def data_delete_source(source: str, body: DeleteRequest):
+    """Delete one source from Bronze, Silver and Gold. `confirm` must repeat the source name."""
+    return _delete(source, body)
+
+
+@app.post("/api/data/delete-all")
+def data_delete_all(body: DeleteRequest):
+    """Delete all loaded data. `confirm` must be DELETE ALL."""
+    return _delete(None, body)
 
 
 # ---------------- Analytics & AI ----------------

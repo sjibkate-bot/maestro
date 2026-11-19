@@ -6,7 +6,7 @@ It follows the same idea as Praxie (AI supply-chain workspace on connected data)
 
 Everything runs in one application, **Maestro-SC** (http://localhost:8000/maestro):
 
-* **Configuration** is the only place data enters: file upload, API/ERP pull and IoT. After each load it shows which module the data feeds.
+* **Configuration** is the only place data enters: file upload, API/ERP pull and IoT. After each load it shows which module the data feeds. **Loaded data** lists every source and deletes one source, or everything. You must type the source name (or `DELETE ALL`) and your name. Deletion removes the source from Bronze, Silver, Gold and quarantine, withdraws certification of the affected Gold products, makes any older version of the same records current again, and is recorded in the audit log.
 * **Modules** show the governed data: **Supply** (inventory, suppliers, POs, shipments, IoT), **Docks / Gates / Machine** (depot flow) and **Fleet** (health and faults).
 * **Governance** shows quality, quarantine and lineage for everything that was loaded.
 
@@ -96,7 +96,7 @@ MONGO_URI=mongomock:// uvicorn app.main:app --reload
 ```
 Open http://localhost:8000. It goes to Maestro's Supply module. Load the files from `samples/` and `samples/maestro/` in **Configuration** (`python samples/make_samples.py` regenerates the supply samples).
 
-Tests: `pytest -q` (45 tests, including the Maestro reference workbooks and the governance rules)
+Tests: `pytest -q` (51 tests, including the Maestro reference workbooks and the governance rules)
 
 ## API
 
