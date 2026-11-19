@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supply Chain AI Data Hub</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1d2433; --muted:#667085; --line:#e4e7ec;
+          --accent:#2f5bea; --warn:#b54708; --bad:#b42318; --good:#067647; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f1218; --card:#171b23; --ink:#e6e8ee; --muted:#98a2b3; --line:#2a303b;
+            --accent:#7b9bff; --warn:#f79009; --bad:#f97066; --good:#47cd89; } }
+  * { box-sizing:border-box } body { margin:0; font:14px/1.45 system-ui,sans-serif; background:var(--bg); color:var(--ink) }
+  header { padding:16px 24px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; background:var(--card) }
+  header h1 { font-size:18px; margin:0 } header .pill { margin-left:auto; color:var(--muted); font-size:12px }
+  main { max-width:1280px; margin:0 auto; padding:20px 24px; display:grid; gap:16px }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px }
+  .card h2 { font-size:14px; margin:0 0 12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted) }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:16px }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px }
+  .kpi { padding:12px; border:1px solid var(--line); border-radius:8px }
+  .kpi .v { font-size:22px; font-weight:600; font-variant-numeric:tabular-nums } .kpi .l { color:var(--muted); font-size:12px }
+  .kpi.bad .v { color:var(--bad) } .kpi.warn .v { color:var(--warn) }
+  input,select,textarea,button { font:inherit; color:inherit; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:7px 9px }
+  button { background:var(--accent); color:#fff; border:none; cursor:pointer; font-weight:600 } button:disabled { opacity:.5 }
+  form { display:grid; gap:8px } .row { display:flex; gap:8px; flex-wrap:wrap } .row > * { flex:1 }
+  .drop { border:2px dashed var(--line); border-radius:8px; padding:22px; text-align:center; color:var(--muted); cursor:pointer }
+  .drop.over { border-color:var(--accent); color:var(--accent) }
+  table { width:100%; border-collapse:collapse; font-size:13px } th,td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line) }
+  th { color:var(--muted); font-weight:500 } td.n { text-align:right; font-variant-numeric:tabular-nums }
+  .bar { height:8px; background:var(--line); border-radius:4px; overflow:hidden; min-width:80px } .bar i { display:block; height:100%; background:var(--accent) }
+  .log { font:12px ui-monospace,monospace; white-space:pre-wrap; max-height:180px; overflow:auto; color:var(--muted) }
+  .answer { white-space:pre-wrap } .answer ul { margin:6px 0 0 18px; padding:0 } .muted { color:var(--muted) }
+  .scroll { max-height:320px; overflow:auto }
+</style>
+</head>
+<body>
+<header><h1>Supply Chain AI Data Hub</h1><span class="pill" id="status">connecting…</span></header>
+<main>
+  <section class="card"><h2>Key indicators</h2><div class="kpis" id="kpis"></div></section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Add data — files</h2>
+      <div class="drop" id="drop">Drop Excel, CSV, JSON, PDF or text files here, or click to choose<br>
+        <span class="muted">AI detects the data type and maps the columns automatically</span></div>
+      <input type="file" id="file" multiple hidden>
+      <div class="row" style="margin-top:8px">
+        <input id="src" placeholder="Source name (optional)">
+        <select id="rtype"><option value="">Auto-detect type</option></select>
+      </div>
+      <div class="log" id="log"></div>
+    </section>
+
+    <section class="card">
+      <h2>Add data — API / ERP / IoT</h2>
+      <form id="apiForm">
+        <div class="row"><select name="kind"><option value="api">REST API</option><option value="erp">ERP (OData/REST)</option></select>
+          <input name="source" placeholder="Source name"></div>
+        <input name="url" placeholder="https://erp.example.com/sap/opu/odata/sap/API_PURCHASEORDER_PROCESS_SRV/A_PurchaseOrderItem" required>
+        <div class="row"><input name="username" placeholder="Username (optional)"><input name="password" type="password" placeholder="Password"></div>
+        <div class="row"><input name="token" placeholder="Bearer token (optional)"><input name="records_path" placeholder="Records path, e.g. d.results"></div>
+        <button>Pull data</button>
+      </form>
+      <p class="muted">IoT devices: <code>POST /api/ingest/iot/&lt;source&gt;</code> with JSON readings, or start an MQTT subscription via <code>/api/ingest/mqtt/start</code>.</p>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Ask AI about your supply chain</h2>
+    <form id="askForm" class="row"><input id="q" placeholder="e.g. Which SKUs are at risk of stockout and which suppliers are causing it?" style="flex:5"><button style="flex:1">Ask</button></form>
+    <div class="answer" id="answer"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card"><h2>Below reorder point</h2><div class="scroll" id="inv"></div></section>
+    <section class="card"><h2>Supplier performance</h2><div class="scroll" id="sup"></div></section>
+    <section class="card"><h2>Late PO lines</h2><div class="scroll" id="late"></div></section>
+    <section class="card"><h2>Delayed shipments</h2><div class="scroll" id="ship"></div></section>
+    <section class="card"><h2>IoT sensor anomalies</h2><div class="scroll" id="iot"></div></section>
+    <section class="card"><h2>Data sources</h2><div class="scroll" id="sources"></div></section>
+  </div>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = v => v == null ? "—" : String(v).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num = v => v == null ? "—" : Number(v).toLocaleString(undefined, {maximumFractionDigits: 2});
+const pct = v => v == null ? "—" : (v * 100).toFixed(1) + "%";
+const log = m => { $("#log").textContent = m + "\n" + $("#log").textContent; };
+const TYPES = ["inventory","purchase_order","sales_order","shipment","supplier","product","sensor_reading","other"];
+TYPES.forEach(t => $("#rtype").insertAdjacentHTML("beforeend", `<option>${t}</option>`));
+
+function table(rows, cols) {
+  if (!rows || !rows.length) return '<p class="muted">Nothing to show.</p>';
+  return `<table><tr>${cols.map(c => `<th>${c[0]}</th>`).join("")}</tr>` +
+    rows.map(r => `<tr>${cols.map(c => `<td class="${c[2]||""}">${c[1](r)}</td>`).join("")}</tr>`).join("") + "</table>";
+}
+
+async function refresh() {
+  const [h, ov, src] = await Promise.all([fetch("/api/health").then(r => r.json()),
+    fetch("/api/analytics/overview").then(r => r.json()), fetch("/api/sources").then(r => r.json())]);
+  $("#status").textContent = `DB: ${h.status} · AI: ${h.ai_provider}`;
+  const k = ov.kpis;
+  const tiles = [["Records", num(k.total_records)], ["Inventory value", num(k.inventory_value)],
+    ["Below reorder pt", k.skus_below_reorder_point, k.skus_below_reorder_point ? "warn" : ""],
+    ["Stockouts", k.stockouts, k.stockouts ? "bad" : ""], ["Supplier on-time", pct(k.supplier_on_time_rate)],
+    ["Late PO lines", k.late_po_lines, k.late_po_lines ? "warn" : ""],
+    ["Delayed shipments", k.delayed_shipments, k.delayed_shipments ? "warn" : ""],
+    ["Sensor anomalies", k.sensor_anomalies, k.sensor_anomalies ? "bad" : ""]];
+  $("#kpis").innerHTML = tiles.map(([l, v, c]) => `<div class="kpi ${c||""}"><div class="v">${esc(v)}</div><div class="l">${l}</div></div>`).join("");
+  $("#inv").innerHTML = table(ov.inventory.below_reorder_point, [["SKU", r => esc(r.sku)], ["Location", r => esc(r.location)],
+    ["On hand", r => num(r.on_hand), "n"], ["Reorder pt", r => num(r.reorder_point), "n"], ["Shortfall", r => num(r.shortfall), "n"]]);
+  $("#sup").innerHTML = table(ov.suppliers.suppliers, [["Supplier", r => esc(r.supplier)], ["Lines", r => r.po_lines, "n"],
+    ["Spend", r => num(r.spend), "n"], ["On-time", r => `<div class="row" style="align-items:center"><div class="bar"><i style="width:${(r.on_time_rate||0)*100}%"></i></div><span>${pct(r.on_time_rate)}</span></div>`],
+    ["Lead time (d)", r => num(r.avg_lead_time_days), "n"]]);
+  $("#late").innerHTML = table(ov.suppliers.late_lines, [["PO", r => esc(r.order_id)], ["SKU", r => esc(r.sku)],
+    ["Supplier", r => esc(r.supplier)], ["Days late", r => r.days_late + (r.open ? " (open)" : ""), "n"]]);
+  $("#ship").innerHTML = table(ov.shipments.delayed, [["Shipment", r => esc(r.shipment_id)], ["Route", r => `${esc(r.origin)} → ${esc(r.destination)}`],
+    ["Status", r => esc(r.status)], ["Days late", r => r.days_late, "n"]]);
+  $("#iot").innerHTML = table(ov.iot.anomalies, [["Device", r => esc(r.device_id)], ["Metric", r => esc(r.metric)],
+    ["Value", r => num(r.value), "n"], ["z-score", r => r.z, "n"], ["When", r => esc((r.timestamp||"").slice(0,16).replace("T"," "))]]);
+  $("#sources").innerHTML = table(src, [["Source", r => esc(r._id)], ["Type", r => esc(r.source_type)],
+    ["Records", r => num(r.record_count), "n"], ["Last load", r => esc((r.last_ingested_at||"").slice(0,16).replace("T"," "))]]);
+}
+
+async function upload(files) {
+  for (const f of files) {
+    const fd = new FormData(); fd.append("file", f);
+    if ($("#src").value) fd.append("source", $("#src").value);
+    if ($("#rtype").value) fd.append("record_type", $("#rtype").value);
+    log(`⏳ ${f.name} …`);
+    const r = await fetch("/api/ingest/file", {method: "POST", body: fd}); const j = await r.json();
+    if (!r.ok) { log(`✗ ${f.name}: ${j.detail}`); continue; }
+    j.batches.forEach(b => log(`✓ ${f.name}${b.sheet ? " / " + b.sheet : ""}: ${b.records} ${b.record_type || b.document_kind || ""} records`));
+  }
+  refresh();
+}
+const drop = $("#drop");
+drop.onclick = () => $("#file").click();
+$("#file").onchange = e => upload(e.target.files);
+drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); upload(e.dataTransfer.files); };
+
+$("#apiForm").onsubmit = async e => {
+  e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
+  const body = {url: f.url, kind: f.kind, source: f.source || null, records_path: f.records_path || null,
+    username: f.username || null, password: f.password || null, headers: f.token ? {Authorization: "Bearer " + f.token} : {}};
+  log(`⏳ pulling ${f.url}`);
+  const r = await fetch("/api/ingest/api", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  const j = await r.json(); log(r.ok ? `✓ ${j.records} ${j.record_type} records from ${j.pages} page(s)` : `✗ ${j.detail}`); refresh();
+};
+
+$("#askForm").onsubmit = async e => {
+  e.preventDefault(); const btn = e.target.querySelector("button"); btn.disabled = true;
+  $("#answer").innerHTML = '<p class="muted">Thinking…</p>';
+  const r = await fetch("/api/ask", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({question: $("#q").value})});
+  const j = await r.json(); btn.disabled = false;
+  if (!r.ok) { $("#answer").textContent = j.detail; return; }
+  const list = (t, xs) => xs.length ? `<p><b>${t}</b></p><ul>${xs.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
+  $("#answer").innerHTML = `<p>${esc(j.answer)}</p>` + list("Key findings", j.key_findings) + list("Recommended actions", j.recommended_actions);
+};
+refresh(); setInterval(refresh, 30000);
+</script>
+</body>
+</html>

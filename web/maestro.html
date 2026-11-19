@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAESTRO-SC</title>
+<style>
+:root {
+  --paper:#edebe7; --panel:#e2dfda; --card:#f6f5f2; --ink:#14171c; --ink2:#4b4f57; --muted:#80838a;
+  --line:#c9c5bd; --accent:#1d6b78; --accent-ink:#ffffff; --hover:#d8d4cd;
+  /* chart tokens (validated palette) */
+  --surface:#fcfcfb; --grid:#e1e0d9; --axis:#c3c2b7; --s1:#2a78d6; --s1-light:#86b6ef; --s2:#eb6834; --s3:#1baf7a;
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+:root[data-theme="dark"] {
+  --paper:#0f1115; --panel:#161a20; --card:#1b2028; --ink:#eef0f3; --ink2:#c3c2b7; --muted:#898781;
+  --line:#2c323c; --accent:#22c3d6; --accent-ink:#0b0d10; --hover:#232a33;
+  --surface:#1a1a19; --grid:#2c2c2a; --axis:#383835; --s1:#3987e5; --s1-light:#1c5cab; --s2:#d95926; --s3:#199e70;
+}
+* { box-sizing:border-box }
+body { margin:0; background:var(--paper); color:var(--ink); font:14px/1.45 var(--sans) }
+a { color:inherit }
+.mono { font-family:var(--mono); letter-spacing:.12em; text-transform:uppercase; font-size:11px }
+header { display:flex; align-items:center; gap:20px; padding:12px 24px; border-bottom:1px solid var(--line) }
+.logo { display:flex; align-items:center; gap:10px; font-family:var(--mono); font-weight:700; font-size:17px; letter-spacing:.02em; text-decoration:none }
+.logo i { width:22px; height:22px; background:var(--accent); display:grid; place-items:center; color:var(--accent-ink); font-style:normal; font-size:11px }
+header .sep { width:1px; height:26px; background:var(--line) }
+.search { border:1px solid var(--ink2); padding:6px 12px; min-width:260px; background:transparent; color:var(--ink); font-family:var(--mono); font-size:12px; letter-spacing:.08em }
+nav { margin-left:auto; display:flex; gap:4px; flex-wrap:wrap }
+nav a { text-decoration:none; padding:6px 10px; border:1px solid transparent }
+nav a.on { border-color:var(--accent); color:var(--accent) }
+.alertbar { padding:8px 24px; border-bottom:1px solid var(--critical); color:var(--critical); display:flex; gap:10px; align-items:center }
+.alertbar .dot { width:7px; height:7px; border-radius:50%; background:var(--critical) }
+.alertbar span.n { color:var(--ink2) }
+main { max-width:1320px; margin:0 auto; padding:28px 24px 80px }
+.eyebrow { color:var(--accent); font-weight:700 }
+h1 { font-size:38px; line-height:1.05; margin:6px 0 4px; letter-spacing:-.02em; font-weight:800 }
+.titlebar { display:flex; align-items:flex-end; justify-content:space-between; border-left:2px solid var(--line); padding-left:24px; margin-bottom:24px }
+.ready { text-align:right } .ready b { display:block; color:var(--accent); font-family:var(--mono); font-size:20px; letter-spacing:.05em }
+.grid4 { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); border-top:1px solid var(--line); border-left:1px solid var(--line) }
+.mod { background:var(--panel); padding:24px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); min-height:180px; text-decoration:none; display:block; position:relative }
+.mod:hover { background:var(--hover) }
+.mod .ic { width:36px; height:36px; border:1px solid var(--accent); color:var(--accent); display:grid; place-items:center; font-family:var(--mono); font-size:12px }
+.mod .id { position:absolute; top:24px; right:24px; color:var(--muted) }
+.mod h3 { margin:28px 0 8px; font-size:15px; letter-spacing:.08em; text-transform:uppercase }
+.mod p { margin:0; color:var(--ink2); font-size:13px }
+.badge { display:inline-block; font-family:var(--mono); font-size:10px; letter-spacing:.1em; padding:2px 6px; border:1px solid var(--line); color:var(--muted); margin-top:10px }
+.badge.live { border-color:var(--accent); color:var(--accent) }
+.panel { background:var(--panel); border:1px solid var(--line); padding:20px; margin-bottom:20px }
+.panel h2 { margin:0 0 14px; font-size:13px } .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center }
+select, input, button, textarea { font:inherit; color:var(--ink); background:var(--card); border:1px solid var(--line); padding:7px 10px }
+button { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); cursor:pointer; font-family:var(--mono); font-size:12px; letter-spacing:.1em; text-transform:uppercase }
+.docks { display:grid; grid-template-columns:repeat(auto-fill,minmax(380px,1fr)); gap:14px }
+.dock { background:var(--card); border:1px solid var(--line); padding:18px; display:grid; gap:12px }
+.dock .top { display:flex; justify-content:space-between; gap:12px }
+.dock .name { font-size:30px; font-weight:300; letter-spacing:.02em; text-transform:uppercase }
+.dock .box { border:1px solid var(--ink2); padding:6px 10px; font-family:var(--mono); font-size:11px; display:grid; grid-template-columns:auto auto; gap:2px 14px; height:max-content }
+.dock .box b { text-align:right } .over { color:var(--critical) }
+.dock .line { font-weight:600; font-size:15px }
+.dock .cols { display:grid; grid-template-columns:90px 1fr; gap:14px; font-size:12px }
+.dock .ms div { margin-bottom:8px } .dock .ms u { font-weight:700; font-size:11px; display:block }
+.dock ul { margin:4px 0 0; padding-left:16px; color:var(--ink2) }
+.tag { font-family:var(--mono); font-size:10px; letter-spacing:.08em; padding:2px 6px; border:1px solid currentColor; display:inline-flex; gap:5px; align-items:center }
+.tag.critical { color:var(--critical) } .tag.warning { color:#b07a00 } :root[data-theme="dark"] .tag.warning { color:var(--warning) }
+.tag.good { color:var(--good) }
+/* charts */
+.viz { background:var(--surface); border:1px solid var(--line); padding:16px 16px 8px; position:relative }
+.viz h3 { margin:0; font-size:18px } .viz .sub { color:var(--ink2); margin-bottom:6px }
+.legend { display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--ink2); margin:6px 0 }
+.legend span { display:inline-flex; align-items:center; gap:6px }
+.key-rect { width:12px; height:12px; border-radius:2px; display:inline-block } .key-line { width:16px; height:2px; display:inline-block }
+svg text { fill:var(--muted); font:11px var(--sans) } svg .lab { fill:var(--ink2); font-weight:600 }
+.tip { position:fixed; pointer-events:none; background:var(--card); border:1px solid var(--line); padding:8px 10px; font-size:12px; box-shadow:0 4px 14px rgba(0,0,0,.15); display:none; z-index:10; min-width:150px }
+.tip b { font-size:14px; color:var(--ink) } .tip div { color:var(--ink2) }
+table { border-collapse:collapse; width:100%; font-size:12px } th, td { padding:5px 8px; border-bottom:1px solid var(--line); text-align:left }
+th { color:var(--muted); font-weight:500 } td.n, th.n { text-align:right; font-variant-numeric:tabular-nums }
+details summary { cursor:pointer; color:var(--ink2); margin:8px 0; font-size:12px }
+.split { display:grid; grid-template-columns:3fr 1fr; gap:16px } @media (max-width:900px) { .split { grid-template-columns:1fr } }
+.fleet { display:grid; grid-template-columns:220px 1fr; gap:16px }
+.rail a { display:flex; justify-content:space-between; padding:8px 10px; border-bottom:1px solid var(--line); text-decoration:none; font-family:var(--mono); font-size:12px }
+.rail a.on { background:var(--card); border-left:2px solid var(--accent) }
+.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:16px }
+.stat { background:var(--card); border:1px solid var(--line); padding:12px } .stat .v { font-size:26px; font-weight:600 } .stat .l { color:var(--muted) }
+.meter { height:8px; background:color-mix(in srgb, var(--s1) 20%, transparent); border-radius:4px; overflow:hidden; margin-top:6px } .meter i { display:block; height:100%; background:var(--s1); border-radius:4px }
+.log { font:12px var(--mono); white-space:pre-wrap; color:var(--ink2); max-height:200px; overflow:auto }
+.themebtn { background:transparent; color:var(--ink); border-color:var(--line) }
+.empty { color:var(--muted); padding:20px 0 }
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="#modules"><i>M</i>MAESTRO-SC</a><span class="sep"></span>
+  <input class="search" id="search" placeholder="SEARCH_SYSTEM...  [Ctrl+K]" aria-label="Search tail number">
+  <nav class="mono" id="nav">
+    <a href="#modules">Modules</a><a href="#docks">Docks</a><a href="#gates">Gates</a><a href="#machine">Machine</a>
+    <a href="#fleet">Fleet</a><a href="#alerts">Alerts</a><a href="#data">Data &amp; AI</a>
+  </nav>
+  <button id="theme" class="mono themebtn" aria-label="Toggle paper or dark mode">Paper</button>
+</header>
+<div class="alertbar mono" id="alertbar"><span class="dot"></span><a href="#alerts" id="alerttext">Loading alerts…</a></div>
+<main id="view"></main>
+<div class="tip" id="tip" role="tooltip"></div>
+
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = v => v == null ? "—" : String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = (v, d = 1) => v == null ? "—" : Number(v).toLocaleString(undefined, {maximumFractionDigits: d});
+const dt = v => v ? new Date(v).toLocaleDateString(undefined, {day: "2-digit", month: "short", year: "numeric"}) : "—";
+const md = v => v ? new Date(v).toLocaleDateString(undefined, {month: "2-digit", day: "2-digit"}) : "—";
+const api = p => fetch(p).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const SVGNS = "http://www.w3.org/2000/svg";
+function el(tag, attrs = {}, parent) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function niceMax(v) { if (v <= 0) return 10; const p = Math.pow(10, Math.floor(Math.log10(v))); for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p; return 10 * p; }
+
+// ---------- tooltip ----------
+const tip = $("#tip");
+function showTip(ev, value, rows) {
+  tip.replaceChildren();
+  const b = document.createElement("b"); b.textContent = value; tip.appendChild(b);
+  rows.forEach(r => { const d = document.createElement("div"); d.textContent = r; tip.appendChild(d); });
+  tip.style.display = "block";
+  const x = Math.min(ev.clientX + 14, innerWidth - tip.offsetWidth - 8), y = Math.min(ev.clientY + 14, innerHeight - tip.offsetHeight - 8);
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+const hideTip = () => tip.style.display = "none";
+function hover(node, value, rows) {
+  node.setAttribute("tabindex", "0");
+  node.addEventListener("pointermove", e => showTip(e, value, rows));
+  node.addEventListener("pointerleave", hideTip);
+  node.addEventListener("focus", () => { const r = node.getBoundingClientRect(); showTip({clientX: r.right, clientY: r.top}, value, rows); });
+  node.addEventListener("blur", hideTip);
+}
+
+// ---------- theme ----------
+const setTheme = t => { document.documentElement.dataset.theme = t; $("#theme").textContent = t === "dark" ? "Dark mode" : "Paper"; localStorage.theme = t; route(); };
+$("#theme").onclick = () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+document.documentElement.dataset.theme = localStorage.theme || "light"; $("#theme").textContent = document.documentElement.dataset.theme === "dark" ? "Dark mode" : "Paper";
+
+// ---------- alerts strip ----------
+async function loadAlerts() {
+  try { const a = await api("/api/maestro/alerts");
+    $("#alerttext").innerHTML = `${a.total} alerts active <span class="n">· ${a.critical} critical / ${a.warning} warning ▾</span>`;
+  } catch { $("#alerttext").textContent = "Alerts unavailable"; }
+}
+
+// ---------- views ----------
+const MODULES = [
+  ["M_01", "Event management", "Monitor supply chain events and logistical windows in real-time.", "#alerts"],
+  ["M_02", "Supply analysis", "Inventory, supplier on-time, late POs and shipments from any source.", "/"],
+  ["M_03", "Tiered dashboards", "Gate and production-machine performance with trend and watch list.", "#machine"],
+  ["M_04", "AMXG", "Aircraft Maintenance Cross-Group operational command board.", "#docks"],
+  ["M_05", "Workflow engine", "Compose tasks into executable workflows; attach alert and simulation rules per node.", null],
+  ["M_06", "Data curation", "Clean, organize, and validate integrated fleet telemetry.", "#data"],
+  ["M_07", "Configuration tool", "Compose custom modules from your data - upload Excel or link an API.", "#data"],
+  ["M_08", "Reliability analysis", "Fleet health, subsystem scores and telemetry against limits.", "#fleet"],
+  ["M_09", "AI/ML engine", "Reads any file layout and answers questions over your data.", "#data"],
+  ["M_10", "Maestro connect", "Link MRO / PLM / MES APIs; data fills the right modules by relevance.", "#data"],
+  ["M_11", "Workforce development", "Skills maturity, training wishes, and where to invest to grow the team.", null],
+  ["M_12", "Admin console", "Users, groups, attribute hierarchy, and module assignment.", null],
+  ["M_13", "Collaboration", "Unified secure workspace - notes, email, chat, calendar.", null],
+  ["M_14", "Capacity planning", "Machine, labor, material, and tool load over time.", null],
+];
+function viewModules(v) {
+  v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Operational framework</div><h1>MAESTRO COMPONENTS</h1></div>
+    <div class="ready mono">System_readiness<b>NOMINAL</b></div></div><div class="grid4" id="mods"></div>`;
+  $("#mods").innerHTML = MODULES.map(([id, t, d, href]) => `<a class="mod" ${href ? `href="${href}"` : ""}>
+    <div class="ic">${id.slice(2)}</div><span class="id mono">${id}</span><h3>${esc(t)}</h3><p>${esc(d)}</p>
+    <span class="badge ${href ? "live" : ""}">${href ? "LIVE" : "DESIGN"}</span></a>`).join("");
+}
+
+async function viewDocks(v) {
+  const d = await api("/api/maestro/docks");
+  v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Operational module // AMXG</div><h1>DOCK OVERVIEW</h1>
+    <div class="mono" style="color:var(--muted)">Status as of ${dt(d.as_of)} · ${d.aircraft.length} aircraft in work</div></div></div><div class="docks" id="cards"></div>`;
+  if (!d.aircraft.length) { $("#cards").innerHTML = `<p class="empty">No aircraft yet. Upload the Fixer workbook under Data &amp; AI.</p>`; return; }
+  $("#cards").innerHTML = d.aircraft.map(c => {
+    const box = [["Day", c.day, c.day_goal ? c.day_goal : null, c.day_over], ["Flow", c.flow_days, c.amrep_days, c.flow_days > c.amrep_days],
+                 ["InDock", c.in_dock_days, c.in_dock_goal, c.in_dock_days > c.in_dock_goal], ["Queue", c.queue_days, null, false]]
+      .map(([l, a, b, o]) => `<span>${l}:</span><b class="${o ? "over" : ""}">${num(a, 0)}${b != null ? "/" + num(b, 0) : ""}</b>`).join("");
+    const ms = c.milestones.map(m => `<div>${md(m.date)}<u>${esc(m.gate.toUpperCase())}</u></div>`).join("") || "<div>—</div>";
+    const flags = [c.amrep_risk ? `<span class="tag critical">▲ AMREP RISK</span>` : "", c.day_over ? `<span class="tag warning">● OVER GATE GOAL</span>` : "",
+                   c.data_quality ? `<span class="tag warning" title="${esc(c.data_quality)}">● DATA CHECK</span>` : ""].join(" ");
+    return `<article class="dock"><div class="top"><div class="name">${esc(c.dock || "Off dock")}</div><div class="box">${box}</div></div>
+      <div class="line">${esc(c.asset_id)} &nbsp; B-52H PDM &nbsp; ${esc(c.gate.toUpperCase())}</div>
+      <div class="cols"><div class="ms">${ms}</div><div>
+        <div class="mono" style="font-size:10px"><u>Next big thing</u></div><div>${esc(c.current_milestone || "—")}</div>
+        <div class="mono" style="font-size:10px;margin-top:8px"><u>Known repairs / notes</u></div>
+        <ul>${(c.notes.length ? c.notes : ["—"]).map(n => `<li>${esc(n)}</li>`).join("")}</ul>
+        <div style="margin-top:8px;color:var(--ink2);font-size:12px">AMREP ${dt(c.amrep_date)} · projected ${dt(c.projected_finish)}</div></div></div>
+      <div>${flags}</div></article>`;
+  }).join("");
+}
+
+// Gate graph: stacked columns (actual + remaining), last-N average line, requirement line, WIP inset.
+function gateChart(host, g) {
+  const W = Math.max(host.clientWidth - 32, 480), H = 320, m = {t: 16, r: 120, b: 44, l: 40};
+  const iw = W - m.l - m.r, ih = H - m.t - m.b, n = g.bars.length;
+  const maxV = niceMax(Math.max(1, ...g.bars.map(b => b.total_days), g.requirement || 0, ...g.bars.map(b => b.last_n_avg || 0)) * 1.08);
+  const y = v => m.t + ih - (v / maxV) * ih, band = iw / Math.max(n, 1), bw = Math.min(24, band * 0.6), cx = i => m.l + band * i + band / 2;
+  const svg = el("svg", {width: W, height: H, role: "img", "aria-label": `${g.subtitle} gate graph`});
+  for (let i = 0; i <= 4; i++) { const v = maxV * i / 4, yy = y(v);
+    el("line", {x1: m.l, x2: m.l + iw, y1: yy, y2: yy, stroke: i ? css("--grid") : css("--axis"), "stroke-width": 1}, svg);
+    el("text", {x: m.l - 6, y: yy + 4, "text-anchor": "end"}, svg).textContent = num(v, 0); }
+  const split = g.bars.findIndex(b => b.in_work);
+  if (split > 0) el("line", {x1: m.l + band * split, x2: m.l + band * split, y1: m.t, y2: m.t + ih, stroke: css("--axis"), "stroke-width": 1}, svg);
+  const bar = (x, y0, y1, color, roundTop) => { const h = Math.max(y0 - y1, 0); if (h <= 0) return null;
+    const r = Math.min(4, h, bw / 2);
+    const d = roundTop ? `M${x},${y0} V${y1 + r} Q${x},${y1} ${x + r},${y1} H${x + bw - r} Q${x + bw},${y1} ${x + bw},${y1 + r} V${y0} Z` : `M${x},${y0} V${y1} H${x + bw} V${y0} Z`;
+    return el("path", {d, fill: color}, svg); };
+  g.bars.forEach((b, i) => {
+    const x = cx(i) - bw / 2, hasRem = b.remaining_days > 0;
+    bar(x, y(0), y(b.actual_days) + (hasRem ? 0 : 0), css("--s1"), !hasRem);
+    if (hasRem) bar(x, y(b.actual_days) - 2, y(b.total_days), css("--s1-light"), true);
+    const hit = el("rect", {x: cx(i) - band / 2, y: m.t, width: band, height: ih, fill: "transparent"}, svg);
+    hover(hit, `${num(b.actual_days, 0)} days`, [b.asset_id + (b.in_work ? " · in gate now" : ""),
+      b.in_work ? `Remaining ${num(b.remaining_days, 0)} · total ${num(b.total_days, 0)}` : `Finished ${dt(b.finished)}`,
+      b.last_n_avg != null ? `Last ${g.last_n} avg ${num(b.last_n_avg)}` : `Requirement ${num(b.requirement, 0)}`]);
+    const t = el("text", {x: cx(i), y: m.t + ih + 16, "text-anchor": "middle"}, svg); t.textContent = b.asset_id;
+    if (b.in_work) { const s = el("text", {x: cx(i), y: m.t + ih + 30, "text-anchor": "middle"}, svg); s.textContent = "in work"; }
+  });
+  // last-N average line over completed bars
+  const pts = g.bars.map((b, i) => b.last_n_avg != null ? [cx(i), y(b.last_n_avg)] : null).filter(Boolean);
+  if (pts.length) {
+    el("path", {d: "M" + pts.map(p => p.join(",")).join(" L"), fill: "none", stroke: css("--s2"), "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round"}, svg);
+    const [lx, ly] = pts[pts.length - 1];
+    el("circle", {cx: lx, cy: ly, r: 4, fill: css("--s2"), stroke: css("--surface"), "stroke-width": 2}, svg);
+  }
+  if (g.requirement != null) {
+    el("line", {x1: m.l, x2: m.l + iw, y1: y(g.requirement), y2: y(g.requirement), stroke: css("--s3"), "stroke-width": 2}, svg);
+  }
+  // direct labels at the right end (leader-free: nudge only if they'd collide)
+  const labs = [];
+  if (pts.length) labs.push([pts[pts.length - 1][1], `Last ${g.last_n} avg ${num(g.last_n_avg)}`]);
+  if (g.requirement != null) labs.push([y(g.requirement), `Requirement ${num(g.requirement, 0)}`]);
+  labs.sort((a, b) => a[0] - b[0]); if (labs.length === 2 && labs[1][0] - labs[0][0] < 14) { labs[0][0] -= 7; labs[1][0] += 7; }
+  labs.forEach(([yy, s]) => { const t = el("text", {x: m.l + iw + 8, y: yy + 4, class: "lab"}, svg); t.textContent = s; });
+  return svg;
+}
+
+function wipChart(w) {
+  const W = 150, H = 200, m = {t: 18, b: 34, l: 28}, ih = H - m.t - m.b;
+  const maxV = niceMax(Math.max(w.plan || 0, w.actual, 1) * 1.15), y = v => m.t + ih - (v / maxV) * ih;
+  const svg = el("svg", {width: W, height: H, role: "img", "aria-label": `WIP plan ${w.plan}, actual ${w.actual}`});
+  el("line", {x1: m.l, x2: W - 6, y1: y(0), y2: y(0), stroke: css("--axis")}, svg);
+  const col = (x, v, color, over) => { if (!v) return;
+    const top = y(v), h = y(0) - top; el("path", {d: `M${x},${y(0)} V${top + Math.min(4, h)} Q${x},${top} ${x + 4},${top} H${x + 20} Q${x + 24},${top} ${x + 24},${top + Math.min(4, h)} V${y(0)} Z`, fill: color}, svg); };
+  const plan = w.plan || 0, within = Math.min(w.actual, plan || w.actual), over = Math.max(w.actual - plan, 0);
+  col(m.l + 10, plan, css("--s1-light"));
+  col(m.l + 66, within, css("--s1-light"));
+  if (over > 0 && w.plan != null) { const top = y(w.actual), base = y(plan) - 2; el("path", {d: `M${m.l + 66},${base} V${top + 4} Q${m.l + 66},${top} ${m.l + 70},${top} H${m.l + 86} Q${m.l + 90},${top} ${m.l + 90},${top + 4} V${base} Z`, fill: css("--critical")}, svg); }
+  [[m.l + 22, plan, "Plan"], [m.l + 78, w.actual, "Actual"]].forEach(([x, v, l]) => {
+    el("text", {x, y: y(0) + 14, "text-anchor": "middle"}, svg).textContent = l;
+    el("text", {x, y: y(v) - 5, "text-anchor": "middle", class: "lab"}, svg).textContent = num(v, 2); });
+  return svg;
+}
+
+async function viewGates(v) {
+  const gates = await api("/api/maestro/gates");
+  const sel = location.hash.split("/")[1] ? decodeURIComponent(location.hash.split("/")[1]) : "Post Dock";
+  v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Tiered dashboards // Gate graphs</div><h1>B-52 PDM THROUGHPUT</h1></div></div>
+    <div class="row" style="margin-bottom:14px"><label class="mono" for="gsel">Gate</label><select id="gsel">${gates.map(g =>
+    `<option ${g.gate === sel ? "selected" : ""}>${esc(g.gate)}</option>`).join("")}</select>
+    <label class="mono" for="lastn">Last X</label><select id="lastn">${[3, 4, 5, 6, 8, 10, 12].map(n => `<option ${n === 6 ? "selected" : ""}>${n}</option>`).join("")}</select></div>
+    <div class="split"><div class="viz" id="gviz"></div><div class="viz" id="wviz"></div></div><div id="gtable"></div>`;
+  const draw = async () => {
+    const g = await api(`/api/maestro/gate/${encodeURIComponent($("#gsel").value)}?last_n=${$("#lastn").value}`);
+    const gv = $("#gviz"); gv.innerHTML = `<h3>${esc(g.title)}</h3><div class="sub">${esc(g.subtitle)} · as of ${dt(g.as_of)}</div>
+      <div class="legend"><span><i class="key-rect" style="background:var(--s1)"></i>Actual days</span><span><i class="key-rect" style="background:var(--s1-light)"></i>Remaining days</span>
+      <span><i class="key-line" style="background:var(--s2)"></i>Last ${g.last_n} average</span><span><i class="key-line" style="background:var(--s3)"></i>Requirement</span></div>`;
+    if (!g.bars.length) gv.insertAdjacentHTML("beforeend", `<p class="empty">No aircraft have been through this gate yet.</p>`); else gv.appendChild(gateChart(gv, g));
+    const wv = $("#wviz"); wv.innerHTML = `<h3>WIP</h3><div class="sub">${g.wip.plan == null ? "No plan for queues" : g.wip.over_plan ? '<span class="tag critical">▲ Over plan</span>' : '<span class="tag good">✓ Within plan</span>'}</div>`;
+    wv.appendChild(wipChart(g.wip));
+    $("#gtable").innerHTML = `<details><summary>Table view</summary><table><tr><th>Aircraft</th><th class="n">Actual</th><th class="n">Remaining</th><th class="n">Total</th><th class="n">Last ${g.last_n} avg</th><th class="n">Requirement</th><th>Finished</th></tr>
+      ${g.bars.map(b => `<tr><td>${esc(b.asset_id)}${b.in_work ? " (in work)" : ""}</td><td class="n">${num(b.actual_days, 0)}</td><td class="n">${num(b.remaining_days, 0)}</td><td class="n">${num(b.total_days, 0)}</td><td class="n">${num(b.last_n_avg)}</td><td class="n">${num(b.requirement, 0)}</td><td>${b.in_work ? "—" : dt(b.finished)}</td></tr>`).join("")}</table></details>`;
+  };
+  $("#gsel").onchange = () => { history.replaceState(null, "", "#gates/" + encodeURIComponent($("#gsel").value)); draw(); };
+  $("#lastn").onchange = draw; await draw();
+}
+
+function machineChart(host, m) {
+  const W = Math.max(host.clientWidth - 32, 560), H = 320, mg = {t: 16, r: 16, b: 52, l: 40}, iw = W - mg.l - mg.r, ih = H - mg.t - mg.b;
+  const n = m.gates.length, maxV = niceMax(Math.max(...m.gates.map(g => Math.max(g.last_n_avg, g.requirement))) * 1.1);
+  const y = v => mg.t + ih - (Math.max(v, 0) / maxV) * ih, band = iw / n, bw = Math.min(24, band * .55), cx = i => mg.l + band * i + band / 2;
+  const svg = el("svg", {width: W, height: H, role: "img", "aria-label": "Production machine last-N average days per gate"});
+  for (let i = 0; i <= 4; i++) { const v = maxV * i / 4; el("line", {x1: mg.l, x2: mg.l + iw, y1: y(v), y2: y(v), stroke: i ? css("--grid") : css("--axis")}, svg);
+    el("text", {x: mg.l - 6, y: y(v) + 4, "text-anchor": "end"}, svg).textContent = num(v, 0); }
+  m.gates.forEach((g, i) => { const x = cx(i) - bw / 2, top = y(g.last_n_avg), h = y(0) - top, r = Math.min(4, h);
+    if (h > 0) el("path", {d: `M${x},${y(0)} V${top + r} Q${x},${top} ${x + r},${top} H${x + bw - r} Q${x + bw},${top} ${x + bw},${top + r} V${y(0)} Z`, fill: g.is_queue ? css("--s2") : css("--s1")}, svg);
+    if (g.requirement > 0) el("line", {x1: cx(i) - bw / 2 - 6, x2: cx(i) + bw / 2 + 6, y1: y(g.requirement), y2: y(g.requirement), stroke: css("--s3"), "stroke-width": 2, "stroke-linecap": "round"}, svg);
+    el("text", {x: cx(i), y: top - 6, "text-anchor": "middle", class: "lab"}, svg).textContent = num(g.last_n_avg);
+    const words = g.gate.replace("Queue to ", "Q→ ").split(" "); words.forEach((w, k) => el("text", {x: cx(i), y: mg.t + ih + 14 + k * 12, "text-anchor": "middle"}, svg).textContent = w);
+    hover(el("rect", {x: cx(i) - band / 2, y: mg.t, width: band, height: ih, fill: "transparent"}, svg), `${num(g.last_n_avg)} days`, [g.gate, `Requirement ${num(g.requirement, 0)}`, `WIP ${g.wip.actual}${g.wip.plan != null ? " / plan " + g.wip.plan : ""}`]);
+  });
+  return svg;
+}
+
+async function viewMachine(v) {
+  const m = await api("/api/maestro/machine");
+  v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Tiered dashboards // Production machine</div><h1>MACHINE PERFORMANCE</h1></div></div>
+    <div class="stats"><div class="stat"><div class="l mono">Last ${m.last_n} avg days (sum of gates)</div><div class="v">${num(m.total_avg_days)}</div></div>
+    <div class="stat"><div class="l mono">Requirement</div><div class="v">${num(m.total_requirement)}</div></div>
+    <div class="stat"><div class="l mono">Last ${m.last_n} flow days</div><div class="v">${num(m.last_n_flow_days)}</div></div>
+    <div class="stat"><div class="l mono">Last ${m.last_n} in-dock days</div><div class="v">${num(m.last_n_in_dock_days)}</div></div></div>
+    <div class="viz" id="mviz"><h3>Last ${m.last_n} average days per gate</h3><div class="sub">Queues are gates too · as of ${dt(m.as_of)}</div>
+    <div class="legend"><span><i class="key-rect" style="background:var(--s1)"></i>Gate</span><span><i class="key-rect" style="background:var(--s2)"></i>Queue</span><span><i class="key-line" style="background:var(--s3)"></i>Requirement</span></div></div>
+    <details><summary>Table view</summary><table><tr><th>Gate</th><th class="n">Last ${m.last_n} avg</th><th class="n">Requirement</th><th class="n">WIP actual</th><th class="n">WIP plan</th></tr>
+    ${m.gates.map(g => `<tr><td>${esc(g.gate)}</td><td class="n">${num(g.last_n_avg)}</td><td class="n">${num(g.requirement, 0)}</td><td class="n">${g.wip.actual}</td><td class="n">${num(g.wip.plan, 2)}</td></tr>`).join("")}</table></details>
+    <div class="panel" style="margin-top:16px"><h2 class="mono">Last ${m.last_n} produced</h2><table><tr><th>Aircraft</th><th>Finished</th><th class="n">Flow days</th><th>Home base</th></tr>
+    ${m.produced.map(p => `<tr><td>${esc(p.asset_id)}</td><td>${dt(p.finished)}</td><td class="n">${num(p.flow_days, 0)}</td><td>${esc(p.location)}</td></tr>`).join("")}</table></div>`;
+  $("#mviz").appendChild(machineChart($("#mviz"), m));
+}
+
+function telemetryChart(host, s) {
+  const W = Math.max(host.clientWidth - 32, 420), H = 200, m = {t: 12, r: 90, b: 26, l: 48}, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const pts = s.points.filter(p => p.v != null && p.t), vals = pts.map(p => p.v).concat(pts.map(p => p.hi).filter(x => x != null), pts.map(p => p.lo).filter(x => x != null));
+  const lo = Math.min(...vals), hi = Math.max(...vals), pad = (hi - lo) * .1 || 1, y0 = lo - pad, y1 = hi + pad;
+  const t0 = new Date(pts[0].t).getTime(), t1 = new Date(pts[pts.length - 1].t).getTime() || t0 + 1;
+  const x = t => m.l + ((new Date(t).getTime() - t0) / Math.max(t1 - t0, 1)) * iw, y = v => m.t + ih - ((v - y0) / (y1 - y0)) * ih;
+  const svg = el("svg", {width: W, height: H, role: "img", "aria-label": `${s.sensor} telemetry`});
+  [y0, (y0 + y1) / 2, y1].forEach((v, i) => { el("line", {x1: m.l, x2: m.l + iw, y1: y(v), y2: y(v), stroke: i ? css("--grid") : css("--axis")}, svg);
+    el("text", {x: m.l - 6, y: y(v) + 4, "text-anchor": "end"}, svg).textContent = num(v, 0); });
+  const last = pts[pts.length - 1];
+  [["hi", "High limit"], ["lo", "Low limit"]].forEach(([k, l]) => { if (last[k] == null) return;
+    el("line", {x1: m.l, x2: m.l + iw, y1: y(last[k]), y2: y(last[k]), stroke: css("--critical"), "stroke-width": 1}, svg);
+    el("text", {x: m.l + iw + 6, y: y(last[k]) + 4, class: "lab"}, svg).textContent = `${l} ${num(last[k], 0)}`; });
+  el("path", {d: "M" + pts.map(p => `${x(p.t)},${y(p.v)}`).join(" L"), fill: "none", stroke: css("--s1"), "stroke-width": 2, "stroke-linejoin": "round"}, svg);
+  el("circle", {cx: x(last.t), cy: y(last.v), r: 4, fill: css("--s1"), stroke: css("--surface"), "stroke-width": 2}, svg);
+  const cross = el("line", {y1: m.t, y2: m.t + ih, stroke: css("--axis"), visibility: "hidden"}, svg);
+  const hit = el("rect", {x: m.l, y: m.t, width: iw, height: ih, fill: "transparent"}, svg);
+  hit.addEventListener("pointermove", e => { const r = svg.getBoundingClientRect(), px = e.clientX - r.left;
+    const p = pts.reduce((a, b) => Math.abs(x(b.t) - px) < Math.abs(x(a.t) - px) ? b : a);
+    cross.setAttribute("x1", x(p.t)); cross.setAttribute("x2", x(p.t)); cross.setAttribute("visibility", "visible");
+    showTip(e, num(p.v), [s.sensor, new Date(p.t).toLocaleString()]); });
+  hit.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); hideTip(); });
+  return svg;
+}
+
+async function viewFleet(v) {
+  const f = await api("/api/maestro/fleet");
+  if (!f.assets.length) { v.innerHTML = `<p class="empty">No fleet data yet. Upload the dashboard supporting workbook under Data &amp; AI.</p>`; return; }
+  const sel = decodeURIComponent(location.hash.split("/")[1] || f.assets[0].asset_id), a = f.assets.find(x => x.asset_id === sel) || f.assets[0];
+  const icon = s => ({good: "✓", warning: "●", serious: "◆", critical: "▲"}[s] || "");
+  v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Reliability analysis</div><h1>FLEET HEALTH</h1>
+    <div class="mono" style="color:var(--muted)">Fleet MC rate ${num(f.fleet_mc_rate)}%</div></div></div>
+    <div class="fleet"><div class="rail panel" style="padding:0">${f.assets.map(x => `<a href="#fleet/${encodeURIComponent(x.asset_id)}" class="${x.asset_id === a.asset_id ? "on" : ""}">
+      <span>${esc(x.asset_id)}</span><span class="tag ${x.band.status}">${icon(x.band.status)} ${esc(x.band.code)}</span></a>`).join("")}</div>
+    <div><div class="stats">
+      <div class="stat"><div class="l mono">Mission capable</div><div class="v">${num(a.mc_rate)}%</div><span class="tag ${a.band.status}">${icon(a.band.status)} ${esc(a.band.label)}</span></div>
+      <div class="stat"><div class="l mono">MTBM (hrs)</div><div class="v">${num(a.mtbm_actual)} <span style="font-size:14px;color:var(--muted)">/ ${num(a.mtbm_target)} target</span></div>
+        <div class="meter"><i style="width:${Math.min(100, 100 * (a.mtbm_actual || 0) / (a.mtbm_target || 1))}%"></i></div></div>
+      <div class="stat"><div class="l mono">Status</div><div class="v" style="font-size:20px">${esc(a.status)}</div></div>
+      <div class="stat"><div class="l mono">Alerts</div><div class="v">${num(a.alert_count, 0)}</div></div></div>
+      <div class="panel"><h2 class="mono">Subsystem health</h2><table>${a.subsystems.map(s => `<tr><td style="width:120px">${esc(s.subsystem)}</td>
+        <td><div class="meter" style="background:color-mix(in srgb, var(--${s.band}) 18%, transparent);height:10px"><i style="width:${s.health_score}%;background:var(--${s.band})"></i></div></td>
+        <td class="n" style="width:60px">${num(s.health_score)}%</td><td style="width:110px"><span class="tag ${s.band}">${icon(s.band)} ${s.band === "good" ? "OK" : s.band === "warning" ? "WATCH" : "CRITICAL"}</span></td>
+        <td class="n" style="width:90px">${s.critical_fault_count ? s.critical_fault_count + " crit." : ""}</td></tr>`).join("") || "<tr><td>No subsystem data</td></tr>"}</table></div>
+      <div id="tele"></div>
+      <div class="panel"><h2 class="mono">Fault registry</h2><table><tr><th>Logged</th><th>Code</th><th>Severity</th><th>Description</th><th>Technician</th></tr>
+        ${a.faults.map(x => `<tr><td>${dt(x.date_logged)}</td><td>${esc(x.fault_code)}</td><td><span class="tag ${x.severity === "Critical" ? "critical" : "warning"}">${esc(x.severity)}</span></td><td>${esc(x.description)}</td><td>${esc(x.technician)}</td></tr>`).join("") || "<tr><td colspan=5>No faults</td></tr>"}</table></div>
+    </div></div>`;
+  const series = f.telemetry.filter(s => s.asset_id === a.asset_id);
+  for (const s of series) { const box = document.createElement("div"); box.className = "viz"; box.style.marginBottom = "16px";
+    box.innerHTML = `<h3 style="font-size:14px">${esc(s.sensor)}</h3><div class="sub">${s.points.length} readings</div>`; $("#tele").appendChild(box); box.appendChild(telemetryChart(box, s)); }
+}
+
+async function viewAlerts(v) {
+  const a = await api("/api/maestro/alerts");
+  v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Event management</div><h1>ACTIVE ALERTS</h1>
+    <div class="mono" style="color:var(--muted)">${a.critical} critical · ${a.warning} warning</div></div></div>
+    <div class="panel"><table><tr><th>Level</th><th>Aircraft</th><th>Source</th><th>Detail</th><th>Logged</th></tr>
+    ${a.items.map(i => `<tr><td><span class="tag ${i.level}">${i.level === "critical" ? "▲" : "●"} ${i.level.toUpperCase()}</span></td><td><a href="#fleet/${encodeURIComponent(i.asset_id)}">${esc(i.asset_id)}</a></td><td>${esc(i.source)}</td><td>${esc(i.text)}</td><td>${i.when ? dt(i.when) : "—"}</td></tr>`).join("")}</table></div>`;
+}
+
+function viewData(v) {
+  v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Configuration tool // AI/ML engine</div><h1>DATA &amp; AI</h1></div></div>
+    <div class="panel"><h2 class="mono">Upload Excel, CSV, JSON, PDF or text</h2>
+      <div class="row"><input type="file" id="files" multiple><input id="src" placeholder="Source name (optional)"><button id="up">Ingest</button></div>
+      <p style="color:var(--ink2);font-size:13px">The AI finds the tables in each sheet (skipping titles and data dictionaries), recognises tracker templates such as the PDM tail sheets, maps columns to Maestro entities, and reads scanned status boards.</p>
+      <div class="log" id="log"></div></div>
+    <div class="panel"><h2 class="mono">Ask Maestro</h2><form id="ask" class="row"><input id="q" style="flex:1" placeholder="e.g. Which aircraft are at risk of missing AMREP and which gate is the constraint?"><button>Ask</button></form><div id="ans" style="margin-top:10px"></div></div>`;
+  const log = m => $("#log").textContent = m + "\n" + $("#log").textContent;
+  $("#up").onclick = async () => { for (const f of $("#files").files) { const fd = new FormData(); fd.append("file", f); if ($("#src").value) fd.append("source", $("#src").value);
+    log(`… ${f.name}`); const r = await fetch("/api/ingest/file", {method: "POST", body: fd}); const j = await r.json();
+    if (!r.ok) { log(`✗ ${f.name}: ${j.detail}`); continue; }
+    j.batches.forEach(b => log(`✓ ${f.name}${b.sheet ? " / " + b.sheet : ""}: ${b.records} ${b.record_type || b.document_kind || ""}${b.template ? " [" + b.template + "]" : ""}${b.note ? " (" + b.note + ")" : ""}`)); } loadAlerts(); };
+  $("#ask").onsubmit = async e => { e.preventDefault(); $("#ans").textContent = "Thinking…";
+    const r = await fetch("/api/ask", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({question: $("#q").value})}); const j = await r.json();
+    if (!r.ok) { $("#ans").textContent = j.detail; return; }
+    const list = (t, xs) => xs.length ? `<p class="mono" style="margin:10px 0 4px">${t}</p><ul>${xs.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
+    $("#ans").innerHTML = `<p>${esc(j.answer)}</p>` + list("Key findings", j.key_findings) + list("Recommended actions", j.recommended_actions); };
+}
+
+const VIEWS = {modules: viewModules, docks: viewDocks, gates: viewGates, machine: viewMachine, fleet: viewFleet, alerts: viewAlerts, data: viewData};
+async function route() {
+  const key = (location.hash.slice(1).split("/")[0]) || "modules";
+  document.querySelectorAll("nav a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + key));
+  const v = $("#view"); hideTip();
+  try { await (VIEWS[key] || viewModules)(v); } catch (e) { v.innerHTML = `<p class="empty">Could not load this view (${esc(e.message)}).</p>`; }
+}
+$("#search").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.value.trim()) location.hash = "#fleet/" + encodeURIComponent(e.target.value.trim()); });
+addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("#search").focus(); } });
+addEventListener("hashchange", route);
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(route, 200); });
+loadAlerts(); route();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+From: orders@globexmetals.example
+Subject: Delay notice for PO-4512 and PO-4530
+
+Hello,
+Due to a furnace outage, PO-4512 (SKU-0007, 300 EA) will ship on 2026-11-28 instead of
+2026-11-17. PO-4530 (SKU-0019, 120 EA at USD 14.20) is unaffected and ships tomorrow.
+Regards, Globex Metals

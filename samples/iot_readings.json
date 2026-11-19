@@ -1,0 +1,1682 @@
+[
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.07,
+  "ts": "2026-11-18T17:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.02,
+  "ts": "2026-11-18T17:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.71,
+  "ts": "2026-11-18T17:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.94,
+  "ts": "2026-11-18T17:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.96,
+  "ts": "2026-11-18T18:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.44,
+  "ts": "2026-11-18T18:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.84,
+  "ts": "2026-11-18T18:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.4,
+  "ts": "2026-11-18T18:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.14,
+  "ts": "2026-11-18T18:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.89,
+  "ts": "2026-11-18T18:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.35,
+  "ts": "2026-11-18T18:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.89,
+  "ts": "2026-11-18T18:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.28,
+  "ts": "2026-11-18T18:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.12,
+  "ts": "2026-11-18T18:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.17,
+  "ts": "2026-11-18T18:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.76,
+  "ts": "2026-11-18T18:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.01,
+  "ts": "2026-11-18T19:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.71,
+  "ts": "2026-11-18T19:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.74,
+  "ts": "2026-11-18T19:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.64,
+  "ts": "2026-11-18T19:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.09,
+  "ts": "2026-11-18T19:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.87,
+  "ts": "2026-11-18T19:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.28,
+  "ts": "2026-11-18T19:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.82,
+  "ts": "2026-11-18T19:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.54,
+  "ts": "2026-11-18T19:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.16,
+  "ts": "2026-11-18T19:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.17,
+  "ts": "2026-11-18T19:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.51,
+  "ts": "2026-11-18T19:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.71,
+  "ts": "2026-11-18T20:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.51,
+  "ts": "2026-11-18T20:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.8,
+  "ts": "2026-11-18T20:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.48,
+  "ts": "2026-11-18T20:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.31,
+  "ts": "2026-11-18T20:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.34,
+  "ts": "2026-11-18T20:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 2.93,
+  "ts": "2026-11-18T20:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.1,
+  "ts": "2026-11-18T20:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.23,
+  "ts": "2026-11-18T20:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.16,
+  "ts": "2026-11-18T20:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.37,
+  "ts": "2026-11-18T20:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.04,
+  "ts": "2026-11-18T20:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.9,
+  "ts": "2026-11-18T21:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.44,
+  "ts": "2026-11-18T21:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.14,
+  "ts": "2026-11-18T21:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 2.74,
+  "ts": "2026-11-18T21:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.67,
+  "ts": "2026-11-18T21:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.9,
+  "ts": "2026-11-18T21:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.39,
+  "ts": "2026-11-18T21:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.23,
+  "ts": "2026-11-18T21:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.96,
+  "ts": "2026-11-18T21:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.15,
+  "ts": "2026-11-18T21:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 2.71,
+  "ts": "2026-11-18T21:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.95,
+  "ts": "2026-11-18T21:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.4,
+  "ts": "2026-11-18T22:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.99,
+  "ts": "2026-11-18T22:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.8,
+  "ts": "2026-11-18T22:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.54,
+  "ts": "2026-11-18T22:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.16,
+  "ts": "2026-11-18T22:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.08,
+  "ts": "2026-11-18T22:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.0,
+  "ts": "2026-11-18T22:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.69,
+  "ts": "2026-11-18T22:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.65,
+  "ts": "2026-11-18T22:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.42,
+  "ts": "2026-11-18T22:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.78,
+  "ts": "2026-11-18T22:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.76,
+  "ts": "2026-11-18T22:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.29,
+  "ts": "2026-11-18T23:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.25,
+  "ts": "2026-11-18T23:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.18,
+  "ts": "2026-11-18T23:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.01,
+  "ts": "2026-11-18T23:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.81,
+  "ts": "2026-11-18T23:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.15,
+  "ts": "2026-11-18T23:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.58,
+  "ts": "2026-11-18T23:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.81,
+  "ts": "2026-11-18T23:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.47,
+  "ts": "2026-11-18T23:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.36,
+  "ts": "2026-11-18T23:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.66,
+  "ts": "2026-11-18T23:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.2,
+  "ts": "2026-11-18T23:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.26,
+  "ts": "2026-11-19T00:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.25,
+  "ts": "2026-11-19T00:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.84,
+  "ts": "2026-11-19T00:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.32,
+  "ts": "2026-11-19T00:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.24,
+  "ts": "2026-11-19T00:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.57,
+  "ts": "2026-11-19T00:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.02,
+  "ts": "2026-11-19T00:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.06,
+  "ts": "2026-11-19T00:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.98,
+  "ts": "2026-11-19T00:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.69,
+  "ts": "2026-11-19T00:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.37,
+  "ts": "2026-11-19T00:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.16,
+  "ts": "2026-11-19T00:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.11,
+  "ts": "2026-11-19T01:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.88,
+  "ts": "2026-11-19T01:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.6,
+  "ts": "2026-11-19T01:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.7,
+  "ts": "2026-11-19T01:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.2,
+  "ts": "2026-11-19T01:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.74,
+  "ts": "2026-11-19T01:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.56,
+  "ts": "2026-11-19T01:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.19,
+  "ts": "2026-11-19T01:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.85,
+  "ts": "2026-11-19T01:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.83,
+  "ts": "2026-11-19T01:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.42,
+  "ts": "2026-11-19T01:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.92,
+  "ts": "2026-11-19T01:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.72,
+  "ts": "2026-11-19T02:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.63,
+  "ts": "2026-11-19T02:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.09,
+  "ts": "2026-11-19T02:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.59,
+  "ts": "2026-11-19T02:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.67,
+  "ts": "2026-11-19T02:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.12,
+  "ts": "2026-11-19T02:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.34,
+  "ts": "2026-11-19T02:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.48,
+  "ts": "2026-11-19T02:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.75,
+  "ts": "2026-11-19T02:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.91,
+  "ts": "2026-11-19T02:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.81,
+  "ts": "2026-11-19T02:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.45,
+  "ts": "2026-11-19T02:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.53,
+  "ts": "2026-11-19T03:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.29,
+  "ts": "2026-11-19T03:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.52,
+  "ts": "2026-11-19T03:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.62,
+  "ts": "2026-11-19T03:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.12,
+  "ts": "2026-11-19T03:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 4.08,
+  "ts": "2026-11-19T03:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.77,
+  "ts": "2026-11-19T03:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-01",
+  "metric": "temperature_c",
+  "reading": 3.92,
+  "ts": "2026-11-19T03:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.72,
+  "ts": "2026-11-18T17:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.17,
+  "ts": "2026-11-18T17:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.98,
+  "ts": "2026-11-18T17:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.65,
+  "ts": "2026-11-18T17:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.77,
+  "ts": "2026-11-18T18:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.67,
+  "ts": "2026-11-18T18:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.03,
+  "ts": "2026-11-18T18:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.46,
+  "ts": "2026-11-18T18:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.9,
+  "ts": "2026-11-18T18:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.82,
+  "ts": "2026-11-18T18:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.9,
+  "ts": "2026-11-18T18:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.88,
+  "ts": "2026-11-18T18:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.27,
+  "ts": "2026-11-18T18:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.0,
+  "ts": "2026-11-18T18:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.58,
+  "ts": "2026-11-18T18:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.86,
+  "ts": "2026-11-18T18:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.66,
+  "ts": "2026-11-18T19:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.59,
+  "ts": "2026-11-18T19:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.55,
+  "ts": "2026-11-18T19:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.22,
+  "ts": "2026-11-18T19:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.01,
+  "ts": "2026-11-18T19:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.25,
+  "ts": "2026-11-18T19:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.67,
+  "ts": "2026-11-18T19:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.88,
+  "ts": "2026-11-18T19:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.51,
+  "ts": "2026-11-18T19:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.54,
+  "ts": "2026-11-18T19:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.02,
+  "ts": "2026-11-18T19:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.08,
+  "ts": "2026-11-18T19:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.27,
+  "ts": "2026-11-18T20:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.71,
+  "ts": "2026-11-18T20:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.99,
+  "ts": "2026-11-18T20:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.73,
+  "ts": "2026-11-18T20:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.92,
+  "ts": "2026-11-18T20:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.66,
+  "ts": "2026-11-18T20:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.48,
+  "ts": "2026-11-18T20:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.01,
+  "ts": "2026-11-18T20:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.61,
+  "ts": "2026-11-18T20:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.47,
+  "ts": "2026-11-18T20:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.3,
+  "ts": "2026-11-18T20:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.87,
+  "ts": "2026-11-18T20:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.1,
+  "ts": "2026-11-18T21:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.86,
+  "ts": "2026-11-18T21:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.31,
+  "ts": "2026-11-18T21:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.76,
+  "ts": "2026-11-18T21:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.74,
+  "ts": "2026-11-18T21:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.66,
+  "ts": "2026-11-18T21:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.72,
+  "ts": "2026-11-18T21:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.68,
+  "ts": "2026-11-18T21:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.2,
+  "ts": "2026-11-18T21:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.96,
+  "ts": "2026-11-18T21:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.39,
+  "ts": "2026-11-18T21:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.31,
+  "ts": "2026-11-18T21:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.35,
+  "ts": "2026-11-18T22:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.01,
+  "ts": "2026-11-18T22:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.84,
+  "ts": "2026-11-18T22:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.01,
+  "ts": "2026-11-18T22:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.83,
+  "ts": "2026-11-18T22:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.61,
+  "ts": "2026-11-18T22:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.56,
+  "ts": "2026-11-18T22:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.92,
+  "ts": "2026-11-18T22:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 14.5,
+  "ts": "2026-11-18T22:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 14.5,
+  "ts": "2026-11-18T22:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.04,
+  "ts": "2026-11-18T22:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.23,
+  "ts": "2026-11-18T22:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.19,
+  "ts": "2026-11-18T23:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.97,
+  "ts": "2026-11-18T23:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.28,
+  "ts": "2026-11-18T23:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.45,
+  "ts": "2026-11-18T23:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.48,
+  "ts": "2026-11-18T23:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.3,
+  "ts": "2026-11-18T23:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.6,
+  "ts": "2026-11-18T23:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.35,
+  "ts": "2026-11-18T23:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.21,
+  "ts": "2026-11-18T23:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.0,
+  "ts": "2026-11-18T23:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.9,
+  "ts": "2026-11-18T23:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.95,
+  "ts": "2026-11-18T23:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.78,
+  "ts": "2026-11-19T00:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.0,
+  "ts": "2026-11-19T00:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.66,
+  "ts": "2026-11-19T00:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.65,
+  "ts": "2026-11-19T00:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.37,
+  "ts": "2026-11-19T00:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.26,
+  "ts": "2026-11-19T00:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.27,
+  "ts": "2026-11-19T00:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.2,
+  "ts": "2026-11-19T00:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.24,
+  "ts": "2026-11-19T00:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.91,
+  "ts": "2026-11-19T00:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.95,
+  "ts": "2026-11-19T00:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.71,
+  "ts": "2026-11-19T00:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.5,
+  "ts": "2026-11-19T01:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.0,
+  "ts": "2026-11-19T01:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.32,
+  "ts": "2026-11-19T01:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.99,
+  "ts": "2026-11-19T01:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.69,
+  "ts": "2026-11-19T01:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.7,
+  "ts": "2026-11-19T01:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.02,
+  "ts": "2026-11-19T01:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.49,
+  "ts": "2026-11-19T01:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.91,
+  "ts": "2026-11-19T01:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.97,
+  "ts": "2026-11-19T01:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.51,
+  "ts": "2026-11-19T01:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.3,
+  "ts": "2026-11-19T01:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.25,
+  "ts": "2026-11-19T02:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.09,
+  "ts": "2026-11-19T02:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.43,
+  "ts": "2026-11-19T02:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.62,
+  "ts": "2026-11-19T02:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.25,
+  "ts": "2026-11-19T02:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.14,
+  "ts": "2026-11-19T02:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.66,
+  "ts": "2026-11-19T02:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.18,
+  "ts": "2026-11-19T02:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.38,
+  "ts": "2026-11-19T02:43:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.03,
+  "ts": "2026-11-19T02:48:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.92,
+  "ts": "2026-11-19T02:53:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.63,
+  "ts": "2026-11-19T02:58:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.96,
+  "ts": "2026-11-19T03:03:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.03,
+  "ts": "2026-11-19T03:08:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 3.8,
+  "ts": "2026-11-19T03:13:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.75,
+  "ts": "2026-11-19T03:18:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.43,
+  "ts": "2026-11-19T03:23:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.19,
+  "ts": "2026-11-19T03:28:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.21,
+  "ts": "2026-11-19T03:33:48.609672+00:00",
+  "site": "DC-Dallas"
+ },
+ {
+  "deviceId": "reefer-02",
+  "metric": "temperature_c",
+  "reading": 4.65,
+  "ts": "2026-11-19T03:38:48.609672+00:00",
+  "site": "DC-Dallas"
+ }
+]
