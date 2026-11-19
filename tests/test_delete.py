@@ -100,3 +100,20 @@ def test_delete_all():
 def test_unknown_source_404():
     r = client.post("/api/data/sources/nope/delete", json={"confirm": "nope", "user": "Tester"})
     assert r.status_code == 404
+
+
+def test_ai_answers_leave_the_overview_when_cleared_or_data_deleted():
+    from app import governance
+    d1 = governance.record_decision("names of aircraft", {"answer": "none", "confidence": .9}, {}, "test-model")
+    did = d1["id"]
+    assert client.get("/api/governance/overview").json()["latest_decision"]["question"] == "names of aircraft"
+    assert client.post(f"/api/governance/decisions/{did}/clear", json={"user": "", "text": ""}).status_code in (400, 409, 422)
+    assert client.post(f"/api/governance/decisions/{did}/clear", json={"user": "tester", "text": "stale"}).status_code == 200
+    assert client.get("/api/governance/overview").json()["latest_decision"] is None
+    hist = client.get("/api/governance/decisions").json()
+    assert hist[0]["archived"] and hist[0]["archived_reason"] == "stale"          # still in the history
+    governance.record_decision("second question", {"answer": "x", "confidence": .9}, {}, "test-model")
+    load("purchase_orders.csv", data=(DIR.parent / "purchase_orders.csv").read_bytes())
+    r = client.post("/api/data/delete-all", json={"confirm": "DELETE ALL", "user": "tester"})
+    assert r.status_code == 200
+    assert client.get("/api/governance/overview").json()["latest_decision"] is None

@@ -710,6 +710,30 @@ def act_on_decision(did: str, action: str, user: str, text: str = "") -> dict:
     return {"id": did, "status": status}
 
 
+def clear_decision(did: str, user: str, reason: str = "") -> dict:
+    """Take an AI answer off the Overview. It stays in the decision history and the audit log."""
+    from bson import ObjectId
+    if not (user or "").strip():
+        raise ValueError("Say who is clearing it")
+    db = get_db()
+    d = db.decisions.find_one({"_id": ObjectId(did)})
+    if not d:
+        raise KeyError(did)
+    db.decisions.update_one({"_id": d["_id"]}, {"$set": {"archived": True, "archived_at": now(), "archived_by": user,
+                                                         "archived_reason": reason or "cleared by user"},
+                                                "$push": {"history": {"at": now(), "action": "clear", "user": user, "text": reason}}})
+    audit("decision_clear", user, {"decision": did, "reason": reason})
+    return {"id": did, "archived": True}
+
+
+def archive_decisions(reason: str, user: str) -> int:
+    """Answers given on data that has since been deleted no longer describe the data."""
+    r = get_db().decisions.update_many({"archived": {"$ne": True}},
+                                       {"$set": {"archived": True, "archived_at": now(), "archived_by": user,
+                                                 "archived_reason": reason}})
+    return r.modified_count
+
+
 def decisions(limit: int = 50) -> list[dict]:
     out = []
     for d in get_db().decisions.find({}).sort("created_at", -1).limit(limit):
@@ -740,8 +764,9 @@ def overview() -> dict:
     gold_records = sum(p["records"] for p in ps)
     live_ps = [p for p in ps if p["records"]]
     silver_types = {r["record_type"] for r in silver}
-    pending = [d for d in decisions(200) if d["status"] == "PENDING"]
     all_dec = decisions(1000)
+    pending = [d for d in all_dec if d["status"] == "PENDING" and not d.get("archived")]
+    current = [d for d in all_dec if not d.get("archived")]
     decided = [d for d in all_dec if d["status"] in ("ACCEPTED", "MODIFIED", "OVERRIDDEN")]
     open_q = quarantine("open")
     drift = list(db.drift.find({}, {"_id": 0}))
@@ -782,7 +807,7 @@ def overview() -> dict:
             "override_rate": round(100 * sum(d["status"] == "OVERRIDDEN" for d in decided) / len(decided), 1) if decided else None,
         },
         "products": ps,
-        "latest_decision": pending[0] if pending else (all_dec[0] if all_dec else None),
+        "latest_decision": pending[0] if pending else (current[0] if current else None),
     }
 
 
@@ -1112,6 +1137,7 @@ def delete_data(source_id: Optional[str], confirm: str, user: str, reason: str =
     db.quarantine.delete_many(q)
     from . import studio
     studio.delete_for_source(source_id)
+    archive_decisions(f"data deleted: {source_id or 'all sources'}", user.strip())
     if source_id:
         db.sources.delete_one({"_id": source_id})
     else:

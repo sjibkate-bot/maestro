@@ -119,7 +119,7 @@ function gauge(score, grade) {
 
 function decisionPanel(d) {
   const ask = `<form id="askf" style="display:flex;gap:8px;margin-top:14px"><input id="q" style="flex:1" placeholder="Ask about your data, e.g. Which aircraft are at risk of missing AMREP?"><button>Ask</button></form>`;
-  if (!d) return `<p class="empty">No AI recommendations yet.</p>${ask}`;
+  if (!d) return `<p class="empty">No open AI answer. Earlier answers are in <a href="#monitor">06 Monitor loop</a>.</p>${ask}`;
   const g = d.gate || {}, a = d.answer || {}, tr = d.data_trust || {};
   const V = {RECOMMEND: "Recommend", RECOMMEND_WITH_CAVEAT: "Recommend with caveat", ADVISORY: "Advisory only", WITHHOLD: "Withheld"}[g.verdict] || g.verdict;
   const actions = (a.recommended_actions || []).map(x => `<li>${esc(x)}</li>`).join("");
@@ -133,13 +133,15 @@ function decisionPanel(d) {
       <div class="fact"><div class="lab">Status</div><div>${esc(d.status)}</div></div></div>
     ${(a.evidence || []).length ? `<details style="margin-top:8px"><summary class="muted">Evidence</summary><ul>${a.evidence.map(x => `<li>${esc(x)}</li>`).join("")}</ul></details>` : ""}
     <div style="display:flex;gap:8px;margin-top:12px"><button class="ok" data-act="accept" ${pending ? "" : "disabled"}>Accept</button>
-      <button class="mod" data-act="modify" ${pending ? "" : "disabled"}>Modify</button><button class="ovr" data-act="override" ${pending ? "" : "disabled"}>Override</button></div>${ask}`;
+      <button class="mod" data-act="modify" ${pending ? "" : "disabled"}>Modify</button><button class="ovr" data-act="override" ${pending ? "" : "disabled"}>Override</button>
+      <button data-act="clear" style="margin-left:auto;background:transparent;color:var(--ink2);border:1px solid var(--line)" title="Take this answer off the overview; it stays in the decision history">Clear</button></div>${ask}`;
 }
 function wireDecision(d, rerender) {
   document.querySelectorAll("[data-act]").forEach(b => b.onclick = async () => {
     const u = who(); if (!u) return; const act = b.dataset.act; let text = "";
     if (act === "modify") { text = prompt("Modified action:"); if (!text) return; }
     if (act === "override") { text = prompt("Reason for override (required, recorded):"); if (!text) return; }
+    if (act === "clear") { text = prompt("Why clear it? (optional, recorded)", "no longer relevant"); if (text === null) return; }
     try { await post(`/api/governance/decisions/${d.id}/${act}`, {user: u, text}); rerender(); } catch (e) { alert(e.message); } });
   const f = $("#askf"); if (f) f.onsubmit = async e => { e.preventDefault(); if (!$("#q").value.trim()) return;
     f.querySelector("button").disabled = true; f.querySelector("button").textContent = "Thinking…";
@@ -320,7 +322,7 @@ const VIEWS = {
       <div class="card"><div class="lab"><b>Drift alerts</b> · newest batch vs earlier batches</div><table><tr><th>Entity</th><th>Field</th><th class="n">Previous mean</th><th class="n">Current mean</th><th class="n">Change</th></tr>
       ${s.drift.map(d => `<tr><td>${esc(d.record_type)}</td><td>${esc(d.field)}</td><td class="n">${num(d.previous_mean, 2)}</td><td class="n">${num(d.current_mean, 2)}</td><td class="n">${d.change_pct > 0 ? "+" : ""}${num(d.change_pct, 1)}%</td></tr>`).join("") || '<tr><td colspan=5 class="empty">No drift above threshold</td></tr>'}</table></div>
       <div class="card"><div class="lab"><b>AI decisions</b></div><table><tr><th>When</th><th>Question</th><th>Gate</th><th>Data</th><th>Status</th><th>By</th><th>Note</th></tr>
-      ${s.decisions.map(d => `<tr><td>${dt(d.created_at)}</td><td>${esc(d.question)}</td><td>${esc((d.gate.verdict || "").replaceAll("_", " ").toLowerCase())}</td><td>${esc(d.data_trust.grade)}</td><td>${esc(d.status)}</td><td>${esc(d.decided_by)}</td><td>${esc(d.decision_note)}</td></tr>`).join("") || '<tr><td colspan=7 class="empty">No decisions yet</td></tr>'}</table></div>`;
+      ${s.decisions.map(d => `<tr><td>${dt(d.created_at)}</td><td>${esc(d.question)}</td><td>${esc((d.gate.verdict || "").replaceAll("_", " ").toLowerCase())}</td><td>${esc(d.data_trust.grade)}</td><td>${esc(d.status)}${d.archived ? `<div class="muted" style="font-size:11px">cleared: ${esc(d.archived_reason)}</div>` : ""}</td><td>${esc(d.decided_by)}</td><td>${esc(d.decision_note)}</td></tr>`).join("") || '<tr><td colspan=7 class="empty">No decisions yet</td></tr>'}</table></div>`;
     document.querySelectorAll("[data-close]").forEach(b => b.onclick = async () => { const u = who(); if (!u) return;
       const r = prompt("Resolution (e.g. 'corrected in source system, re-ingest scheduled'):"); if (!r) return;
       try { await post(`/api/governance/quarantine/${b.dataset.close}/close`, {user: u, resolution: r}); route(); } catch (e) { alert(e.message); } });

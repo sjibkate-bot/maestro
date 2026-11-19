@@ -731,9 +731,11 @@ class DecisionAction(BaseModel):
 
 @app.post("/api/governance/decisions/{did}/{action}")
 def gov_decide(did: str, action: str, body: DecisionAction):
-    if action not in ("accept", "modify", "override"):
-        raise HTTPException(404, "Actions: accept, modify, override")
+    if action not in ("accept", "modify", "override", "clear"):
+        raise HTTPException(404, "Actions: accept, modify, override, clear")
     try:
+        if action == "clear":
+            return governance.clear_decision(did, body.user, body.text)
         return governance.act_on_decision(did, action, body.user, body.text)
     except KeyError:
         raise HTTPException(404, "Unknown decision")
