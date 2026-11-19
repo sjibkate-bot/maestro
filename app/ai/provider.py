@@ -168,6 +168,20 @@ class RuleBasedProvider:
     name = "rules"
 
     def map_columns(self, columns, sample_rows, context: str = "") -> MappingResult:
+        """Same classifier as Mapping Studio: an entity is chosen only when its required fields
+        are covered; otherwise the table is 'other' and stays in Bronze for a person to map."""
+        from .. import studio
+        fields = studio.profile_columns(list(columns), list(sample_rows or []))
+        cl = studio.classify(context or "", fields)
+        if cl["entity"] == "other":
+            return MappingResult(record_type="other", mappings=[ColumnMapping(source_column=c, canonical_field=None) for c in columns],
+                                 notes="No entity matched well enough: map it in Mapping Studio or register a new entity.")
+        maps = [ColumnMapping(source_column=c, canonical_field=(cl["picks"].get(c) or {}).get("field")
+                              if (cl["picks"].get(c) or {}).get("score", 0) >= 75 else None) for c in columns]
+        return MappingResult(record_type=cl["entity"], mappings=maps,
+                             notes=f"Rule-based matching (AI disabled), {cl['confidence']}% confidence.")
+
+    def _legacy_map_columns(self, columns, sample_rows, context: str = "") -> MappingResult:
         best, best_score = "other", 0.0
         best_maps = [ColumnMapping(source_column=c, canonical_field=None) for c in columns]
         for entity, fields in ENTITIES.items():

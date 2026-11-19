@@ -1,0 +1,353 @@
+{
+ "id": "manufacturing",
+ "name": "Manufacturing",
+ "description": "Discrete and process manufacturing: work orders, machines, quality inspections.",
+ "entities": [
+  {
+   "name": "work_order",
+   "label": "Work order",
+   "domain": "manufacturing",
+   "key": [
+    "work_order_id"
+   ],
+   "freshness_field": "due_date",
+   "freshness_days": 180,
+   "fields": [
+    {
+     "name": "work_order_id",
+     "type": "text",
+     "description": "Work / production order number",
+     "synonyms": [
+      "wo",
+      "workorder",
+      "aufnr",
+      "productionorder",
+      "orderno"
+     ],
+     "required": true
+    },
+    {
+     "name": "sku",
+     "type": "text",
+     "description": "Material produced",
+     "synonyms": [
+      "material",
+      "matnr",
+      "item",
+      "partnumber"
+     ],
+     "required": true
+    },
+    {
+     "name": "quantity",
+     "type": "number",
+     "description": "Planned quantity",
+     "synonyms": [
+      "gamng",
+      "plannedqty",
+      "orderqty",
+      "targetqty"
+     ],
+     "required": true,
+     "min": 0
+    },
+    {
+     "name": "quantity_completed",
+     "type": "number",
+     "description": "Quantity confirmed / completed",
+     "synonyms": [
+      "igmng",
+      "confirmedqty",
+      "completedqty",
+      "goodqty"
+     ],
+     "required": false,
+     "min": 0
+    },
+    {
+     "name": "scrap_quantity",
+     "type": "number",
+     "description": "Scrap quantity",
+     "synonyms": [
+      "scrap",
+      "scrapqty",
+      "xmnga"
+     ],
+     "required": false,
+     "min": 0
+    },
+    {
+     "name": "work_center",
+     "type": "text",
+     "description": "Work centre / line",
+     "synonyms": [
+      "arbpl",
+      "workcentre",
+      "line",
+      "cell"
+     ],
+     "required": false
+    },
+    {
+     "name": "location",
+     "type": "text",
+     "description": "Plant",
+     "synonyms": [
+      "plant",
+      "werks",
+      "site"
+     ],
+     "required": false
+    },
+    {
+     "name": "start_date",
+     "type": "date",
+     "description": "Planned or actual start",
+     "synonyms": [
+      "gstrp",
+      "plannedstart",
+      "startdate"
+     ],
+     "required": false
+    },
+    {
+     "name": "due_date",
+     "type": "date",
+     "description": "Planned finish / due date",
+     "synonyms": [
+      "gltrp",
+      "plannedfinish",
+      "duedate",
+      "finishdate"
+     ],
+     "required": false
+    },
+    {
+     "name": "status",
+     "type": "text",
+     "description": "Order status",
+     "synonyms": [
+      "orderstatus",
+      "systemstatus"
+     ],
+     "required": false
+    }
+   ],
+   "pack": "manufacturing"
+  },
+  {
+   "name": "machine",
+   "label": "Machine",
+   "domain": "manufacturing",
+   "key": [
+    "machine_id"
+   ],
+   "fields": [
+    {
+     "name": "machine_id",
+     "type": "text",
+     "description": "Machine / equipment id",
+     "synonyms": [
+      "equipment",
+      "equnr",
+      "asset",
+      "machine",
+      "machineno"
+     ],
+     "required": true
+    },
+    {
+     "name": "machine_name",
+     "type": "text",
+     "description": "Machine name",
+     "synonyms": [
+      "equipmentname",
+      "description",
+      "name"
+     ],
+     "required": false
+    },
+    {
+     "name": "work_center",
+     "type": "text",
+     "description": "Work centre / line",
+     "synonyms": [
+      "arbpl",
+      "workcentre",
+      "line"
+     ],
+     "required": false
+    },
+    {
+     "name": "status",
+     "type": "text",
+     "description": "Up / down / maintenance",
+     "synonyms": [
+      "machinestatus",
+      "state"
+     ],
+     "required": false,
+     "allowed": [
+      "Up",
+      "Down",
+      "Maintenance",
+      "Idle"
+     ]
+    },
+    {
+     "name": "uptime_pct",
+     "type": "number",
+     "description": "Uptime, percent",
+     "synonyms": [
+      "uptime",
+      "availability",
+      "oee_availability"
+     ],
+     "required": false,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "name": "mtbf_hours",
+     "type": "number",
+     "description": "Mean time between failures, hours",
+     "synonyms": [
+      "mtbf"
+     ],
+     "required": false,
+     "min": 0
+    },
+    {
+     "name": "last_pm_date",
+     "type": "date",
+     "description": "Last preventive maintenance",
+     "synonyms": [
+      "lastpm",
+      "lastservice"
+     ],
+     "required": false
+    },
+    {
+     "name": "next_pm_date",
+     "type": "date",
+     "description": "Next preventive maintenance due",
+     "synonyms": [
+      "nextpm",
+      "nextservice",
+      "pmdue"
+     ],
+     "required": false
+    }
+   ],
+   "pack": "manufacturing"
+  },
+  {
+   "name": "quality_inspection",
+   "label": "Quality inspection",
+   "domain": "manufacturing",
+   "key": [
+    "inspection_id"
+   ],
+   "key_mode": "event",
+   "fields": [
+    {
+     "name": "inspection_id",
+     "type": "text",
+     "description": "Inspection lot / id",
+     "synonyms": [
+      "inspectionlot",
+      "prueflos",
+      "inspection",
+      "lotno"
+     ],
+     "required": true
+    },
+    {
+     "name": "work_order_id",
+     "type": "text",
+     "description": "Work order inspected",
+     "synonyms": [
+      "wo",
+      "workorder",
+      "aufnr"
+     ],
+     "required": false
+    },
+    {
+     "name": "sku",
+     "type": "text",
+     "description": "Material",
+     "synonyms": [
+      "material",
+      "matnr",
+      "item"
+     ],
+     "required": true
+    },
+    {
+     "name": "inspected_qty",
+     "type": "number",
+     "description": "Quantity inspected",
+     "synonyms": [
+      "inspected",
+      "sampleqty",
+      "lotsize"
+     ],
+     "required": false,
+     "min": 0
+    },
+    {
+     "name": "defects",
+     "type": "number",
+     "description": "Defects found",
+     "synonyms": [
+      "defectqty",
+      "rejects",
+      "nonconforming"
+     ],
+     "required": false,
+     "min": 0
+    },
+    {
+     "name": "result",
+     "type": "text",
+     "description": "Pass / fail / rework",
+     "synonyms": [
+      "decision",
+      "usagedecision",
+      "outcome"
+     ],
+     "required": true,
+     "allowed": [
+      "Pass",
+      "Fail",
+      "Rework"
+     ]
+    },
+    {
+     "name": "defect_code",
+     "type": "text",
+     "description": "Defect code",
+     "synonyms": [
+      "defect",
+      "defectcode",
+      "ncr"
+     ],
+     "required": false
+    },
+    {
+     "name": "inspection_date",
+     "type": "date",
+     "description": "Inspection date",
+     "synonyms": [
+      "inspected_on",
+      "date",
+      "inspectiondate"
+     ],
+     "required": false
+    }
+   ],
+   "pack": "manufacturing"
+  }
+ ]
+}

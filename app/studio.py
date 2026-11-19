@@ -53,6 +53,10 @@ NAME_HINTS = {
 }
 
 
+GENERIC_TOKENS = {"date", "name", "code", "number", "num", "qty", "value", "type", "status", "amount", "total",
+                  "time", "day", "days", "count", "flag", "level", "description", "text", "the", "and", "for"}
+
+
 def _norm(s: Any) -> str:
     return re.sub(r"[^a-z0-9]", "", str(s).lower())
 
@@ -124,16 +128,19 @@ def candidates(column: str, col_type: str, entity: str) -> list[dict]:
     syn = _synonyms()
     nc, tc = _norm(column), _tokens(column)
     out = []
-    for f in ENTITIES[entity]:
+    for f in list(ENTITIES.get(entity, {})):
         names = [f] + syn.get(f, [])
         if nc in {_norm(x) for x in names}:
             score, why = 100, "name matches a known synonym"
         else:
             ft = set().union(*[_tokens(x) for x in names] or [set()]) | {t for x in names for t in [_norm(x)] if len(t) >= 4}
-            common = {t for t in tc if t in ft or any(len(t) >= 4 and (t in x or x in t) and len(x) >= 4 for x in ft)}
+            common = {t for t in tc if t in ft or any(len(t) >= 4 and len(x) >= 4 and (t in x or x in t)
+                                                      and min(len(t), len(x)) / max(len(t), len(x)) >= .7 for x in ft)}
             if not common:
                 continue
-            score, why = 78 if len(common) >= 1 and len(tc) <= 2 else 66, f"shares '{sorted(common)[0]}' with {f}"
+            specific = common - GENERIC_TOKENS
+            score = (78 if len(tc) <= 2 else 66) if specific else 60   # "date" or "code" alone is weak evidence
+            why = f"shares '{sorted(specific or common)[0]}' with {f}"
         if not _type_fits(f, col_type):
             score -= 25
             why += f"; values look like {col_type}"
@@ -152,9 +159,11 @@ def status_for(score: Optional[float]) -> str:
 def classify(name: str, fields: list[dict], ai_entity: Optional[str] = None) -> dict:
     """Score every entity: coverage of its required fields, how well the columns map,
     and the object name. Returns the best entity, alternatives and per-column suggestions."""
+    from . import registry
+    registry.ensure_loaded()
     nn = _norm(name)
     scored = []
-    for entity in ENTITIES:
+    for entity in list(ENTITIES):
         if entity == "other":
             continue
         sugg = {f["name"]: candidates(f["name"], f["type"], entity) for f in fields}
@@ -181,9 +190,11 @@ def classify(name: str, fields: list[dict], ai_entity: Optional[str] = None) -> 
     if not scored:
         return {"entity": "other", "confidence": 0, "alternatives": [], "picks": {}, "suggestions": {}}
     best = scored[0]
-    return {"entity": best["entity"] if best["confidence"] >= 40 else "other", "confidence": best["confidence"],
+    # a weak match is worse than none: unknown data should be registered, not forced into a near entity
+    known = best["confidence"] >= 55 and best["coverage"] >= .5
+    return {"entity": best["entity"] if known else "other", "confidence": best["confidence"],
             "alternatives": [{"entity": x["entity"], "confidence": x["confidence"]} for x in scored[1:4]],
-            "picks": best["picks"], "suggestions": best["suggestions"],
+            "picks": best["picks"] if known else {}, "suggestions": best["suggestions"] if known else {},
             "evidence": {"required_coverage": best["coverage"], "name_hint": best["name_hint"]}}
 
 
@@ -296,7 +307,7 @@ def _gate(obj: dict) -> list[str]:
     """Reasons the object cannot be published yet (empty = ready)."""
     reasons = []
     if obj.get("entity") in (None, "other"):
-        reasons.append("Entity not recognised: choose one")
+        reasons.append("Entity not recognised: choose one, or register a new entity from this source")
     mapped = {f["canonical_field"] for f in obj["fields"] if f["status"] in MAPS_TO_FIELD and f["canonical_field"]}
     missing = [r for r in required_fields(obj.get("entity") or "") if r not in mapped]
     if missing:
@@ -343,7 +354,7 @@ def object_view(object_id: str) -> dict:
     return {**{k: v for k, v in obj.items() if k != "context"}, "gate": _gate(obj), "sample_rows": rows,
             "entity_fields": [{"field": f, "description": d, "required": f in req, "mapped": f in mapped}
                               for f, (_, d) in ENTITIES.get(ent, {}).items()],
-            "entities": sorted(e for e in ENTITIES if e != "other"),
+            "entities": sorted(e for e in list(ENTITIES) if e != "other"),
             "profile": {k: prof[k] for k in ("_id", "version", "status", "activated_at", "activated_by")} if prof else None,
             "decisions": list(get_db().mapping_decisions.find({"object_id": object_id}, {"_id": 0}).sort("at", -1).limit(50))}
 
@@ -355,6 +366,30 @@ def _decide_log(obj, field, action, user, detail):
     get_db().mapping_decisions.insert_one({"object_id": obj["_id"], "batch_id": obj["batch_id"], "field": field,
                                            "action": action, "user": user, "at": now(), **detail})
     governance.audit("mapping_" + action.lower(), user, {"object": obj["name"], "field": field, **detail})
+
+
+def propose_entity(object_id: str, name: Optional[str] = None, domain: Optional[str] = None) -> dict:
+    from . import registry
+    return registry.propose_from_object(get_object(object_id), name, domain)
+
+
+def register_entity(object_id: str, definition: dict, user: str) -> dict:
+    """Register a new entity for a source nothing matched, then map the source to it 1:1."""
+    from . import registry
+    obj = get_object(object_id)
+    if obj.get("published"):
+        raise ValueError("Already published: load the source again to remap")
+    desc = registry.create(definition, user)
+    cols = {f.get("source_column"): f["name"] for f in definition.get("fields", []) if f.get("source_column")}
+    obj = set_entity(object_id, desc["name"], user)
+    for f in obj["fields"]:   # the proposal maps each column to the field made from it
+        target = cols.get(f["name"])
+        if target and target in ENTITIES[desc["name"]]:
+            f.update({"canonical_field": target, "status": ACCEPTED, "confidence": 100, "extension_key": None,
+                      "why": "field created from this column", "decided_by": user, "decided_at": now()})
+    _decide_log(obj, None, "REGISTER_ENTITY", user, {"entity": desc["name"], "version": desc["version"]})
+    _save(obj)
+    return desc
 
 
 def set_entity(object_id: str, entity: str, user: str) -> dict:

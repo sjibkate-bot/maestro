@@ -8,21 +8,23 @@ from pathlib import Path
 from typing import Any, Optional
 
 import httpx
-from fastapi import Body, FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import Body, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel
 
-from . import amxg, analytics, governance, pdm, risk_feeds, studio, supply_risk
+from . import amxg, analytics, dataapi, governance, packs, pdm, registry, risk_feeds, studio, supply_risk
 from .ai.claude import AIError
 from .ai.provider import get_provider
 from .connectors.files import ingest_file
 from .connectors.remote import MqttSubscriber, ingest_iot, pull_api
 from .db import get_db
-from .models import RecordType
+from .models import ENTITIES
 
 logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(_app):
+    from . import registry
+    registry.load()                # registered entities and enabled industry packs
     risk_feeds.start_scheduler()   # daily public risk feeds (RISK_FEEDS_ENABLED / RISK_FEEDS_HOUR)
     yield
 
@@ -30,6 +32,15 @@ async def lifespan(_app):
 app = FastAPI(title="Maestro-SC", version="0.2.0", lifespan=lifespan)
 WEB = Path(__file__).resolve().parent.parent / "web"
 _mqtt: dict[str, MqttSubscriber] = {}
+
+
+def _rt(record_type: Optional[str]) -> Optional[str]:
+    """Entity names are runtime data (core + registered + industry packs), so validate here."""
+    if not record_type:
+        return None
+    if record_type not in ENTITIES:
+        raise HTTPException(400, f"Unknown entity {record_type!r}. See GET /api/entities")
+    return record_type
 
 
 def _source_id(name: Optional[str]) -> str:
@@ -58,12 +69,12 @@ def health():
 
 @app.post("/api/ingest/file")
 async def upload_file(file: UploadFile = File(...), source: Optional[str] = Form(None),
-                      record_type: Optional[RecordType] = Form(None)):
+                      record_type: Optional[str] = Form(None)):
     """Excel, CSV, JSON, PDF, TXT/EML. The AI maps columns or extracts line items."""
     data = await file.read()
     try:
         results = ingest_file(file.filename, data, _source_id(source or file.filename),
-                              record_type.value if record_type else None)
+                              _rt(record_type))
     except AIError as e:
         raise HTTPException(502, str(e))
     except Exception as e:  # malformed file
@@ -76,7 +87,7 @@ async def upload_file(file: UploadFile = File(...), source: Optional[str] = Form
 @app.post("/api/batches")
 async def create_batch(files: list[UploadFile] = File(...), name: Optional[str] = Form(None),
                        mode: str = Form("review"), user: Optional[str] = Form(None),
-                       record_type: Optional[RecordType] = Form(None)):
+                       record_type: Optional[str] = Form(None)):
     """Upload several files as one ingestion batch. Tables are staged for Mapping Studio
     (mode=review) or published straight away (mode=auto). Layouts with an active mapping
     profile publish automatically; template sheets and documents publish directly."""
@@ -90,7 +101,7 @@ async def create_batch(files: list[UploadFile] = File(...), name: Optional[str] 
         data = await f.read()
         token = studio.STAGING.set({"batch_id": b["_id"], "mode": mode, "user": user})
         try:
-            res = ingest_file(f.filename, data, _source_id(f.filename), record_type.value if record_type else None)
+            res = ingest_file(f.filename, data, _source_id(f.filename), _rt(record_type))
             studio.register_direct(b["_id"], f.filename, _source_id(f.filename), res)
             out.append({"file": f.filename, "results": res})
         except Exception as e:
@@ -170,6 +181,116 @@ def save_profile(object_id: str, body: dict = Body(default={})):
     return _studio_call(studio.save_profile, object_id, body.get("user") or "")
 
 
+@app.get("/api/objects/{object_id}/propose-entity")
+def propose_entity(object_id: str, name: Optional[str] = None, domain: Optional[str] = None):
+    """Draft a new entity from an unrecognised source (fields, types, key, required)."""
+    try:
+        return studio.propose_entity(object_id, name, domain)
+    except KeyError:
+        raise HTTPException(404, "Source object not found")
+
+
+@app.post("/api/objects/{object_id}/register-entity")
+def register_entity(object_id: str, body: dict = Body(...)):
+    """body: {definition: <entity definition, e.g. an edited proposal>, user}. Maps the source to it."""
+    try:
+        studio.register_entity(object_id, body.get("definition") or {}, body.get("user") or "")
+        return studio.object_view(object_id)
+    except KeyError:
+        raise HTTPException(404, "Source object not found")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
+# ---------------------------------------------------------------- entity registry, industry packs, data API
+@app.get("/api/entities")
+def entities():
+    """Every entity the platform knows (core + registered + packs) with domain, origin and record count."""
+    return registry.catalog()
+
+
+@app.post("/api/entities")
+def create_entity(body: dict = Body(...)):
+    """Register an entity (or a new version of one). body: {definition, user}."""
+    try:
+        return registry.create(body.get("definition") or {}, body.get("user") or "")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
+@app.get("/api/entities/{entity}")
+def describe_entity(entity: str):
+    try:
+        return registry.describe(entity)
+    except KeyError:
+        raise HTTPException(404, f"Unknown entity {entity}")
+
+
+@app.delete("/api/entities/{entity}")
+def retire_entity(entity: str, user: str = Query(...)):
+    try:
+        return registry.retire(entity, user)
+    except KeyError:
+        raise HTTPException(404, f"{entity} is not a registered entity")
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+
+
+_RESERVED = {"q", "sort", "page", "page_size", "layer", "fields", "group_by", "metric", "field", "date_field", "bucket", "limit"}
+
+
+def _data_call(fn, *a, **kw):
+    try:
+        return fn(*a, **kw)
+    except KeyError as e:
+        raise HTTPException(404, f"Unknown entity or record {e}")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/api/entities/{entity}/records")
+def entity_records(entity: str, request: Request, q: Optional[str] = None, sort: Optional[str] = None, page: int = 1,
+                   page_size: int = 50, layer: str = "gold", fields: Optional[str] = None):
+    """Rows of any entity. Filters: field=value or field__op=value (ne gt gte lt lte in contains exists); ext.key=value."""
+    filters = {k: v for k, v in request.query_params.items() if k not in _RESERVED}
+    return _data_call(dataapi.records, entity, filters=filters, q=q, sort=sort, page=page, page_size=page_size,
+                      layer=layer, fields=fields.split(",") if fields else None)
+
+
+@app.get("/api/entities/{entity}/summary")
+def entity_summary(entity: str, layer: str = "gold"):
+    return _data_call(dataapi.summary, entity, layer)
+
+
+@app.get("/api/entities/{entity}/aggregate")
+def entity_aggregate(entity: str, request: Request, metric: str = "count", field: Optional[str] = None,
+                     group_by: Optional[str] = None, date_field: Optional[str] = None, bucket: Optional[str] = None,
+                     layer: str = "gold", limit: int = 200):
+    filters = {k: v for k, v in request.query_params.items() if k not in _RESERVED}
+    return _data_call(dataapi.aggregate, entity, group_by=group_by.split(",") if group_by else None, metric=metric,
+                      field=field, date_field=date_field, bucket=bucket, filters=filters, layer=layer, limit=limit)
+
+
+@app.get("/api/records/{rid}")
+def one_record(rid: str):
+    return _data_call(dataapi.record, rid)
+
+
+@app.get("/api/packs")
+def list_packs():
+    return packs.list_packs()
+
+
+@app.post("/api/packs/{pid}/enable")
+def enable_pack(pid: str, body: dict = Body(default={})):
+    try:
+        return packs.enable(pid, body.get("user") or "")
+    except KeyError:
+        raise HTTPException(404, "Unknown pack")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
 @app.get("/api/profiles")
 def mapping_profiles():
     return studio.profiles()
@@ -184,7 +305,7 @@ class ApiPull(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
     records_path: Optional[str] = None  # e.g. "d.results" or "data.items"
-    record_type: Optional[RecordType] = None
+    record_type: Optional[str] = None
 
 
 @app.post("/api/ingest/api")
@@ -195,7 +316,7 @@ def ingest_from_api(req: ApiPull):
                         source_type=req.kind, headers=req.headers, params=req.params,
                         auth=(req.username, req.password) if req.username else None,
                         records_path=req.records_path,
-                        record_type_hint=req.record_type.value if req.record_type else None)
+                        record_type_hint=_rt(req.record_type))
     except httpx.HTTPError as e:
         raise HTTPException(502, f"Source request failed: {e}")
     except AIError as e:
@@ -251,12 +372,12 @@ def mappings():
 
 
 @app.get("/api/records")
-def records(record_type: Optional[RecordType] = None, sku: Optional[str] = None,
+def records(record_type: Optional[str] = None, sku: Optional[str] = None,
             supplier: Optional[str] = None, source: Optional[str] = None,
             limit: int = Query(100, le=1000), skip: int = 0):
     q: dict[str, Any] = {}
     if record_type:
-        q["record_type"] = record_type.value
+        q["record_type"] = _rt(record_type)
     if sku:
         q["sku"] = sku
     if supplier:
@@ -619,6 +740,15 @@ def gov_stage(name: str):
         return governance.stage(name)
     except KeyError:
         raise HTTPException(404, "Stages: plan, filter, clean, enrich, audit, monitor")
+
+
+@app.get("/api/governance/config")
+def gov_config():
+    """Active governance rules, including those of registered entities and packs."""
+    cfg = governance.config()
+    return {k: cfg.get(k) for k in ("version", "weights", "grades", "confidence", "quarantine_sla_days", "drift_threshold_pct",
+                                    "gold_target_pct", "domains", "required", "keys", "hard_keys", "enums", "ranges",
+                                    "freshness", "products", "asset_id_pattern")}
 
 
 @app.put("/api/governance/config")

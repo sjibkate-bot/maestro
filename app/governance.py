@@ -187,7 +187,8 @@ def config() -> dict:
     if doc:
         for k, v in doc.get("config", {}).items():
             cfg[k] = v
-    return cfg
+    from . import registry
+    return registry.merge_governance(cfg)
 
 
 def update_config(changes: dict, user: str = "system") -> dict:
@@ -213,6 +214,11 @@ def grade_for(score: Optional[float], cfg: Optional[dict] = None) -> Optional[st
         return None
     g = (cfg or config())["grades"]
     return "A" if score >= g["A"] else "B" if score >= g["B"] else "C" if score >= g["C"] else "D"
+
+
+def _core():
+    from .registry import CORE
+    return CORE
 
 
 def domain_of(record_type: str, cfg: dict) -> str:
@@ -274,7 +280,11 @@ def _score_record(r: dict, cfg: dict, ctx: dict) -> dict:
             checks += 1
             failed += 1
             issue("validity", "UNPARSEABLE", f"{c['field']}: '{c['raw']}' is {c['issue']}")
-    for f, allowed in cfg["enums"].items():
+    for key, allowed in cfg["enums"].items():
+        # "entity.field" applies to that entity only; a bare field name is a rule of the core model
+        ent, _, f = key.rpartition(".")
+        if (ent and ent != rt) or (not ent and rt not in _core()):
+            continue
         if f in ENTITIES.get(rt, {}) and _present(r.get(f)):
             checks += 1
             if r[f] not in allowed:
@@ -294,6 +304,14 @@ def _score_record(r: dict, cfg: dict, ctx: dict) -> dict:
                 failed += 1
                 issue("validity", "OUT_OF_RANGE", f"{f} = {v} is outside {lo}–{hi if hi is not None else '∞'}",
                       hard=f in ("quantity", "health_score", "mc_rate"))
+    for key, (lo, hi) in cfg.get("ranges", {}).items():
+        ent, _, f = key.rpartition(".")
+        v = r.get(f)
+        if ent == rt and isinstance(v, (int, float)):
+            checks += 1
+            if (lo is not None and v < lo) or (hi is not None and v > hi):
+                failed += 1
+                issue("validity", "OUT_OF_RANGE", f"{f} = {v} is outside {lo if lo is not None else '-∞'}–{hi if hi is not None else '∞'}")
     for f in ENTITIES.get(rt, {}):
         v = _naive(r.get(f))
         if isinstance(v, datetime):

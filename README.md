@@ -12,6 +12,18 @@ Everything runs in one application, **Maestro-SC** (http://localhost:8000/maestr
 
 ![gate graph](docs-maestro-gates.png)
 
+## Any industry: entity registry, industry packs, generic data API
+
+The data model is data, not code. **Front-end developers: start with [docs/FRONTEND_API.md](docs/FRONTEND_API.md).**
+
+* **Core entities** cover supply chain, MRO / depot and supply risk. Any other kind of data is *registered* as an entity: fields, types, key, required fields, allowed values, ranges and column synonyms. Registering one needs no code change and no restart, and an entity can be versioned: fields can be added, but types can't change once it has data.
+* **Unknown files stay unknown.** A file is classified as an entity only when it covers that entity's required fields. Otherwise Mapping Studio offers **register a new entity from this source**: it drafts fields, types and a key from the columns, a person edits and approves the draft, and the file maps 1:1. The next file with the same columns maps by itself.
+* **Industry packs** (`app/packs/*.json`) are ready-made entity sets to switch on, with ERP-style synonyms (e.g. SAP `AUFNR`, `GAMNG`). Shipped: **manufacturing** (work order, machine, quality inspection), **retail** (store, store sales, promotion) and **life sciences** (batch / lot, temperature excursion, supplier audit). To add a pack, add a JSON file.
+* **Governance follows the registry.** Every registered domain gets its own governance domain and data product. Required fields, keys, allowed values and ranges become quality rules for that entity only, so one industry's codes never quarantine another's data.
+* **One data API for every entity:** `GET /api/entities`, `/api/entities/{e}`, `/records` (filters, sort, paging, Gold by default), `/summary` (per-field profile) and `/aggregate` (grouped metrics and time buckets for charts).
+
+Try it with `samples/industry/`. Load `retail_store_sales.csv` and `hospital_bed_occupancy.csv` together: both are held as unknown. Then enable the retail pack (`POST /api/packs/retail/enable`) and register the hospital file from Mapping Studio.
+
 ## Loading data: batches and Mapping Studio
 
 **Configuration → Load files**: select several files at once. They load as one *ingestion batch*, and every table (CSV, sheet, JSON list) becomes a *source object*:

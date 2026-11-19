@@ -1,0 +1,251 @@
+{
+ "id": "retail",
+ "name": "Retail",
+ "description": "Stores, store sales and promotions.",
+ "entities": [
+  {
+   "name": "store",
+   "label": "Store",
+   "domain": "retail",
+   "key": [
+    "store_id"
+   ],
+   "fields": [
+    {
+     "name": "store_id",
+     "type": "text",
+     "description": "Store number",
+     "synonyms": [
+      "store",
+      "storeno",
+      "storecode",
+      "site"
+     ],
+     "required": true
+    },
+    {
+     "name": "store_name",
+     "type": "text",
+     "description": "Store name",
+     "synonyms": [
+      "name",
+      "storename"
+     ],
+     "required": false
+    },
+    {
+     "name": "region",
+     "type": "text",
+     "description": "Region / district",
+     "synonyms": [
+      "district",
+      "area",
+      "zone"
+     ],
+     "required": false
+    },
+    {
+     "name": "country",
+     "type": "text",
+     "description": "Country",
+     "synonyms": [
+      "countrycode"
+     ],
+     "required": false
+    },
+    {
+     "name": "store_format",
+     "type": "text",
+     "description": "Format (hyper, express...)",
+     "synonyms": [
+      "format",
+      "storetype"
+     ],
+     "required": false
+    },
+    {
+     "name": "open_date",
+     "type": "date",
+     "description": "Opening date",
+     "synonyms": [
+      "opened",
+      "opendate"
+     ],
+     "required": false
+    }
+   ],
+   "pack": "retail"
+  },
+  {
+   "name": "store_sales",
+   "label": "Store sales",
+   "domain": "retail",
+   "key": [
+    "store_id",
+    "sku",
+    "sale_date"
+   ],
+   "key_mode": "event",
+   "freshness_field": "sale_date",
+   "freshness_days": 14,
+   "fields": [
+    {
+     "name": "store_id",
+     "type": "text",
+     "description": "Store number",
+     "synonyms": [
+      "store",
+      "storeno",
+      "storecode"
+     ],
+     "required": true
+    },
+    {
+     "name": "sku",
+     "type": "text",
+     "description": "Item",
+     "synonyms": [
+      "item",
+      "article",
+      "upc",
+      "ean",
+      "product"
+     ],
+     "required": true
+    },
+    {
+     "name": "sale_date",
+     "type": "date",
+     "description": "Business day",
+     "synonyms": [
+      "date",
+      "businessdate",
+      "salesdate",
+      "day"
+     ],
+     "required": true
+    },
+    {
+     "name": "units",
+     "type": "number",
+     "description": "Units sold",
+     "synonyms": [
+      "qty",
+      "unitssold",
+      "quantitysold",
+      "salesunits"
+     ],
+     "required": true
+    },
+    {
+     "name": "revenue",
+     "type": "number",
+     "description": "Net sales value",
+     "synonyms": [
+      "sales",
+      "netsales",
+      "salesvalue",
+      "amount"
+     ],
+     "required": false,
+     "min": 0
+    },
+    {
+     "name": "currency",
+     "type": "text",
+     "description": "Currency",
+     "synonyms": [
+      "curr",
+      "waers"
+     ],
+     "required": false
+    },
+    {
+     "name": "promo_flag",
+     "type": "text",
+     "description": "yes if sold on promotion",
+     "synonyms": [
+      "promo",
+      "onpromo",
+      "promotion"
+     ],
+     "required": false
+    }
+   ],
+   "pack": "retail"
+  },
+  {
+   "name": "promotion",
+   "label": "Promotion",
+   "domain": "retail",
+   "key": [
+    "promo_id"
+   ],
+   "fields": [
+    {
+     "name": "promo_id",
+     "type": "text",
+     "description": "Promotion id",
+     "synonyms": [
+      "promo",
+      "promotionid",
+      "campaign"
+     ],
+     "required": true
+    },
+    {
+     "name": "sku",
+     "type": "text",
+     "description": "Item",
+     "synonyms": [
+      "item",
+      "article"
+     ],
+     "required": true
+    },
+    {
+     "name": "store_id",
+     "type": "text",
+     "description": "Store (empty = all)",
+     "synonyms": [
+      "store"
+     ],
+     "required": false
+    },
+    {
+     "name": "start_date",
+     "type": "date",
+     "description": "Start",
+     "synonyms": [
+      "from",
+      "startdate"
+     ],
+     "required": true
+    },
+    {
+     "name": "end_date",
+     "type": "date",
+     "description": "End",
+     "synonyms": [
+      "to",
+      "enddate"
+     ],
+     "required": true
+    },
+    {
+     "name": "discount_pct",
+     "type": "number",
+     "description": "Discount, percent",
+     "synonyms": [
+      "discount",
+      "pctoff"
+     ],
+     "required": false,
+     "min": 0,
+     "max": 100
+    }
+   ],
+   "pack": "retail"
+  }
+ ]
+}

@@ -1,0 +1,277 @@
+{
+ "id": "life_sciences",
+ "name": "Life sciences",
+ "description": "Lots and expiry, cold-chain excursions, supplier audits.",
+ "entities": [
+  {
+   "name": "batch_lot",
+   "label": "Batch / lot",
+   "domain": "life_sciences",
+   "key": [
+    "lot_number"
+   ],
+   "fields": [
+    {
+     "name": "lot_number",
+     "type": "text",
+     "description": "Batch / lot number",
+     "synonyms": [
+      "lot",
+      "batch",
+      "charg",
+      "batchno",
+      "lotno"
+     ],
+     "required": true
+    },
+    {
+     "name": "sku",
+     "type": "text",
+     "description": "Product",
+     "synonyms": [
+      "material",
+      "product",
+      "item",
+      "ndc"
+     ],
+     "required": true
+    },
+    {
+     "name": "manufacture_date",
+     "type": "date",
+     "description": "Manufacture date",
+     "synonyms": [
+      "mfgdate",
+      "manufactured",
+      "hsdat"
+     ],
+     "required": false
+    },
+    {
+     "name": "expiry_date",
+     "type": "date",
+     "description": "Expiry date",
+     "synonyms": [
+      "expiry",
+      "expdate",
+      "vfdat",
+      "bestbefore"
+     ],
+     "required": true
+    },
+    {
+     "name": "quantity",
+     "type": "number",
+     "description": "Quantity",
+     "synonyms": [
+      "qty",
+      "onhand"
+     ],
+     "required": false,
+     "min": 0
+    },
+    {
+     "name": "lot_status",
+     "type": "text",
+     "description": "Release status",
+     "synonyms": [
+      "status",
+      "releasestatus",
+      "qastatus"
+     ],
+     "required": true,
+     "allowed": [
+      "Released",
+      "Quarantined",
+      "Rejected",
+      "On hold"
+     ]
+    },
+    {
+     "name": "location",
+     "type": "text",
+     "description": "Site / warehouse",
+     "synonyms": [
+      "site",
+      "warehouse",
+      "plant"
+     ],
+     "required": false
+    }
+   ],
+   "pack": "life_sciences"
+  },
+  {
+   "name": "temperature_excursion",
+   "label": "Temperature excursion",
+   "domain": "life_sciences",
+   "key": [
+    "excursion_id"
+   ],
+   "key_mode": "event",
+   "fields": [
+    {
+     "name": "excursion_id",
+     "type": "text",
+     "description": "Excursion id",
+     "synonyms": [
+      "excursion",
+      "eventid",
+      "alarmid"
+     ],
+     "required": true
+    },
+    {
+     "name": "lot_number",
+     "type": "text",
+     "description": "Lot affected",
+     "synonyms": [
+      "lot",
+      "batch"
+     ],
+     "required": false
+    },
+    {
+     "name": "shipment_id",
+     "type": "text",
+     "description": "Shipment",
+     "synonyms": [
+      "shipment",
+      "consignment",
+      "awb"
+     ],
+     "required": false
+    },
+    {
+     "name": "min_temp_c",
+     "type": "number",
+     "description": "Lowest temperature, \u00b0C",
+     "synonyms": [
+      "mintemp",
+      "lowtemp",
+      "minc"
+     ],
+     "required": false
+    },
+    {
+     "name": "max_temp_c",
+     "type": "number",
+     "description": "Highest temperature, \u00b0C",
+     "synonyms": [
+      "maxtemp",
+      "hightemp",
+      "maxc"
+     ],
+     "required": false
+    },
+    {
+     "name": "duration_minutes",
+     "type": "number",
+     "description": "Minutes outside range",
+     "synonyms": [
+      "duration",
+      "minutesout",
+      "excursionminutes"
+     ],
+     "required": false,
+     "min": 0
+    },
+    {
+     "name": "detected_at",
+     "type": "date",
+     "description": "When detected",
+     "synonyms": [
+      "detected",
+      "eventtime",
+      "timestamp"
+     ],
+     "required": true
+    },
+    {
+     "name": "excursion_status",
+     "type": "text",
+     "description": "Open / assessed / closed",
+     "synonyms": [
+      "status",
+      "disposition"
+     ],
+     "required": false,
+     "allowed": [
+      "Open",
+      "Assessed",
+      "Closed"
+     ]
+    }
+   ],
+   "pack": "life_sciences"
+  },
+  {
+   "name": "supplier_audit",
+   "label": "Supplier audit",
+   "domain": "life_sciences",
+   "key": [
+    "audit_id"
+   ],
+   "fields": [
+    {
+     "name": "audit_id",
+     "type": "text",
+     "description": "Audit id",
+     "synonyms": [
+      "audit",
+      "auditno"
+     ],
+     "required": true
+    },
+    {
+     "name": "supplier",
+     "type": "text",
+     "description": "Supplier audited",
+     "synonyms": [
+      "vendor",
+      "suppliername"
+     ],
+     "required": true
+    },
+    {
+     "name": "audit_date",
+     "type": "date",
+     "description": "Audit date",
+     "synonyms": [
+      "date",
+      "auditdate"
+     ],
+     "required": true
+    },
+    {
+     "name": "audit_result",
+     "type": "text",
+     "description": "Approved / conditional / rejected",
+     "synonyms": [
+      "result",
+      "outcome",
+      "rating"
+     ],
+     "required": true,
+     "allowed": [
+      "Approved",
+      "Conditional",
+      "Rejected"
+     ]
+    },
+    {
+     "name": "findings",
+     "type": "number",
+     "description": "Number of findings",
+     "synonyms": [
+      "observations",
+      "findingcount"
+     ],
+     "required": false,
+     "min": 0
+    }
+   ],
+   "pack": "life_sciences"
+  }
+ ]
+}
