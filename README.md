@@ -12,6 +12,28 @@ Everything runs in one application, **Maestro-SC** (http://localhost:8000/maestr
 
 ![gate graph](docs-maestro-gates.png)
 
+## Loading data: batches and Mapping Studio
+
+**Configuration → Load files**: select several files at once. They load as one *ingestion batch*, and every table (CSV, sheet, JSON list) becomes a *source object*:
+
+1. **Discover and classify.** Each column is profiled (type, % empty, % distinct, samples), and the object is classified to a Maestro entity, with a confidence score and alternatives. Suggestions are always fields of that entity, so a column can never be mapped to a field of another domain.
+2. **Mapping Studio.** For each column choose **Accept** (a Maestro field of the entity), **Ignore** (kept only in the original file, Bronze) or **Extension** (kept on the record under a key you name). Every decision records who made it, and the decision log shows the history. Columns with no match and no decision are kept as attributes.
+3. **Save & activate profile.** The next file with the same columns is mapped by the profile and publishes straight away. A file whose columns changed is held as **drift**: the earlier decisions are kept for the columns that remain, the active profile is not touched, and saving creates version 2.
+4. **Validate, govern and publish.** Objects whose required fields are mapped are published. The rest are held with the reason, not dropped. Each run records five real stages:
+   - **VALIDATE**: mapping checks.
+   - **GOVERN**: the trust scores and grades.
+   - **CERTIFY**: lists the affected data products. Certification stays a named owner's decision.
+   - **PUBLISH**: writes the records.
+   - **RISK**: refreshes supply risk.
+
+   Runs are kept whether they succeed, partly succeed or fail.
+
+Untick *Review mappings…* to publish without review (the old behaviour). Tracker templates (PDM tail sheets, machine info) and AI-read documents are published directly and appear in the batch as such.
+
+![mapping studio](docs-mapping-studio.png)
+
+`samples/risk_center/` holds the 11 Risk Center CSVs. Load them together to see the flow end to end. Three objects need a decision (`risk_title`, `purchase_order`, `product_or_material`), and the other eight are ready.
+
 ## Data governance (after ingest)
 
 Open **http://localhost:8000/governance**. It follows the DFSP IP Data Governance design: Bronze → Silver → Gold, a Data Trust Score, quarantine, certified Gold products and an AI decision gate.
@@ -71,6 +93,29 @@ Limits:
 * GDELT rate-limits heavily. Countries it refuses are reported, and the feed shows PARTIAL.
 * Hosts to allow in a restricted network: `www.treasury.gov`, `sanctionslistservice.ofac.treas.gov`, OFAC's download redirect to `*.s3.us-gov-west-1.amazonaws.com`, `sanctionslist.fcdo.gov.uk`, `www.gdacs.org`, `earthquake.usgs.gov`, `api.worldbank.org`, `api.gdeltproject.org`.
 * Set `RISK_FEEDS_ENABLED=false` where the app has no internet access.
+
+### Risk Center data and what-if
+
+The supply model also reads these entities when they are loaded:
+
+| Data | What it changes |
+|---|---|
+| Supplier network (`supplier`: code, node type, buffer days, time to recover, critical) | Vendor codes on POs resolve to the master. A recovery time longer than the buffer raises continuity impact. |
+| Supply relationships (`supply_link`: upstream, downstream, share, lane) | Network edges, sub-tier "supplies to", and the lanes each supplier ships on. |
+| Country risk, transport lanes | Fill in where the public feeds leave gaps, and add lane risk to the geopolitical factor. |
+| Risk register, alerts | Open items on a node raise likelihood and appear in the scorecard's signals. |
+| Forecast, inventory allocation | Demand comes from the forecast, and stock counts only what is not allocated. |
+| Scenarios | **Supply → What-if** compares the baseline with the scenario over the same horizon. |
+
+What-if inputs: PO delay, demand change, inventory loss, or a geopolitical scenario. A scenario's scope comes from its own country/lane fields, or else from lane, country and material names found in its text. The evidence is listed with the result.
+
+Results:
+- Value at risk is grouped by currency and never summed across currencies.
+- A cost-uplift scenario shows its extra cost.
+
+Each result can be accepted, modified, overridden or deferred. Modify and override need a rationale, and every decision goes in the audit log.
+
+![what-if](docs-supply-whatif.png)
 
 ## Maestro-SC module (depot / maintenance)
 
@@ -170,6 +215,9 @@ Tests: `pytest -q` (75 tests, including the Maestro reference workbooks and the 
 | `GET /api/analytics/overview` and `/api/analytics/{inventory,suppliers,shipments,demand,iot}` | KPIs |
 | `POST /api/ask` | Natural-language question → answer, findings, actions |
 | `GET /api/records`, `/api/sources`, `/api/mappings` | Browse data, sources and the AI's learned mappings |
+| `POST /api/batches` (files[], user, mode=review/auto) · `GET /api/batches[/{id}]` · `POST /api/batches/{id}/publish` · `GET /api/batches/{id}/runs` | Ingestion batches and validate-govern-publish runs |
+| `GET /api/objects/{id}` · `PATCH /api/objects/{id}/entity` · `PATCH /api/objects/{id}/fields` (column, action ACCEPTED/IGNORED/EXTENSION/RESET) · `POST /api/objects/{id}/accept-high-confidence` · `POST /api/objects/{id}/profile` · `GET /api/profiles` | Mapping Studio |
+| `GET /api/supply/scenarios` · `POST /api/supply/whatif` · `GET/POST /api/supply/decisions` | Scenarios, what-if and decisions |
 | `GET /api/amxg/hub`, `/events`, `/timelines?filter=`, `/tiered`, `/status`, `/dockboard`, `/bom?asset=`, `/script/{tail}?gate=` | AMXG screens |
 | `POST /api/amxg/events/{id}`, `/api/amxg/script/{tail}/close`, `/api/amxg/script/{tail}/found-work` | Acknowledge / close events, close tasks, add found work (audited) |
 

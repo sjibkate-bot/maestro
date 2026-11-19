@@ -109,7 +109,7 @@ dialog label { display:block; font-size:12px; color:var(--ink2); margin:10px 0 4
     <div class="lab sec">Analyse</div>
     <a href="#overview">Overview</a><a href="#network">Supply network <small id="r-net"></small></a><a href="#suppliers">Supplier risk <small id="r-sup"></small></a><a href="#matrix">Risk matrix</a>
     <div class="lab sec">Protect</div>
-    <a href="#coverage">Stock coverage <small id="r-cov"></small></a><a href="#delivery">Delivery</a><a href="#signals">Risk signals <small id="r-sig"></small></a><a href="#mitigation">Mitigation <small id="r-mit"></small></a>
+    <a href="#coverage">Stock coverage <small id="r-cov"></small></a><a href="#delivery">Delivery</a><a href="#signals">Risk signals <small id="r-sig"></small></a><a href="#mitigation">Mitigation <small id="r-mit"></small></a><a href="#whatif">What-if</a>
     <p class="note">Computed from governed Gold data loaded in <a href="/maestro#config">Configuration</a>. Every rating shows how it was built.</p>
   </aside>
   <main>
@@ -452,9 +452,46 @@ async function ask(q, out) {
   catch (e) { out.innerHTML = `<div class="answer">${esc(e.message)}</div>`; }
 }
 $("#askTop").onclick = e => { e.preventDefault(); $("#askOut").innerHTML = ""; $("#askDlg").showModal(); $("#askQ").focus(); };
+V.whatif = async v => {
+  if (!OV.has_data) { v.innerHTML = emptyState(); return; }
+  const [scs, decs] = await Promise.all([api("/api/supply/scenarios"), api("/api/supply/decisions")]);
+  v.innerHTML = `<div class="card"><h3>What-if</h3><div class="sub">Coverage over a horizon: stock after allocation, open-order receipts due in time, against forecast demand. Baseline and scenario use the same horizon.</div>
+    <form id="wf" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-top:10px">
+      <label>Geopolitical scenario<br><select name="scenario_id"><option value="">None</option>${scs.map(s => `<option value="${esc(s.scenario_id)}">${esc(s.scenario_name)} · ${num(s.probability_pct)}%/yr</option>`).join("")}</select></label>
+      <label>PO delay (days)<br><input name="delay_days" type="number" value="0" style="width:90px"></label>
+      <label>Demand change (%)<br><input name="demand_pct" type="number" value="0" style="width:90px"></label>
+      <label>Inventory loss (%)<br><input name="inventory_loss_pct" type="number" value="0" style="width:90px"></label>
+      <label>Horizon (days)<br><input name="horizon_days" type="number" placeholder="auto" style="width:90px"></label><button>Run</button></form></div>
+    <div id="wout"></div>
+    <div class="card"><h3>Decisions</h3><div class="sub">Accept, modify, override or defer a result; modify and override need a rationale. Kept in the audit log.</div>
+      <table><tr><th>When</th><th>Who</th><th>Subject</th><th>Decision</th><th>Rationale</th></tr>${decs.map(d => `<tr><td>${dt(d.decided_at)}</td><td>${esc(d.decided_by)}</td><td>${esc(d.subject)}</td><td>${esc(d.decision)}</td><td>${esc(d.rationale)}</td></tr>`).join("") || '<tr><td colspan=5 class="empty">No decisions yet.</td></tr>'}</table></div>`;
+  $("#wf").onsubmit = async e => { e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.target)); const body = {...f, horizon_days: f.horizon_days || null};
+    const w = await post("/api/supply/whatif", body), B = w.baseline, R = w.result, sc = w.scenario;
+    const varTxt = o => Object.keys(o.value_at_risk_by_currency).length ? Object.entries(o.value_at_risk_by_currency).map(([c, x]) => `${esc(c)} ${money(x)}`).join(" · ") : "no unit costs loaded";
+    $("#wout").innerHTML = `<div class="card">${sc ? `<h3>${esc(sc.scenario_name)}</h3><p style="color:var(--ink2)">${esc(sc.description)} · ${num(sc.duration_days)} days · supply loss ${pct(sc.supply_loss)}${sc.cost_uplift_pct ? ` · cost +${num(sc.cost_uplift_pct)}%` : ""}</p>
+        <p style="font-size:13px"><b>Hits:</b> ${sc.scope.suppliers.map(x => `<a href="#suppliers/${encodeURIComponent(x.supplier)}">${esc(x.supplier)}</a> (${esc(x.why)})`).join(", ") || "no supplier in scope"}
+        <span style="color:var(--muted)"> · matched ${esc(sc.scope.evidence.join("; ") || "nothing")}</span></p>` : "<h3>Result</h3>"}
+      <div class="kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px">
+        ${[["Items short", B.short_items, R.short_items], ["Shortage qty", B.shortage_qty, R.shortage_qty]].map(([l, a, b]) => `<div class="card" style="margin:0"><div class="lab">${l}</div><div class="v">${num(a)} → <b style="color:${b > a ? "var(--critical)" : "inherit"}">${num(b)}</b></div><div class="s">baseline → scenario</div></div>`).join("")}
+        <div class="card" style="margin:0"><div class="lab">Value at risk</div><div class="v" style="font-size:16px">${varTxt(R)}</div><div class="s">by currency; never summed across currencies</div></div>
+        <div class="card" style="margin:0"><div class="lab">Cost impact</div><div class="v" style="font-size:16px">${R.cost_impact ? `+${money(R.cost_impact.extra_cost)}` : "—"}</div><div class="s">${R.cost_impact ? `${num(R.cost_impact.uplift_pct)}% on ${money(R.cost_impact.affected_spend)} spend` : "no cost uplift"}</div></div></div>
+      <p style="color:var(--muted);font-size:12px">Horizon ${w.inputs.horizon_days} days · delay ${num(w.inputs.delay_days)} d · demand ${num(w.inputs.demand_pct)}% · inventory loss ${num(w.inputs.inventory_loss_pct)}%</p>
+      <table><tr><th>Item</th><th class="n">Demand</th><th class="n">Stock</th><th class="n">Incoming</th><th class="n">Supply cut</th><th class="n">Shortage (baseline → scenario)</th><th class="n">Cover days</th><th>Suppliers</th></tr>
+      ${w.changed.map(r => `<tr><td>${esc(r.sku)}</td><td class="n">${num(r.demand)}</td><td class="n">${num(r.stock)}</td><td class="n">${num(r.incoming)}</td><td class="n">${num(r.supply_cut)}</td>
+        <td class="n">${num(r.baseline_shortage)} → <b style="color:${r.shortage > r.baseline_shortage ? "var(--critical)" : "inherit"}">${num(r.shortage)}</b></td><td class="n">${num(r.baseline_cover, 1)} → ${num(r.days_cover, 1)}</td><td style="font-size:12px">${r.suppliers.map(esc).join(", ")}</td></tr>`).join("") || '<tr><td colspan=8 class="empty">No item changes under this scenario.</td></tr>'}</table>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap"><input id="why" placeholder="Rationale (needed to modify or override)" style="flex:1;min-width:240px">
+        ${["ACCEPT", "MODIFY", "OVERRIDE", "DEFER"].map(d => `<button class="ghost" data-dec="${d}">${d[0] + d.slice(1).toLowerCase()}</button>`).join("")}</div><div id="decMsg"></div></div>`;
+    $("#wout").querySelectorAll("[data-dec]").forEach(b => b.onclick = async () => { const u = user() || prompt("Your name or role (recorded):"); if (!u) return; localStorage.govUser = u;
+      try { await post("/api/supply/decisions", {decision: b.dataset.dec, rationale: $("#why").value, user: u, subject: sc ? sc.scenario_name : "what-if", inputs: w.inputs,
+              summary: {baseline_short: B.short_items, scenario_short: R.short_items}}); V.whatif(v); }
+      catch (e) { $("#decMsg").innerHTML = `<p style="color:var(--critical)">${esc(e.message)}</p>`; } });
+  };
+};
+
 $("#askForm").onsubmit = e => { e.preventDefault(); if ($("#askQ").value.trim()) ask($("#askQ").value, $("#askOut")); };
 
-const NAMES = {overview: "Overview", network: "Supply network", suppliers: "Supplier risk", matrix: "Risk matrix", coverage: "Stock coverage", delivery: "Delivery", signals: "Risk signals", mitigation: "Mitigation"};
+const NAMES = {overview: "Overview", network: "Supply network", suppliers: "Supplier risk", matrix: "Risk matrix", coverage: "Stock coverage", delivery: "Delivery", signals: "Risk signals", mitigation: "Mitigation", whatif: "What-if"};
 async function route() {
   const [key0, arg] = location.hash.slice(1).split("/"), key = NAMES[key0] ? key0 : "overview";
   document.querySelectorAll(".rail a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + key));

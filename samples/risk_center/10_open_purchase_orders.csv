@@ -1,0 +1,19 @@
+﻿purchase_order,line,vendor,material,destination,order_date,expected_date,order_quantity,unit
+PO-1000,1,ree,NdFeB oxide,WH-OH,2026-11-01,2026-12-03,20,EA
+PO-1001,1,wafer,MCU / GaN wafers,WH-OH,2026-11-01,2026-12-04,30,EA
+PO-1002,1,gallium,Gallium,WH-OH,2026-11-01,2026-12-05,40,EA
+PO-1003,1,cufoil,Copper foil,WH-OH,2026-11-01,2026-12-06,50,EA
+PO-1004,1,lithium,Lithium carbonate,WH-OH,2026-11-01,2026-12-07,60,EA
+PO-1005,1,resin,PBT resin,WH-OH,2026-11-01,2026-12-08,70,EA
+PO-1006,1,magnets,NdFeB magnets,WH-OH,2026-11-01,2026-12-09,20,EA
+PO-1007,1,mcu,MCU / BMS chips,WH-OH,2026-11-01,2026-12-10,30,EA
+PO-1008,1,laminate,Copper-clad laminate,WH-OH,2026-11-01,2026-12-11,40,EA
+PO-1009,1,cells,Li-ion cells,WH-OH,2026-11-01,2026-12-12,50,EA
+PO-1010,1,gan,GaN power FETs,WH-OH,2026-11-01,2026-12-13,60,EA
+PO-1011,1,molding,Molded parts,WH-OH,2026-11-01,2026-12-14,70,EA
+PO-1012,1,motor,Servo motors,WH-OH,2026-11-01,2026-12-15,20,EA
+PO-1013,1,ctrl,Controller PCBAs,WH-OH,2026-11-01,2026-12-16,30,EA
+PO-1014,1,batt,Battery packs,WH-OH,2026-11-01,2026-12-17,40,EA
+PO-1015,1,housing,Housings,WH-OH,2026-11-01,2026-12-18,50,EA
+PO-1016,1,conn,Connectors,WH-OH,2026-11-01,2026-12-19,60,EA
+PO-1017,1,cable,Wire harnesses,WH-OH,2026-11-01,2026-12-20,70,EA

@@ -12,7 +12,7 @@ from fastapi import Body, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel
 
-from . import amxg, analytics, governance, pdm, risk_feeds, supply_risk
+from . import amxg, analytics, governance, pdm, risk_feeds, studio, supply_risk
 from .ai.claude import AIError
 from .ai.provider import get_provider
 from .connectors.files import ingest_file
@@ -70,6 +70,109 @@ async def upload_file(file: UploadFile = File(...), source: Optional[str] = Form
         logging.exception("ingest failed")
         raise HTTPException(400, f"Could not read {file.filename}: {e}")
     return {"file": file.filename, "batches": results}
+
+
+# ---------------------------------------------------------------- ingestion batches & Mapping Studio
+@app.post("/api/batches")
+async def create_batch(files: list[UploadFile] = File(...), name: Optional[str] = Form(None),
+                       mode: str = Form("review"), user: Optional[str] = Form(None),
+                       record_type: Optional[RecordType] = Form(None)):
+    """Upload several files as one ingestion batch. Tables are staged for Mapping Studio
+    (mode=review) or published straight away (mode=auto). Layouts with an active mapping
+    profile publish automatically; template sheets and documents publish directly."""
+    if not files:
+        raise HTTPException(400, "Select at least one file")
+    if mode not in ("review", "auto"):
+        raise HTTPException(400, "mode must be review or auto")
+    b = studio.begin_batch(name or f"Batch {len(files)} file(s)", user or "unknown", mode)
+    out = []
+    for f in files:
+        data = await f.read()
+        token = studio.STAGING.set({"batch_id": b["_id"], "mode": mode, "user": user})
+        try:
+            res = ingest_file(f.filename, data, _source_id(f.filename), record_type.value if record_type else None)
+            studio.register_direct(b["_id"], f.filename, _source_id(f.filename), res)
+            out.append({"file": f.filename, "results": res})
+        except Exception as e:
+            logging.exception("batch ingest failed")
+            out.append({"file": f.filename, "error": str(e)})
+        finally:
+            studio.STAGING.reset(token)
+    studio.finish_batch(b["_id"], [{"file": f.filename} for f in files], out)
+    return studio.batch_view(b["_id"]) | {"load": out}
+
+
+@app.get("/api/batches")
+def list_batches():
+    return studio.batches()
+
+
+@app.get("/api/batches/{batch_id}")
+def get_batch(batch_id: str):
+    try:
+        return studio.batch_view(batch_id)
+    except KeyError:
+        raise HTTPException(404, "Batch not found")
+
+
+@app.post("/api/batches/{batch_id}/publish")
+def publish_batch(batch_id: str, body: dict = Body(default={})):
+    try:
+        return studio.publish_batch(batch_id, body.get("user") or "")
+    except KeyError:
+        raise HTTPException(404, "Batch not found")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/api/batches/{batch_id}/runs")
+def batch_runs(batch_id: str):
+    return list(get_db().publish_runs.find({"batch_id": batch_id}).sort("started_at", -1))
+
+
+@app.get("/api/objects/{object_id}")
+def get_object(object_id: str):
+    try:
+        return studio.object_view(object_id)
+    except KeyError:
+        raise HTTPException(404, "Source object not found")
+
+
+def _studio_call(fn, *a, **kw):
+    try:
+        fn(*a, **kw)
+        return studio.object_view(a[0])
+    except KeyError as e:
+        raise HTTPException(404, f"Not found: {e}")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
+@app.patch("/api/objects/{object_id}/entity")
+def set_object_entity(object_id: str, body: dict = Body(...)):
+    return _studio_call(studio.set_entity, object_id, body.get("entity"), body.get("user") or "")
+
+
+@app.patch("/api/objects/{object_id}/fields")
+def field_action(object_id: str, body: dict = Body(...)):
+    """body: column, action (ACCEPTED | IGNORED | EXTENSION | RESET), canonical_field, extension_key, user"""
+    return _studio_call(studio.field_action, object_id, body.get("column"), body.get("action"), body.get("user") or "",
+                        body.get("canonical_field"), body.get("extension_key"))
+
+
+@app.post("/api/objects/{object_id}/accept-high-confidence")
+def accept_high(object_id: str, body: dict = Body(default={})):
+    return _studio_call(studio.accept_high_confidence, object_id, body.get("user") or "", int(body.get("minimum") or 90))
+
+
+@app.post("/api/objects/{object_id}/profile")
+def save_profile(object_id: str, body: dict = Body(default={})):
+    return _studio_call(studio.save_profile, object_id, body.get("user") or "")
+
+
+@app.get("/api/profiles")
+def mapping_profiles():
+    return studio.profiles()
 
 
 class ApiPull(BaseModel):
@@ -227,6 +330,11 @@ def maestro_page():
     return FileResponse(WEB / "maestro.html")
 
 
+@app.get("/static/studio.js", include_in_schema=False)
+def studio_js():
+    return FileResponse(WEB / "studio.js", media_type="text/javascript")
+
+
 @app.get("/static/amxg.js", include_in_schema=False)
 def amxg_js():
     return FileResponse(WEB / "amxg.js", media_type="text/javascript")
@@ -370,6 +478,34 @@ def supply_coverage(buffer_days: float = Query(7, ge=0, le=180)):
 @app.get("/api/supply/delivery")
 def supply_delivery():
     return supply_risk.delivery()
+
+
+@app.get("/api/supply/scenarios")
+def supply_scenarios():
+    return supply_risk.scenarios()
+
+
+@app.post("/api/supply/whatif")
+def supply_whatif(body: dict = Body(default={})):
+    try:
+        return supply_risk.whatif(float(body.get("delay_days") or 0), float(body.get("demand_pct") or 0),
+                                  float(body.get("inventory_loss_pct") or 0), body.get("scenario_id") or None,
+                                  int(body["horizon_days"]) if body.get("horizon_days") else None)
+    except KeyError:
+        raise HTTPException(404, "Scenario not found")
+
+
+@app.get("/api/supply/decisions")
+def supply_decisions():
+    return supply_risk.decisions()
+
+
+@app.post("/api/supply/decisions")
+def supply_decide(body: dict = Body(...)):
+    try:
+        return supply_risk.record_decision(body, body.get("user") or "")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
 
 
 @app.get("/api/supply/plans")

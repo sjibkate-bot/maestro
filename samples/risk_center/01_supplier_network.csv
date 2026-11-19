@@ -1,0 +1,26 @@
+﻿vendor_code,vendor_name,node_type,tier_level,country_iso,is_critical,commodity,annual_spend_musd,buffer_days,time_to_recover_days,category_scores,data_quality_scores,last_evaluation_date
+ree,Northern Rare Earth Refining,sup,0,CN,False,NdFeB oxide,,20.0,120.0,"30,52,66,48,58,88","52,55,48,60,45",
+wafer,Hsinchu Wafer Fab 12,sup,0,TW,False,MCU / GaN wafers,,15.0,150.0,"18,46,22,40,20,82","60,64,55,62,50",
+gallium,Yunnan Gallium Works,sup,0,CN,False,Gallium,,30.0,180.0,"40,50,70,45,55,90","44,50,40,52,38",
+cufoil,Andes Copper Foil,sup,0,CL,False,Copper foil,,25.0,45.0,"42,48,40,30,36,38","56,58,50,60,48",
+lithium,Salar Lithium Chemicals,sup,0,AR,False,Lithium carbonate,,30.0,90.0,"55,44,62,28,60,58","46,50,44,55,40",
+resin,Gulf Polymer Resins,sup,0,US,False,PBT resin,,14.0,30.0,"22,40,24,30,18,12","70,72,66,70,60",
+magnets,Ningbo Magnetics,sup,1,CN,False,NdFeB magnets,14.0,21.0,90.0,"38,48,58,52,46,84","64,66,58,70,56",2026-05-14
+mcu,Taipei Semicon Assembly,sup,1,TW,True,MCU / BMS chips,22.0,28.0,120.0,"20,52,20,44,18,80","74,78,70,76,62",2026-08-02
+laminate,Penang Laminates,sup,1,MY,False,Copper-clad laminate,6.0,20.0,30.0,"34,40,30,32,26,40","70,72,66,74,60",
+cells,Hanseong Cell Co.,sup,1,KR,True,Li-ion cells,31.0,25.0,75.0,"36,42,64,38,72,36","76,74,72,78,66",2026-03-20
+gan,Kyoto Power Devices,sup,1,JP,False,GaN power FETs,12.0,30.0,90.0,"22,44,26,30,18,46","72,76,68,74,58",
+molding,Bajío Moldings,sup,1,MX,False,Molded parts,4.0,12.0,21.0,"44,50,30,36,24,46","68,64,60,66,58",
+motor,Saxon Motorworks,sup,2,DE,True,Servo motors,48.0,18.0,60.0,"34,74,20,30,22,30","84,82,80,86,78",2026-07-11
+ctrl,Apex Controller Boards,sup,2,VN,True,Controller PCBAs,62.0,14.0,45.0,"72,56,40,70,34,48","62,60,52,58,50",2025-08-30
+batt,NovaPack Energy,sup,2,US,True,Battery packs,38.0,16.0,40.0,"46,42,62,34,40,22","80,78,74,80,70",2026-06-01
+housing,Monterrey Precision Castings,sup,2,MX,False,Housings,11.0,10.0,21.0,"40,66,28,30,22,50","78,74,76,72,70",
+conn,Rheinland Connectors,sup,2,DE,False,Connectors,7.0,30.0,14.0,"18,24,16,26,12,20","88,86,84,90,80",
+cable,Coastal Wire & Harness,sup,2,US,False,Wire harnesses,9.0,14.0,18.0,"30,36,20,40,16,10","86,84,88,84,80",
+mfg-mx,Plant Monterrey,mfg,3,MX,True,Motor sub-assemblies,,7.0,30.0,"10,48,22,40,14,46","92,90,94,90,92",
+mfg-oh,"Plant Columbus, OH",mfg,3,US,True,Industrial drives,,5.0,21.0,"10,52,18,46,12,10","94,92,96,92,94",
+dc-mem,"DC Memphis, TN",dc,4,US,True,Drives,,12.0,14.0,"8,58,14,36,10,8","92,90,96,90,90",
+dc-reno,"DC Reno, NV",dc,4,US,False,Drives,,14.0,10.0,"8,30,12,30,10,8","92,90,96,90,90",
+dc-rtm,3PL DC Rotterdam,dc,4,NL,False,Drives,,21.0,10.0,"24,34,20,64,14,22","72,70,64,70,60",
+dem-na,North America customers,dem,5,US,False,,,0.0,,,,
+dem-eu,EU customers,dem,5,NL,False,,,0.0,,,,

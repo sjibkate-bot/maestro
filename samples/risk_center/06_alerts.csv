@@ -1,0 +1,11 @@
+﻿alert_id,age_minutes,source_system,severity,node_id,alert_text,level,status
+A-301,30,News / OSINT,critical,mcu,Live-fire zone declared across Taiwan Strait shipping lanes; 3 container lines pause bookings.,3,escalated
+A-302,20,Cyber intel,critical,dc-rtm,Rotterdam 3PL: ransomware indicator matched; warehouse portal offline.,2,new
+A-303,45,Carrier AIS,high,magnets,Magnet shipment ETA slips +12 days (Cape routing). Saxon Motorworks buffer drops to 6 days.,1,new
+A-304,130,Credit bureau,high,ctrl,Apex Controller Boards downgraded B+ → B−; two late payments to sub-tiers.,2,ack
+A-305,1440,Sanctions / UFLPA,high,lithium,Entity list update names a lithium refiner two tiers above Hanseong Cell.,2,new
+A-306,300,NOAA / GDACS,medium,dc-mem,"Severe storm watch for Memphis metro, next 36 h; inbound appointments at risk.",1,new
+A-307,180,QMS,medium,housing,"Casting porosity PPM 1,850 (target 500); 2 lots on hold.",1,ack
+A-308,360,Trade notices,medium,mfg-mx,Proposed 25% tariff on non-USMCA-compliant motor assemblies.,1,new
+A-309,540,Data quality,medium,ctrl,Data confidence for Apex Controller Boards fell below 60%: evaluation is 14 months old.,1,new
+A-310,2880,ESG ratings,low,cells,ESG rating downgraded to CCC (labour practices).,1,ack

@@ -1,0 +1,15 @@
+﻿risk_id,affected_node,likelihood_1_5,risk_title,risk_evidence
+R-101,mcu,5,MCU supply concentrated in one Taiwan fab and assembler,100% of MCU die from Hsinchu Fab 12; Strait exercise activity up 3× QoQ; 28 days of buffer.
+R-102,ree,5,China licensing on NdFeB rare earth feedstock,MOFCOM added licensing for 7 rare earths; Ningbo lead times +5 weeks; oxide source found only via customs data.
+R-103,ctrl,0,Apex Controller Boards liquidity stress,Credit score down 2 notches (B+ → B−); DPO stretched to 94 days; two late payments to sub-tiers.
+R-104,motor,1,Saxon Motorworks sole-source capacity ceiling,Running at 96% utilisation; on-time delivery 81% over the last 8 weeks.
+R-105,magnets,5,Red Sea diversion on the magnet lane to Germany,Cape routing adds 12 days; freight +38%; 3 sailings missed in October.
+R-106,lithium,2,Forced-labour traceability gap in the lithium chain,Tier-3 lithium refiner unmapped until customs match; CBP detention risk for packs.
+R-107,dc-mem,1,DC Memphis carries 60% of North America volume,Single DC concentration in the New Madrid seismic zone; halt limit 48 h before backorders.
+R-108,ctrl,3,Firmware-signing exposure at the controller board supplier,Security rating 610 (−45); exposed remote-desktop service found by external scan.
+R-109,mfg-mx,5,Tariff escalation on Mexico-made motor assemblies,Proposed 25% tariff on non-USMCA-compliant assemblies; review hearing in July.
+R-110,gallium,5,Gallium export ban reaches GaN power FETs,Kyoto Power Devices buys 90% of gallium from Yunnan; dependency found two tiers down.
+R-111,cells,4,ESG controversy at Hanseong Cell,Labour violation report; ESG rating fell to CCC; two customers asked for statements.
+R-112,housing,1,Casting porosity defects rising,"PPM 1,850 against a 500 target; 2 lots on hold at Plant Monterrey."
+R-113,dc-rtm,3,Ransomware exposure at the Rotterdam 3PL,Indicator of compromise matched in an external scan; warehouse portal offline 6 h.
+R-114,mfg-oh,1,Single final-assembly site for all drives,Plant Columbus assembles 100% of drives; halt limit 48 h; 5 days of component buffer.

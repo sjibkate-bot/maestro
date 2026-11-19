@@ -1,0 +1,18 @@
+﻿upstream_node,downstream_node,material_or_flow,share_of_supply,transport_lane
+wafer,gan,Wafers,0.35,taiwan-strait
+gallium,gan,Gallium,0.9,east-china-sea
+cufoil,laminate,Copper foil,0.6,pacific
+lithium,cells,Lithium,0.7,pacific
+resin,molding,Resin,1.0,us-mx
+magnets,motor,Magnets,1.0,suez-red-sea
+mcu,ctrl,MCUs,1.0,south-china-sea
+mcu,batt,BMS chips,1.0,pacific
+laminate,ctrl,Laminate,0.7,malacca
+gan,ctrl,GaN FETs,1.0,south-china-sea
+cells,batt,Cells,1.0,pacific
+molding,conn,Molded parts,0.3,atlantic
+motor,mfg-mx,Motors,1.0,atlantic
+ctrl,mfg-oh,Controller PCBAs,1.0,pacific
+conn,mfg-oh,Connectors,0.6,atlantic
+mfg-mx,mfg-oh,Motor sub-assemblies,1.0,us-mx
+mfg-oh,dc-rtm,Drives,1.0,atlantic

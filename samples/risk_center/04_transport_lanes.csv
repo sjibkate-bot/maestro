@@ -1,0 +1,13 @@
+﻿lane_code,lane_name,lane_risk_index
+taiwan-strait,Taiwan Strait,72
+south-china-sea,South China Sea,60
+east-china-sea,East China Sea,52
+malacca,Strait of Malacca,45
+suez-red-sea,Red Sea / Suez,82
+pacific,Trans-Pacific,30
+atlantic,Trans-Atlantic,16
+us-mx,US–Mexico border,40
+domestic,Domestic road / rail,8
+pacific-sloc,Western Pacific SLOCs (contested),86
+air-bridge,Strategic airlift bridge,55
+eurasia-rail,Trans-Caspian rail,62

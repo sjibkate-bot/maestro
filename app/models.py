@@ -26,6 +26,7 @@ ENTITIES: dict[str, dict[str, tuple[str, str]]] = {
         "unit": (S, "Unit of measure"), "unit_cost": (N, "Cost per unit"),
         "total_value": (N, "Stock value"), "reorder_point": (N, "Reorder point / safety stock"),
         "lead_time_days": (N, "Replenishment lead time in days"),
+        "allocated": (N, "Quantity allocated / reserved"), "as_of": (D, "Snapshot date"),
     },
     "purchase_order": {
         "order_id": (S, "PO number"), "sku": (S, "Item / part number"), "description": (S, "Line text"),
@@ -34,6 +35,17 @@ ENTITIES: dict[str, dict[str, tuple[str, str]]] = {
         "order_date": (D, "PO date"), "promised_date": (D, "Promised / due / expected date"),
         "delivered_date": (D, "Actual receipt date"), "status": (S, "Line status"),
         "location": (S, "Receiving site"), "lead_time_days": (N, "Lead time in days"),
+        "line_number": (S, "PO line"), "unit": (S, "Unit of measure"),
+    },
+    "forecast": {
+        "sku": (S, "Item / material"), "location": (S, "Site the demand is for"),
+        "need_date": (D, "Date the quantity is needed"), "quantity": (N, "Forecast quantity"),
+        "unit": (S, "Unit of measure"),
+    },
+    "supply_link": {
+        "upstream": (S, "Supplying node (supplier code)"), "downstream": (S, "Receiving node"),
+        "material": (S, "Material or flow on the link"), "share": (N, "Share of the downstream node's supply, 0-1"),
+        "lane": (S, "Transport lane used"),
     },
     "sales_order": {
         "order_id": (S, "Sales order number"), "customer": (S, "Customer"), "sku": (S, "Item"),
@@ -55,6 +67,11 @@ ENTITIES: dict[str, dict[str, tuple[str, str]]] = {
         "sole_source": (S, "yes if it is the only qualified source for what it supplies"),
         "annual_spend": (N, "Annual spend with the supplier"),
         "lead_time_days": (N, "Standard lead time"), "status": (S, "Approval status"),
+        "supplier_id": (S, "Supplier / vendor code used on orders"),
+        "node_type": (S, "Kind of network node: supplier, plant, warehouse, port..."),
+        "critical": (S, "yes if the supplier or node is flagged critical"),
+        "buffer_days": (N, "Days of buffer stock held for this node"),
+        "recovery_days": (N, "Time to recover after a disruption, days"),
     },
     "product": {
         "sku": (S, "Item / part number"), "description": (S, "Description"),
@@ -126,6 +143,34 @@ ENTITIES: dict[str, dict[str, tuple[str, str]]] = {
         "weapon_system": (S, "Weapon system affected"), "status": (S, "Critical / Issue / Stable"),
         "title": (S, "Short description"), "impact_days": (N, "Schedule impact in days"),
         "owner": (S, "Person or office working it"), "date_logged": (D, "When raised"), "notes": (S, "Detail"),
+    },
+    # ---------------- risk centre (reference data for supply risk) ----------------
+    "country_risk": {
+        "country": (S, "Country code or name"), "country_name": (S, "Country name"),
+        "risk_index": (N, "Political / stability risk index 0-100"), "hazard_index": (N, "Natural hazard index 0-100"),
+    },
+    "transport_lane": {
+        "lane": (S, "Lane code"), "lane_name": (S, "Lane name"), "lane_risk_index": (N, "Lane risk index 0-100"),
+    },
+    "risk_item": {
+        "risk_id": (S, "Risk identifier"), "node": (S, "Affected node / supplier code"),
+        "likelihood": (N, "Likelihood 1-5"), "impact": (N, "Impact 1-5"), "title": (S, "Risk title"),
+        "evidence": (S, "Evidence / description"), "owner": (S, "Risk owner"), "status": (S, "Open / mitigating / closed"),
+    },
+    "alert": {
+        "alert_id": (S, "Alert identifier"), "age_minutes": (N, "Minutes since raised"), "source": (S, "Where the alert came from"),
+        "alert_severity": (S, "critical / high / medium / low"), "node": (S, "Affected node / supplier code"),
+        "text": (S, "Alert text"), "level": (N, "Escalation level"), "status": (S, "new / escalated / closed"),
+    },
+    "scenario": {
+        "scenario_id": (S, "Scenario identifier"), "scenario_name": (S, "Scenario name"), "description": (S, "What happens"),
+        "duration_days": (N, "How long the disruption lasts"), "supply_loss": (N, "Share of supply lost, 0-1"),
+        "cost_uplift_pct": (N, "Cost increase, percent"), "probability_pct": (N, "Annual probability, percent"),
+        "country": (S, "Country affected (optional)"), "lane": (S, "Lane affected (optional)"),
+    },
+    "data_source": {
+        "source_name": (S, "Data source"), "source_class": (S, "Internal / external"), "content_domain": (S, "Content domain"),
+        "record_count": (N, "Records"), "refresh_minutes": (N, "Refresh interval, minutes"),
     },
     "bom_line": {
         "parent": (S, "Parent assembly part number (the end item for top-level lines)"),

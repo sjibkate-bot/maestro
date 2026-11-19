@@ -46,9 +46,12 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "fleet": {"entities": ["asset_status", "subsystem_health", "sensor_reading", "fault"],
                   "owner": "Fleet Reliability Lead", "steward": "Maintenance Data Steward",
                   "sensitivity": "CUI"},
-        "supply": {"entities": ["inventory", "product", "purchase_order", "supplier", "sales_order", "shipment"],
+        "supply": {"entities": ["inventory", "product", "purchase_order", "supplier", "sales_order", "shipment",
+                                "forecast", "supply_link"],
                    "owner": "Supply Chain Manager", "steward": "Supply Data Steward",
                    "sensitivity": "Internal"},
+        "risk": {"entities": ["country_risk", "transport_lane", "risk_item", "alert", "scenario", "data_source"],
+                 "owner": "Supply Risk Manager", "steward": "Risk Register Steward", "sensitivity": "Internal"},
         "external": {"entities": ["risk_signal"], "owner": "Risk Intelligence Lead", "steward": "Risk Data Steward",
                      "sensitivity": "Public"},
     },
@@ -72,6 +75,14 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "production_summary": ["organization", "weapon_system", "period", "produced", "goal"],
         "issue": ["organization", "weapon_system", "status", "title"],
         "bom_line": ["parent", "child", "quantity"],
+        "forecast": ["sku", "quantity", "need_date"],
+        "supply_link": ["upstream", "downstream"],
+        "country_risk": ["country", "risk_index"],
+        "transport_lane": ["lane", "lane_risk_index"],
+        "risk_item": ["risk_id", "title", "likelihood"],
+        "alert": ["alert_id", "text"],
+        "scenario": ["scenario_id", "scenario_name", "duration_days", "supply_loss"],
+        "data_source": ["source_name"],
         "work_task": ["asset_id", "gate", "skill", "work_package", "task", "planned_days", "status"],
     },
     # natural keys; "snapshot" keeps the newest version, "event" removes duplicate copies
@@ -87,6 +98,11 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "purchase_order": ("event", ["order_id", "sku"]),
         "sales_order": ("event", ["order_id", "sku"]),
         "shipment": ("event", ["shipment_id"]),
+        "forecast": ("snapshot", ["sku", "location", "need_date"]),
+        "supply_link": ("snapshot", ["upstream", "downstream", "material"]),
+        "country_risk": ("snapshot", ["country"]), "transport_lane": ("snapshot", ["lane"]),
+        "risk_item": ("snapshot", ["risk_id"]), "alert": ("snapshot", ["alert_id"]),
+        "scenario": ("snapshot", ["scenario_id"]), "data_source": ("snapshot", ["source_name"]),
         "gate_event": ("event", ["asset_id", "gate"]),
         "fault": ("event", ["asset_id", "fault_code", "date_logged"]),
         "sensor_reading": ("event", ["asset_id", "device_id", "metric", "timestamp"]),
@@ -108,6 +124,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "issue": ["weapon_system", "title"],
         "bom_line": ["parent", "child"],
         "work_task": ["asset_id", "task"],
+        "forecast": ["sku"], "supply_link": ["upstream", "downstream"], "country_risk": ["country"],
+        "transport_lane": ["lane"], "risk_item": ["risk_id"], "alert": ["alert_id"], "scenario": ["scenario_id"],
+        "data_source": ["source_name"],
     },
     # field used for timeliness and how old it may be relative to the newest record of that type
     "freshness": {
@@ -132,10 +151,10 @@ DEFAULT_CONFIG: dict[str, Any] = {
          "entities": ["asset_status", "subsystem_health", "sensor_reading", "fault"], "freshness_days": 1},
         {"id": "inventory_position", "name": "Inventory Position", "domain": "supply",
          "description": "On-hand stock, reorder points and item master.",
-         "entities": ["inventory", "product"], "freshness_days": 7},
+         "entities": ["inventory", "product", "forecast"], "freshness_days": 7},
         {"id": "supplier_performance", "name": "Supplier Performance", "domain": "supply",
          "description": "Purchase-order lines, promised vs received, supplier master.",
-         "entities": ["purchase_order", "supplier"], "freshness_days": 7},
+         "entities": ["purchase_order", "supplier", "supply_link"], "freshness_days": 7},
         {"id": "logistics", "name": "Logistics & Shipments", "domain": "supply",
          "description": "Inbound and outbound shipments against ETA.",
          "entities": ["shipment", "sales_order"], "freshness_days": 3},
@@ -145,6 +164,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
         {"id": "work_and_bom", "name": "Work Packages & BOM", "domain": "depot",
          "description": "Gate work tasks by skill and work package, and the indentured bill of materials.",
          "entities": ["work_task", "bom_line"], "freshness_days": 7},
+        {"id": "risk_register", "name": "Risk Register & Network", "domain": "risk",
+         "description": "Internal risk register, alerts, scenarios, country and lane risk, supply network links.",
+         "entities": ["risk_item", "alert", "scenario", "country_risk", "transport_lane", "data_source"], "freshness_days": 30},
         {"id": "risk_signals", "name": "External Risk Signals", "domain": "external",
          "description": "Sanctions matches, natural hazards, political stability and unrest from public feeds.",
          "entities": ["risk_signal"], "freshness_days": 2},
@@ -1088,6 +1110,8 @@ def delete_data(source_id: Optional[str], confirm: str, user: str, reason: str =
     db.raw.delete_many(q)
     db.bronze_files.delete_many(q)
     db.quarantine.delete_many(q)
+    from . import studio
+    studio.delete_for_source(source_id)
     if source_id:
         db.sources.delete_one({"_id": source_id})
     else:

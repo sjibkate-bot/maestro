@@ -1,0 +1,6 @@
+﻿scenario_id,scenario_name,description,duration_days,supply_loss_fraction,cost_uplift_pct,annual_probability_pct
+g-tw,Taiwan Strait quarantine,Commercial shipping around Taiwan halted for about 60 days.,60,1.0,0.0,8.0
+g-min,China critical-mineral export controls,"Licensing on gallium, germanium and rare earths cuts volumes 70% for four months.",120,0.7,25.0,30.0
+g-red,Red Sea / Suez closure,Attacks force Cape routing: +12–14 days and lower lane capacity.,45,0.45,18.0,35.0
+g-scs,South China Sea standoff,Naval standoff slows transits; insurers add war-risk premium.,30,0.3,12.0,15.0
+g-tariff,US–Mexico tariff escalation,25% tariff on Mexican-origin assemblies outside USMCA rules.,0,0.0,25.0,20.0

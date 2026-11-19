@@ -117,6 +117,7 @@ button:disabled { opacity:.4; cursor:not-allowed }
 
 
 <script src="/static/amxg.js"></script>
+<script src="/static/studio.js"></script>
 <script>
 const $ = s => document.querySelector(s);
 const esc = v => v == null ? "—" : String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -399,6 +400,8 @@ const DEST = {
   "asset_flow+gate_event": ["docks", "Docks & Gates"], production_schedule: ["docks", "Docks & Gates"],
   asset_status: ["fleet", "Fleet"], subsystem_health: ["fleet", "Fleet"], fault: ["fleet", "Fleet"],
   sensor_reading: ["fleet", "Fleet / Supply IoT"],
+  forecast: ["supply", "Supply"], supply_link: ["supply", "Supply"], country_risk: ["supply", "Supply"], transport_lane: ["supply", "Supply"],
+  risk_item: ["supply", "Supply"], alert: ["supply", "Supply"], scenario: ["supply", "Supply"], data_source: ["supply", "Supply"],
 };
 const destLink = rt => { const d = DEST[rt]; return d ? `<a href="${d[0] === "supply" ? "/supply" : "#" + d[0]}">→ ${esc(d[1])}</a>` : '<span style="color:var(--muted)">not shown in a module</span>'; };
 
@@ -406,9 +409,10 @@ async function viewConfig(v) {
   v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Configuration tool // Maestro connect</div><h1>CONFIGURATION</h1>
     <div class="mono" style="color:var(--muted)">The one place data enters Maestro. It is governed (Bronze → Silver → Gold) and then appears in the module it belongs to.</div></div></div>
     <div class="panel"><h2 class="mono">Load files · Excel, CSV, JSON, PDF, text</h2>
-      <div class="row"><input type="file" id="files" multiple><input id="src" placeholder="Source name (optional)"><button id="up">Load</button></div>
-      <p style="color:var(--ink2);font-size:13px">The AI finds the tables in each sheet (skipping titles and data dictionaries), recognises tracker templates such as the PDM tail sheets, maps columns to Maestro entities, and reads scanned status boards.</p>
-      <table id="result" style="display:none"><tr><th>File / sheet</th><th>Read as</th><th class="n">Records</th><th>Shows in</th><th>Note</th></tr></table></div>
+      <div class="row"><input type="file" id="files" multiple aria-label="Files to load"><input id="uname" placeholder="Your name or role" aria-label="Your name or role">
+        <label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="review" checked> Review mappings in Mapping Studio before publishing</label><button id="up">Load</button></div>
+      <p style="color:var(--ink2);font-size:13px">Select several files at once: they load as one batch. Each table is profiled and classified, and its columns are matched to Maestro fields. You accept, ignore or keep each column as an extension in <b>Mapping Studio</b>, then <b>validate, govern and publish</b>. Layouts you have approved before are mapped by their saved profile and publish straight away. Tracker templates (PDM tail sheets) and scanned documents are read directly.</p>
+      <div id="loadMsg"></div><div id="batchList"></div></div>
     <div class="panel"><h2 class="mono">Connect an API or ERP · Maestro connect</h2>
       <form id="apiForm" class="row"><select name="kind"><option value="erp">ERP (OData / REST)</option><option value="api">REST API</option></select>
         <input name="source" placeholder="Source name"><input name="url" required style="flex:1;min-width:320px" placeholder="https://erp.example.com/sap/opu/odata/sap/API_PURCHASEORDER_PROCESS_SRV/A_PurchaseOrderItem">
@@ -434,17 +438,22 @@ async function viewConfig(v) {
   };
   const row = (name, b) => `<tr><td>${esc(name)}${b.sheet ? " / " + esc(b.sheet) : ""}</td><td>${b.error ? '<span class="tag critical">▲ ERROR</span>' : b.blocked ? '<span class="tag critical">▲ BLOCKED</span>' : esc(b.record_type || b.document_kind || "")}${b.template ? ` <span class="tag good">${esc(b.template)}</span>` : ""}</td>
     <td class="n">${num(b.records, 0)}</td><td>${b.records ? destLink(b.record_type) : "—"}</td><td style="color:var(--ink2)">${esc(b.error || b.note || "")}</td></tr>`;
+  $("#uname").value = localStorage.amxUser || "";
   $("#up").onclick = async () => {
-    const files = [...$("#files").files]; if (!files.length) return;
-    const t = $("#result"); t.style.display = ""; $("#up").disabled = true;
-    for (const f of files) {
-      const fd = new FormData(); fd.append("file", f); if ($("#src").value) fd.append("source", $("#src").value);
-      t.insertAdjacentHTML("beforeend", `<tr id="pending"><td>${esc(f.name)}</td><td colspan=4 style="color:var(--muted)">loading…</td></tr>`);
-      const r = await fetch("/api/ingest/file", {method: "POST", body: fd}); const j = await r.json(); $("#pending").remove();
-      t.insertAdjacentHTML("beforeend", r.ok ? j.batches.map(b => row(f.name, b)).join("") : row(f.name, {error: j.detail, records: 0}));
-    }
-    $("#up").disabled = false; loadAlerts(); recent();
+    const files = [...$("#files").files]; if (!files.length) { $("#loadMsg").innerHTML = '<p style="color:var(--critical)">Choose one or more files first.</p>'; return; }
+    const user = $("#uname").value.trim(); if (!user) { $("#loadMsg").innerHTML = '<p style="color:var(--critical)">Enter your name or role (it is recorded with every decision).</p>'; $("#uname").focus(); return; }
+    localStorage.amxUser = user;
+    const fd = new FormData(); files.forEach(f => fd.append("files", f)); fd.append("user", user); fd.append("mode", $("#review").checked ? "review" : "auto");
+    fd.append("name", files.length === 1 ? files[0].name : `${files.length} files · ${new Date().toLocaleString()}`);
+    $("#up").disabled = true; $("#loadMsg").innerHTML = `<p style="color:var(--muted)">Discovering ${files.length} file(s)…</p>`;
+    const r = await fetch("/api/batches", {method: "POST", body: fd}); const j = await r.json(); $("#up").disabled = false;
+    if (!r.ok) { $("#loadMsg").innerHTML = `<p style="color:var(--critical)">${esc(j.detail || "Load failed")}</p>`; return; }
+    loadAlerts(); location.hash = "#batch/" + j._id;
   };
+  (async () => { const bs = (await api("/api/batches")).slice(0, 8);
+    $("#batchList").innerHTML = bs.length ? `<table><tr><th>Batch</th><th>Loaded</th><th>By</th><th class="n">Sources</th><th class="n">Rows</th><th>Status</th></tr>${bs.map(b => `<tr>
+      <td><a href="#batch/${b._id}">${esc(b.name)}</a></td><td>${dt(b.created_at)}</td><td>${esc(b.created_by)}</td><td class="n">${b.objects}</td><td class="n">${num(b.rows, 0)}</td>
+      <td>${Object.entries(b.counts).map(([k, n]) => `<span class="tag ${k === "PUBLISHED" ? "good" : k === "READY" ? "" : "warning"}">${n} ${esc(k.replace("_", " ").toLowerCase())}</span>`).join(" ")}</td></tr>`).join("")}</table>` : ""; })();
   $("#apiForm").onsubmit = async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
     const body = {url: f.url, kind: f.kind, source: f.source || null, records_path: f.records_path || null, username: f.username || null,
       password: f.password || null, headers: f.token ? {Authorization: "Bearer " + f.token} : {}};
@@ -528,10 +537,10 @@ async function whyEmpty(entities, what) {
     <a class="tag" style="color:var(--accent)" href="#config">Load data in Configuration</a></div></div>`;
 }
 
-const VIEWS = {...(window.AMXG_VIEWS || {}), modules: viewModules, supply: () => { location.href = "/supply"; }, docks: viewDocks, gates: viewGates, machine: viewMachine, fleet: viewFleet, alerts: viewAlerts, config: viewConfig, data: viewConfig};
+const VIEWS = {...(window.AMXG_VIEWS || {}), ...(window.STUDIO_VIEWS || {}), modules: viewModules, supply: () => { location.href = "/supply"; }, docks: viewDocks, gates: viewGates, machine: viewMachine, fleet: viewFleet, alerts: viewAlerts, config: viewConfig, data: viewConfig};
 async function route() {
   const key = (location.hash.slice(1).split(/[/?]/)[0]) || "modules";
-  document.querySelectorAll("nav a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + key || (a.getAttribute("href") === "#amxg" && key.startsWith("amxg-"))));
+  document.querySelectorAll("nav a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + key || (a.getAttribute("href") === "#amxg" && key.startsWith("amxg-")) || (a.getAttribute("href") === "#config" && (key === "batch" || key === "studio"))));
   const v = $("#view"); hideTip();
   try { await (VIEWS[key] || viewModules)(v); } catch (e) { v.innerHTML = `<p class="empty">Could not load this view (${esc(e.message)}).</p>`; }
 }

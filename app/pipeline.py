@@ -199,6 +199,20 @@ def ingest_rows(rows: list[dict], *, source_id: str, source_type: str,
     if not rows:
         return store([], [], source_id, source_type, {**(meta or {}), "note": "no rows"})
     columns = list(dict.fromkeys(c for r in rows for c in r))
+    from . import studio
+    if studio.STAGING.get() is not None:      # ingestion batch: stage for Mapping Studio
+        return studio.stage_rows(rows, columns, source_id=source_id, source_type=source_type,
+                                 meta=dict(meta or {}), context=context, record_type_hint=record_type_hint)
+    prof = None if record_type_hint else studio.active_profile(fingerprint(columns))
+    if prof:                                   # a person approved this layout: use their decisions
+        fields = [{"name": c, **prof["fields"].get(c, {"status": "UNMAPPED"})} for c in columns]
+        records = []
+        for r in rows:
+            data, attrs = studio.convert_row(r, fields)
+            records.append(build_record(prof["entity"], source_id, source_type, data, attrs))
+        return store(records, rows, source_id, source_type,
+                     {**(meta or {}), "record_type": prof["entity"], "profile_id": prof["_id"],
+                      "mapping": {f["name"]: f.get("canonical_field") for f in fields}})
     mapping = get_mapping(columns, rows[:SAMPLE_ROWS], record_type_hint, context)
     records = [_row_to_record(r, mapping, source_id, source_type) for r in rows]
     info = {**(meta or {}), "record_type": mapping.record_type,
@@ -212,7 +226,7 @@ def ingest_rows(rows: list[dict], *, source_id: str, source_type: str,
 
 def ingest_dataframe(df: pd.DataFrame, **kw) -> dict:
     df = df.dropna(how="all").dropna(axis=1, how="all")
-    df.columns = [str(c).strip() for c in df.columns]
+    df.columns = [str(c).replace("\ufeff", "").strip() for c in df.columns]
     return ingest_rows(df.to_dict(orient="records"), **kw)
 
 

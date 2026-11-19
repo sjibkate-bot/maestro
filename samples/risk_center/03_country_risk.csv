@@ -1,0 +1,22 @@
+﻿country_code,country_name,risk_index,hazard_index
+CN,China,78,45
+TW,Taiwan,74,62
+VN,Vietnam,50,48
+MY,Malaysia,38,30
+KR,South Korea,36,30
+JP,Japan,26,66
+MX,Mexico,47,40
+DE,Germany,16,12
+NL,Netherlands,14,20
+US,United States,14,30
+CL,Chile,34,58
+AR,Argentina,52,22
+KZ,Kazakhstan,64,25
+AU,Australia,12,30
+EE,Estonia,34,8
+PL,Poland,26,10
+AT,Austria,12,10
+BE,Belgium,14,12
+GB,United Kingdom,14,10
+NO,Norway,10,8
+GU,Guam (US),58,62

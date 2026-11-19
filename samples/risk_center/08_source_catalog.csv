@@ -1,0 +1,11 @@
+﻿source_name,source_class,content_domain,record_count,refresh_minutes,dq_dimensions
+ERP supplier master & POs,Internal,Supplier master / purchase orders,18420,12,"94,91,96,88,92"
+Delivery & quality (EDI 856 / QMS),Internal,Delivery / quality,52300,5,"90,84,97,80,88"
+Supplier financial health (credit bureau),External,Financial risk,640,360,"82,86,78,84,70"
+Global news & OSINT (NLP),External,Risk signals / geopolitical,9800,3,"70,62,98,58,74"
+Natural hazards (NOAA / GDACS),External,Hazard / geopolitical,1200,15,"88,90,95,86,80"
+Cyber security ratings,External,Cyber risk,210,1440,"64,78,52,70,48"
+Customs bills of lading (n-tier),Public,Sub-tier discovery,31800,2880,"58,61,46,52,44"
+Sanctions & watchlists (OFAC / EU / UFLPA),Public,Compliance,14,60,"96,95,92,94,90"
+ESG ratings,External,ESG,180,10080,"60,66,40,58,46"
+MAESTRO supplier evaluations,Evaluation,All risk dimensions,23,4320,"55,88,50,80,52"

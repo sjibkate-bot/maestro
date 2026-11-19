@@ -10,6 +10,7 @@ Supplier rating = likelihood (1-5) x impact (1-5), as in common SCRM practice:
   impact     <- share of spend, sole-sourced items, days of cover of its items
 A sub-tier supplier inherits the impact of the supplier it feeds.
 """
+import re
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from statistics import mean
@@ -77,10 +78,27 @@ def _line_value(r: dict) -> float:
 def build() -> dict:
     """Compute items, suppliers and their ratings in one pass (shared by every view)."""
     today = _today()
-    master = {}
+    master, code = {}, {}
     for s in _gold("supplier"):
         master[_key(s["supplier"])] = s
+        if s.get("supplier_id"):
+            code[_key(s["supplier_id"])] = _key(s["supplier"])
+    ref = lambda v: code.get(_key(v), _key(v))      # orders and links may use the vendor code
     pos = _gold("purchase_order")
+    links = _gold("supply_link")
+    register = defaultdict(list)
+    for r in _gold("risk_item"):
+        if r.get("node") and (r.get("status") or "open").lower() not in ("closed", "retired"):
+            register[ref(r["node"])].append(r)
+    alerts = defaultdict(list)
+    for a in _gold("alert"):
+        if a.get("node") and (a.get("status") or "new").lower() not in ("closed", "resolved"):
+            alerts[ref(a["node"])].append(a)
+    lanes = {_key(l["lane"]): l for l in _gold("transport_lane") if l.get("lane")}
+    out_lanes = defaultdict(set)
+    for l in links:
+        if l.get("upstream") and l.get("lane"):
+            out_lanes[ref(l["upstream"])].add(_key(l["lane"]))
     geo = country_signals()
     inv = _gold("inventory")
     products = _gold("product")
@@ -91,8 +109,8 @@ def build() -> dict:
     names = {}
     for p in pos:
         if p.get("sku") and p.get("supplier"):
-            item_sup[p["sku"]].add(_key(p["supplier"]))
-            names[_key(p["supplier"])] = p["supplier"]
+            item_sup[p["sku"]].add(ref(p["supplier"]))
+            names.setdefault(ref(p["supplier"]), p["supplier"])
     for p in products:
         if p.get("sku") and p.get("supplier"):
             item_sup[p["sku"]].add(_key(p["supplier"]))
@@ -105,7 +123,7 @@ def build() -> dict:
         if not r.get("sku"):
             continue
         st = stock[r["sku"]]
-        st["on_hand"] += r.get("quantity") or 0
+        st["on_hand"] += max((r.get("quantity") or 0) - (r.get("allocated") or 0), 0)
         st["reorder_point"] += r.get("reorder_point") or 0
         if r.get("location"):
             st["sites"].add(str(r["location"]))
@@ -129,6 +147,14 @@ def build() -> dict:
         return {k: v / span for k, v in by.items()}
 
     demand_so = daily_rate(sos)
+    demand_fc = {}
+    fc_by = defaultdict(list)
+    for f in _gold("forecast"):
+        if f.get("sku") and f.get("quantity") and _naive(f.get("need_date")):
+            fc_by[f["sku"]].append(f)
+    for sku, fs in fc_by.items():   # forecast quantity spread over the days until it is needed
+        last = max(_naive(f["need_date"]) for f in fs)
+        demand_fc[sku] = sum(f["quantity"] for f in fs) / max((last - today).days, 7)
     demand_po = daily_rate(pos)
     customers = defaultdict(set)
     for s in sos:
@@ -147,7 +173,9 @@ def build() -> dict:
     items = {}
     for sku in set(stock) | set(item_sup):
         st = stock.get(sku, {"on_hand": None, "reorder_point": None, "sites": set(), "unit_cost": None, "description": None})
-        d, basis = demand_so.get(sku), "customer orders"
+        d, basis = demand_fc.get(sku), "forecast"
+        if d is None:
+            d, basis = demand_so.get(sku), "customer orders"
         if d is None:
             d, basis = demand_po.get(sku), "purchase orders (proxy)"
         cover = (st["on_hand"] / d) if (d and st["on_hand"] is not None) else None
@@ -169,7 +197,7 @@ def build() -> dict:
     lines_by = defaultdict(list)
     for p in pos:
         if p.get("supplier"):
-            lines_by[_key(p["supplier"])].append(p)
+            lines_by[ref(p["supplier"])].append(p)
     all_keys = set(master) | set(lines_by)
     spend = {}
     spend_basis = {}
@@ -217,8 +245,15 @@ def build() -> dict:
         base_parts = [(v, w) for v, w in ((cs.get("stability"), .6), (cs.get("unrest"), .4)) if v is not None]
         base = sum(v * w for v, w in base_parts) / sum(w for _, w in base_parts) if base_parts else None
         hz = cs.get("hazard")
-        f_geo = 100.0 if sanc else (max(x for x in (base, hz) if x is not None) if (base is not None or hz is not None) else None)
-        lik_parts = [(f_delivery, .4), (f_lead, .15), (f_conc, .2), (f_geo, .25)]
+        lane_risk = max((lanes[l].get("lane_risk_index") or 0 for l in out_lanes.get(k, ()) if l in lanes), default=None)
+        geo_parts = [x for x in (base, hz, lane_risk) if x is not None]
+        f_geo = 100.0 if sanc else (max(geo_parts) if geo_parts else None)
+        reg, al = register.get(k, []), alerts.get(k, [])
+        sev_score = {"critical": 90, "high": 70, "medium": 50, "moderate": 50, "low": 30}
+        ev = [min(100.0, (r.get("likelihood") or 3) * 20) for r in reg] + \
+             [sev_score.get(_key(a.get("alert_severity")), 50) for a in al]
+        f_events = max(ev) if ev else None      # internal risk register and open alerts on this node
+        lik_parts = [(f_delivery, .4), (f_lead, .15), (f_conc, .2), (f_geo, .25), (f_events, .25)]
         have = [(v, w) for v, w in lik_parts if v is not None]
         lik = sum(v * w for v, w in have) / sum(w for _, w in have) if have else 50.0
         # impact factors
@@ -229,18 +264,40 @@ def build() -> dict:
         # losing a sole source stops its items; other items have another supplier to fall back on
         f_cont = max(cover_risk(min(sole_covers) if sole_covers else (None if sole_items else 0)) if sole_items else 0.0,
                      cover_risk(mc) * 0.6)
+        buf, ttr = m.get("buffer_days"), m.get("recovery_days")
+        f_ttr = None
+        if buf is not None and ttr is not None:   # time to recover longer than the buffer = a gap to cover
+            f_ttr = 100.0 if ttr > 2 * buf else 75.0 if ttr > buf else 30.0
+            f_cont = max(f_cont, f_ttr)
+        if _yes(m.get("critical")):
+            f_cont = max(f_cont, 75.0)
         imp = .4 * f_spend + .6 * f_cont
-        conf_parts = [f_delivery is not None, f_lead is not None, f_conc is not None, mc is not None, bool(m)]
-        signals = sorted(sanc + cs.get("signals", []), key=lambda x: -(x.get("severity") or 0))[:6]
+        conf_parts = [f_delivery is not None or f_events is not None, f_lead is not None, f_conc is not None or f_geo is not None,
+                      mc is not None or f_ttr is not None, bool(m)]
+        own = [{"category": "register", "title": f"{r.get('risk_id')}: {r.get('title')}", "severity": min(100, (r.get("likelihood") or 3) * 20),
+                "source": "Risk register", "detail": r.get("evidence")} for r in reg] + \
+              [{"category": "alert", "title": a.get("text"), "severity": sev_score.get(_key(a.get("alert_severity")), 50),
+                "source": a.get("source") or "Alert", "detail": f"{a.get('status') or ''} {a.get('alert_severity') or ''}".strip()} for a in al]
+        signals = sorted(sanc + own + cs.get("signals", []), key=lambda x: -(x.get("severity") or 0))[:8]
+        supplies_to = m.get("supplies_to")
+        if not supplies_to:
+            ups = sorted((l for l in links if ref(l.get("upstream")) == k and l.get("downstream")), key=lambda l: -(l.get("share") or 0))
+            if ups:
+                supplies_to = names.get(ref(ups[0]["downstream"]), ups[0]["downstream"])
         sups[k] = {
-            "key": k, "supplier": names.get(k, k), "tier": tier, "country": country, "supplies_to": m.get("supplies_to"),
+            "key": k, "supplier": names.get(k, k), "tier": tier, "country": country, "supplies_to": supplies_to,
+            "supplier_id": m.get("supplier_id"), "node_type": m.get("node_type"), "buffer_days": buf, "recovery_days": ttr,
+            "register": [{k2: r.get(k2) for k2 in ("risk_id", "title", "likelihood", "evidence")} for r in reg],
+            "alerts": [{k2: a.get(k2) for k2 in ("alert_id", "alert_severity", "text", "status", "source")} for a in al],
+            "lanes": sorted(out_lanes.get(k, ())),
             "commodity": m.get("commodity"), "spend": round(spend[k], 2), "spend_basis": spend_basis[k],
             "spend_share": round(share, 4), "po_lines": len(lines), "delivered_lines": len(delivered),
             "on_time_rate": round(on_time, 3) if on_time is not None else None, "avg_days_late": round(avg_late, 1),
             "open_late": len(open_late), "lead_time_days": round(lead, 1) if lead is not None else None,
             "items": skus, "sole_items": sole_items, "min_days_cover": mc, "in_master": bool(m),
             "factors": {"delivery": f_delivery, "lead_time": f_lead, "concentration": f_conc, "geopolitical": f_geo,
-                        "spend_share": f_spend, "continuity": f_cont},
+                        "spend_share": f_spend, "continuity": f_cont, "events": f_events, "lane": lane_risk,
+                        "recovery_gap": f_ttr},
             "iso3": iso, "country_risk": {k: cs.get(k) for k in ("stability", "unrest", "hazard")} if cs else None,
             "signals": signals, "sanctions_match": bool(sanc),
             "likelihood_score": round(lik, 1), "impact_score": round(imp, 1),
@@ -268,7 +325,9 @@ def build() -> dict:
         s["explain"] = _explain(s)
     return {"suppliers": sups, "items": items, "total_spend": total_spend, "by_country": dict(by_country),
             "split": {"likelihood": lik_med, "impact": imp_med},
-            "has": {"master": bool(master), "po": bool(pos), "inventory": bool(inv), "demand": bool(sos), "products": bool(products)}}
+            "links": links, "ref": code,
+            "has": {"master": bool(master), "po": bool(pos), "inventory": bool(inv), "demand": bool(sos) or bool(fc_by),
+                    "products": bool(products), "register": bool(register), "alerts": bool(alerts), "links": bool(links)}}
 
 
 def country_signals() -> dict:
@@ -297,6 +356,18 @@ def country_signals() -> dict:
         elif cat in ("stability", "unrest"):
             c[cat] = sev
         c["signals"].append(brief)
+    from .risk_feeds import resolve_country
+    for r in _gold("country_risk"):     # the customer's own country risk index (fills gaps the feeds leave)
+        iso = resolve_country(r.get("country")) or resolve_country(r.get("country_name"))
+        if not iso:
+            continue
+        c = countries.setdefault(iso, {"stability": None, "unrest": None, "hazard": None, "signals": []})
+        if r.get("risk_index") is not None:
+            c["stability"] = max(c["stability"] or 0, r["risk_index"])
+        if r.get("hazard_index") is not None and r["hazard_index"] >= HAZARD_MIN_SCORE:
+            c["hazard"] = max(c["hazard"] or 0, r["hazard_index"])
+        c["signals"].append({"category": "country", "title": f"{r.get('country_name') or iso}: risk index {r.get('risk_index')}, hazard {r.get('hazard_index')}",
+                             "severity": r.get("risk_index"), "source": "Country risk (internal)"})
     for c in countries.values():
         c["signals"].sort(key=lambda x: -(x["severity"] or 0))
     return {"countries": countries, "sanctions": dict(sanctions)}
@@ -308,7 +379,7 @@ def _actions(s: dict, items: dict) -> list[str]:
         out.append("Verify possible sanctions-list match before the next order (name match only)")
     hz = (s.get("country_risk") or {}).get("hazard")
     if hz and hz >= 60:
-        top = next((x for x in s.get("signals", []) if x["category"] == "hazard"), None)
+        top = next((x for x in s.get("signals", []) if x["category"] in ("hazard", "country")), None)
         out.append(f"Check supplier sites in {s['country']}: {top['title'] if top else 'active hazard alert'}")
     if s["sole_items"] and s["rating"] >= 10:
         out.append(f"Qualify a second source for {', '.join(map(str, s['sole_items'][:3]))}")
@@ -371,7 +442,7 @@ def overview() -> dict:
                                  "text": "Possible sanctions-list match: verify before the next order", "ref": s["supplier"]})
         hz = (s.get("country_risk") or {}).get("hazard")
         if hz and hz >= 60:
-            top = next((x for x in s["signals"] if x["category"] == "hazard"), {})
+            top = next((x for x in s["signals"] if x["category"] in ("hazard", "country")), {})
             attention.append({"kind": "signal", "level": "critical" if hz >= 90 else "serious", "title": f"{s['supplier']} · {s['country']}",
                               "text": top.get("title") or "Active hazard alert", "ref": s["supplier"]})
     for it in sorted([i for i in items if i["days_cover"] is not None and i["days_cover"] < 14], key=lambda i: i["days_cover"])[:5]:
@@ -586,3 +657,171 @@ def signals_view() -> dict:
     hazards = sorted([s for r in rows for s in r["signals"] if s["category"] == "hazard"], key=lambda s: -(s["severity"] or 0))
     return {"countries": rows, "sanctions": sanctions, "hazards": hazards[:30],
             "unmapped": sorted({x["country"] for x in m["suppliers"].values() if x.get("country") and not x.get("iso3")})}
+
+
+# ---------------------------------------------------------------- what-if scenarios & decisions
+
+def _scenario_scope(sc: dict, m: dict) -> dict:
+    """Which suppliers a scenario hits: its own country/lane fields, else names of lanes,
+    countries and commodities found in its title and description (each match is listed)."""
+    import pycountry
+    from .risk_feeds import resolve_country
+    text = f" {sc.get('scenario_name') or ''} {sc.get('description') or ''} ".lower()
+    lanes, countries, evidence = set(), set(), []
+    if sc.get("lane"):
+        lanes.add(_key(sc["lane"]))
+    if sc.get("country"):
+        iso = resolve_country(sc["country"])
+        if iso:
+            countries.add(iso)
+    for l in _gold("transport_lane"):
+        names = [l.get("lane_name") or ""] + [p.strip() for p in (l.get("lane_name") or "").split("/")]
+        hit = next((n for n in sorted(names, key=len, reverse=True) if len(n) >= 4 and n.lower() in text), None)
+        if hit:
+            lanes.add(_key(l["lane"]))
+            evidence.append(f"lane '{hit}'")
+            text = text.replace(hit.lower(), " ")
+    cands = {}
+    for s in m["suppliers"].values():
+        iso = resolve_country(s["country"]) if s.get("country") else None
+        if iso:
+            c = pycountry.countries.get(alpha_3=iso)
+            for n in {getattr(c, "name", ""), getattr(c, "common_name", ""), s["country"]}:
+                if n and len(n) >= 4:
+                    cands[n.lower()] = iso
+    for r in _gold("country_risk"):
+        iso = resolve_country(r.get("country")) or resolve_country(r.get("country_name"))
+        if iso and r.get("country_name"):
+            cands[r["country_name"].lower()] = iso
+    for n, iso in cands.items():
+        if re.search(r"(?<![a-z])" + re.escape(n) + r"(n|ns|ese)?(?![a-z])", text):
+            countries.add(iso)
+            evidence.append(f"country '{n.title()}'")
+    stem = lambda t: {w.rstrip("s") for w in re.findall(r"[a-z]{5,}", t.lower())}
+    words = stem(text) - stem(" ".join({"about", "commercial", "shipping", "volumes", "routing",
+                                                                           "force", "lower", "capacity", "attacks", "around", "halted",
+                                                                           "naval", "slows", "transits", "insurers", "premium", "licensing",
+                                                                           "export", "controls", "critical", "mineral", "months", "tariff",
+                                                                           "rules", "outside", "origin", "assemblies", "escalation"}))
+    hit_sups = []
+    for k, s in m["suppliers"].items():
+        iso = resolve_country(s["country"]) if s.get("country") else None
+        in_c = iso in countries
+        in_l = bool(set(s.get("lanes") or []) & lanes)
+        if not (in_c or in_l):
+            continue
+        hit_sups.append({"key": k, "supplier": s["supplier"], "why": "country" if in_c else "lane",
+                         "commodity": s.get("commodity")})
+    # a scenario that names materials (e.g. gallium, rare earths) hits only suppliers of those
+    named = [x for x in hit_sups if words & stem(f"{x['commodity'] or ''} {x['supplier']}")]
+    if named and len(named) < len(hit_sups):
+        evidence.append("materials named: " + ", ".join(sorted(words & {w for x in named for w in stem(f"{x['commodity'] or ''} {x['supplier']}")})))
+        hit_sups = named
+    return {"countries": sorted(countries), "lanes": sorted(lanes), "suppliers": hit_sups, "evidence": evidence}
+
+
+def scenarios() -> list[dict]:
+    m = build()
+    out = []
+    for sc in _gold("scenario"):
+        scope = _scenario_scope(sc, m)
+        out.append({k: sc.get(k) for k in ("scenario_id", "scenario_name", "description", "duration_days", "supply_loss",
+                                           "cost_uplift_pct", "probability_pct")} | {"scope": scope})
+    out.sort(key=lambda s: -(s.get("probability_pct") or 0))
+    return out
+
+
+def whatif(delay_days: float = 0, demand_pct: float = 0, inventory_loss_pct: float = 0,
+           scenario_id: Optional[str] = None, horizon_days: Optional[int] = None) -> dict:
+    """Baseline vs scenario coverage over a horizon, per item: stock after allocation (less any
+    inventory loss) + open-order receipts due in the horizon (delayed, and cut by a scenario's
+    supply loss for the suppliers it hits) against demand over the horizon."""
+    m = build()
+    today = _today()
+    sc = next((s for s in _gold("scenario") if s.get("scenario_id") == scenario_id), None) if scenario_id else None
+    if scenario_id and not sc:
+        raise KeyError(scenario_id)
+    scope = _scenario_scope(sc, m) if sc else None
+    hit = {x["key"] for x in scope["suppliers"]} if scope else set()
+    loss = float(sc.get("supply_loss") or 0) if sc else 0.0
+    horizon = int(horizon_days or (sc.get("duration_days") if sc and sc.get("duration_days") else 0) or 30)
+    end = today + timedelta(days=horizon)
+    ref = lambda v: m["ref"].get(_key(v), _key(v))
+    pos = [p for p in _gold("purchase_order") if p.get("sku") and not p.get("delivered_date")]
+    cost = {}
+    for p in _gold("product") + _gold("inventory") + _gold("purchase_order"):
+        if p.get("sku") and p.get("unit_cost"):
+            cost.setdefault(p["sku"], (p["unit_cost"], p.get("currency")))
+
+    def run(apply: bool) -> dict:
+        rows = []
+        for sku, it in m["items"].items():
+            d = (it["daily_demand"] or 0) * (1 + (demand_pct if apply else 0) / 100)
+            stock = (it["on_hand"] or 0) * (1 - (inventory_loss_pct if apply else 0) / 100)
+            incoming, cut = 0.0, 0.0
+            for p in (x for x in pos if x["sku"] == sku):
+                due = _naive(p.get("promised_date")) or end
+                if apply:
+                    due = due + timedelta(days=delay_days)
+                q = p.get("quantity") or 0
+                if apply and ref(p.get("supplier")) in hit and loss:
+                    cut += q * loss
+                    q = q * (1 - loss)
+                if due <= end:
+                    incoming += q
+            need = d * horizon
+            short = max(need - stock - incoming, 0.0)
+            uc, cur = cost.get(sku, (None, None))
+            rows.append({"sku": sku, "description": it.get("description"), "demand": round(need, 1), "stock": round(stock, 1),
+                         "incoming": round(incoming, 1), "supply_cut": round(cut, 1), "shortage": round(short, 1),
+                         "days_cover": round((stock + incoming) / d, 1) if d else None,
+                         "value_at_risk": round(short * uc, 2) if uc else None, "currency": cur or ("unpriced" if not uc else "unspecified"),
+                         "suppliers": it["suppliers"]})
+        var = defaultdict(float)
+        for r in rows:
+            if r["value_at_risk"]:
+                var[r["currency"]] += r["value_at_risk"]
+        return {"items": rows, "short_items": sum(1 for r in rows if r["shortage"] > 0),
+                "shortage_qty": round(sum(r["shortage"] for r in rows), 1),
+                "value_at_risk_by_currency": dict(var), "unpriced_short_items": sum(1 for r in rows if r["shortage"] > 0 and r["value_at_risk"] is None)}
+
+    base, scen = run(False), run(True)
+    by = {r["sku"]: r for r in base["items"]}
+    changed = [{**r, "baseline_shortage": by[r["sku"]]["shortage"], "baseline_cover": by[r["sku"]]["days_cover"]}
+               for r in scen["items"] if r["shortage"] != by[r["sku"]]["shortage"] or r["supply_cut"]]
+    changed.sort(key=lambda r: -(r["shortage"] - r["baseline_shortage"]))
+    uplift = float(sc.get("cost_uplift_pct") or 0) if sc else 0.0
+    hit_spend = sum(m["suppliers"][k]["spend"] for k in hit if k in m["suppliers"])
+    scen["cost_impact"] = {"uplift_pct": uplift, "affected_spend": round(hit_spend, 2),
+                           "extra_cost": round(hit_spend * uplift / 100, 2),
+                           "basis": "supplier annual spend as loaded (supplier master, else PO value)"} if uplift else None
+    return {"inputs": {"delay_days": delay_days, "demand_pct": demand_pct, "inventory_loss_pct": inventory_loss_pct,
+                       "scenario_id": scenario_id, "horizon_days": horizon},
+            "scenario": ({k: sc.get(k) for k in ("scenario_id", "scenario_name", "description", "duration_days", "supply_loss",
+                                                  "cost_uplift_pct", "probability_pct")} | {"scope": scope}) if sc else None,
+            "baseline": {k: v for k, v in base.items() if k != "items"}, "result": {k: v for k, v in scen.items() if k != "items"},
+            "changed": changed, "items": scen["items"]}
+
+
+DECISIONS = ["ACCEPT", "MODIFY", "OVERRIDE", "DEFER"]
+
+
+def record_decision(body: dict, user: str) -> dict:
+    from . import governance
+    if not (user or "").strip():
+        raise ValueError("Say who is deciding")
+    d = (body.get("decision") or "").upper()
+    if d not in DECISIONS:
+        raise ValueError("Decision must be ACCEPT, MODIFY, OVERRIDE or DEFER")
+    if d in ("MODIFY", "OVERRIDE") and not (body.get("rationale") or "").strip():
+        raise ValueError("Give a rationale to modify or override")
+    doc = {"subject": body.get("subject") or "what-if", "inputs": body.get("inputs") or {}, "summary": body.get("summary"),
+           "decision": d, "rationale": body.get("rationale"), "decided_by": user, "decided_at": now()}
+    get_db().risk_decisions.insert_one(doc)
+    governance.audit("risk_decision", user, {"subject": doc["subject"], "decision": d})
+    doc.pop("_id", None)
+    return doc
+
+
+def decisions() -> list[dict]:
+    return list(get_db().risk_decisions.find({}, {"_id": 0}).sort("decided_at", -1).limit(100))
