@@ -174,8 +174,8 @@ function viewModules(v) {
 async function viewDocks(v) {
   const d = await api("/api/maestro/docks");
   v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Operational module // AMXG</div><h1>DOCK OVERVIEW</h1>
-    <div class="mono" style="color:var(--muted)">Status as of ${dt(d.as_of)} · ${d.aircraft.length} aircraft in work</div></div></div><div class="docks" id="cards"></div>`;
-  if (!d.aircraft.length) { $("#cards").innerHTML = `<p class="empty">No aircraft yet. Upload the Fixer workbook under Data &amp; AI.</p>`; return; }
+    <div class="mono" style="color:var(--muted)">Status as of ${dt(d.as_of)} · ${d.aircraft.length} aircraft in work${d.trust ? ` · data trust <a href="/governance#drill?product=depot_flow&gold=1">${esc(d.trust.label)}</a>` : ""}</div></div></div><div class="docks" id="cards"></div>`;
+  if (!d.aircraft.length) { $("#cards").outerHTML = await whyEmpty(["asset_flow", "gate_event"], "aircraft in work"); return; }
   $("#cards").innerHTML = d.aircraft.map(c => {
     const box = [["Day", c.day, c.day_goal ? c.day_goal : null, c.day_over], ["Flow", c.flow_days, c.amrep_days, c.flow_days > c.amrep_days],
                  ["InDock", c.in_dock_days, c.in_dock_goal, c.in_dock_days > c.in_dock_goal], ["Queue", c.queue_days, null, false]]
@@ -184,7 +184,7 @@ async function viewDocks(v) {
     const flags = [c.amrep_risk ? `<span class="tag critical">▲ AMREP RISK</span>` : "", c.day_over ? `<span class="tag warning">● OVER GATE GOAL</span>` : "",
                    c.data_quality ? `<span class="tag warning" title="${esc(c.data_quality)}">● DATA CHECK</span>` : ""].join(" ");
     return `<article class="dock"><div class="top"><div class="name">${esc(c.dock || "Off dock")}</div><div class="box">${box}</div></div>
-      <div class="line">${esc(c.asset_id)} &nbsp; B-52H PDM &nbsp; ${esc(c.gate.toUpperCase())}</div>
+      <div class="line"><a href="/governance#drill?asset=${encodeURIComponent(c.asset_id)}" title="Open this aircraft's records and lineage">${esc(c.asset_id)}</a> &nbsp; B-52H PDM &nbsp; ${esc(c.gate.toUpperCase())}</div>
       <div class="cols"><div class="ms">${ms}</div><div>
         <div class="mono" style="font-size:10px"><u>Next big thing</u></div><div>${esc(c.current_milestone || "—")}</div>
         <div class="mono" style="font-size:10px;margin-top:8px"><u>Known repairs / notes</u></div>
@@ -214,10 +214,11 @@ function gateChart(host, g) {
     const x = cx(i) - bw / 2, hasRem = b.remaining_days > 0;
     bar(x, y(0), y(b.actual_days) + (hasRem ? 0 : 0), css("--s1"), !hasRem);
     if (hasRem) bar(x, y(b.actual_days) - 2, y(b.total_days), css("--s1-light"), true);
-    const hit = el("rect", {x: cx(i) - band / 2, y: m.t, width: band, height: ih, fill: "transparent"}, svg);
+    const hit = el("rect", {x: cx(i) - band / 2, y: m.t, width: band, height: ih, fill: "transparent", style: "cursor:pointer"}, svg);
+    hit.addEventListener("click", () => location.href = "/governance#drill?asset=" + encodeURIComponent(b.asset_id));
     hover(hit, `${num(b.actual_days, 0)} days`, [b.asset_id + (b.in_work ? " · in gate now" : ""),
       b.in_work ? `Remaining ${num(b.remaining_days, 0)} · total ${num(b.total_days, 0)}` : `Finished ${dt(b.finished)}`,
-      b.last_n_avg != null ? `Last ${g.last_n} avg ${num(b.last_n_avg)}` : `Requirement ${num(b.requirement, 0)}`]);
+      b.last_n_avg != null ? `Last ${g.last_n} avg ${num(b.last_n_avg)}` : `Requirement ${num(b.requirement, 0)}`, "Click to drill into this aircraft's records"]);
     const t = el("text", {x: cx(i), y: m.t + ih + 16, "text-anchor": "middle"}, svg); t.textContent = b.asset_id;
     if (b.in_work) { const s = el("text", {x: cx(i), y: m.t + ih + 30, "text-anchor": "middle"}, svg); s.textContent = "in work"; }
   });
@@ -270,7 +271,8 @@ async function viewGates(v) {
     const gv = $("#gviz"); gv.innerHTML = `<h3>${esc(g.title)}</h3><div class="sub">${esc(g.subtitle)} · as of ${dt(g.as_of)}</div>
       <div class="legend"><span><i class="key-rect" style="background:var(--s1)"></i>Actual days</span><span><i class="key-rect" style="background:var(--s1-light)"></i>Remaining days</span>
       <span><i class="key-line" style="background:var(--s2)"></i>Last ${g.last_n} average</span><span><i class="key-line" style="background:var(--s3)"></i>Requirement</span></div>`;
-    if (!g.bars.length) gv.insertAdjacentHTML("beforeend", `<p class="empty">No aircraft have been through this gate yet.</p>`); else gv.appendChild(gateChart(gv, g));
+    if (!g.bars.length) gv.insertAdjacentHTML("beforeend", await whyEmpty(["gate_event", "asset_flow"], "gate history")); else gv.appendChild(gateChart(gv, g));
+    if (g.trust) gv.insertAdjacentHTML("beforeend", `<div class="mono" style="color:var(--ink2);margin-top:6px">Data trust: <a href="/governance#drill?product=depot_flow&gold=1">${esc(g.trust.label)} · ${esc(g.trust.certification)}</a></div>`);
     const wv = $("#wviz"); wv.innerHTML = `<h3>WIP</h3><div class="sub">${g.wip.plan == null ? "No plan for queues" : g.wip.over_plan ? '<span class="tag critical">▲ Over plan</span>' : '<span class="tag good">✓ Within plan</span>'}</div>`;
     wv.appendChild(wipChart(g.wip));
     $("#gtable").innerHTML = `<details><summary>Table view</summary><table><tr><th>Aircraft</th><th class="n">Actual</th><th class="n">Remaining</th><th class="n">Total</th><th class="n">Last ${g.last_n} avg</th><th class="n">Requirement</th><th>Finished</th></tr>
@@ -299,6 +301,7 @@ function machineChart(host, m) {
 
 async function viewMachine(v) {
   const m = await api("/api/maestro/machine");
+  if (!m.gates.some(g => g.completed || g.wip.actual)) { v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Tiered dashboards // Production machine</div><h1>MACHINE PERFORMANCE</h1></div></div>` + await whyEmpty(["gate_event", "asset_flow"], "gate history"); return; }
   v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Tiered dashboards // Production machine</div><h1>MACHINE PERFORMANCE</h1></div></div>
     <div class="stats"><div class="stat"><div class="l mono">Last ${m.last_n} avg days (sum of gates)</div><div class="v">${num(m.total_avg_days)}</div></div>
     <div class="stat"><div class="l mono">Requirement</div><div class="v">${num(m.total_requirement)}</div></div>
@@ -340,7 +343,7 @@ function telemetryChart(host, s) {
 
 async function viewFleet(v) {
   const f = await api("/api/maestro/fleet");
-  if (!f.assets.length) { v.innerHTML = `<p class="empty">No fleet data yet. Upload the dashboard supporting workbook under Data &amp; AI.</p>`; return; }
+  if (!f.assets.length) { v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Reliability analysis</div><h1>FLEET HEALTH</h1></div></div>` + await whyEmpty(["asset_status", "subsystem_health", "fault", "sensor_reading"], "fleet status"); return; }
   const sel = decodeURIComponent(location.hash.split("/")[1] || f.assets[0].asset_id), a = f.assets.find(x => x.asset_id === sel) || f.assets[0];
   const icon = s => ({good: "✓", warning: "●", serious: "◆", critical: "▲"}[s] || "");
   v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Reliability analysis</div><h1>FLEET HEALTH</h1>
@@ -392,6 +395,19 @@ function viewData(v) {
     if (!r.ok) { $("#ans").textContent = j.detail; return; }
     const list = (t, xs) => xs.length ? `<p class="mono" style="margin:10px 0 4px">${t}</p><ul>${xs.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
     $("#ans").innerHTML = `<p>${esc(j.answer)}</p>` + list("Key findings", j.key_findings) + list("Recommended actions", j.recommended_actions); };
+}
+
+async function whyEmpty(entities, what) {
+  let d; try { d = await api("/api/governance/diagnose?entities=" + entities.join(",")); } catch { d = {reasons: []}; }
+  const prods = {asset_flow: "depot_flow", gate_event: "depot_flow", asset_status: "fleet_health"};
+  const pid = prods[entities[0]] || "";
+  return `<div class="panel" style="border-color:var(--warning)"><h2 class="mono">No ${esc(what)} in Gold</h2>
+    <p>This module reads only governed Gold data (grade A/B, not quarantined).</p>
+    <ul>${(d.reasons.length ? d.reasons : ["No matching records have been loaded yet."]).map(r => `<li>${esc(r)}</li>`).join("")}</ul>
+    ${d.layers && Object.keys(d.layers).length ? `<p class="mono" style="color:var(--ink2)">Loaded: ${Object.entries(d.layers).map(([k, n]) => `${n} ${esc(k)}`).join(" · ")}</p>` : ""}
+    <div class="row"><a class="tag" style="color:var(--accent)" href="/governance#drill?product=${pid}">Drill into the records</a>
+    <a class="tag" style="color:var(--accent)" href="/governance#batches">See how each sheet was read</a>
+    <a class="tag" style="color:var(--accent)" href="#data">Upload data</a></div></div>`;
 }
 
 const VIEWS = {modules: viewModules, docks: viewDocks, gates: viewGates, machine: viewMachine, fleet: viewFleet, alerts: viewAlerts, data: viewData};

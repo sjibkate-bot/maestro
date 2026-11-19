@@ -518,6 +518,11 @@ def products() -> list[dict]:
         live = list(db.records.find({"record_type": {"$in": ents}, "layer": {"$in": ["silver", "quarantine"]}},
                                     {"trust.score": 1, "trust.grade": 1, "layer": 1, "ingested_at": 1}))
         if not live:
+            out.append({**{k: p[k] for k in ("id", "name", "description", "domain", "entities", "freshness_days")},
+                        "owner": cfg["domains"].get(p["domain"], {}).get("owner"), "score": None, "grade": None,
+                        "records": 0, "quarantined": 0, "excluded_c": 0, "freshness": "NO DATA", "last_loaded": None,
+                        "certification": "NO DATA", "certified_by": None, "certified_at": None,
+                        "trust_label": "no data loaded"})
             continue
         gold = [r for r in live if r["layer"] == "silver" and r["trust"]["grade"] in GOLD_GRADES]
         excluded_c = sum(1 for r in live if r["layer"] == "silver" and r["trust"]["grade"] == "C")
@@ -665,7 +670,7 @@ def decisions(limit: int = 50) -> list[dict]:
 
 
 def overall_trust() -> dict:
-    ps = [p for p in products() if p["score"] is not None]
+    ps = [p for p in products() if p["score"] is not None and p["records"]]
     if not ps:
         return {"score": None, "grade": None}
     total = sum(p["records"] for p in ps) or 1
@@ -684,6 +689,7 @@ def overview() -> dict:
     silver = list(db.records.find({"layer": "silver"}, {"trust.score": 1, "trust.grade": 1, "record_type": 1}))
     ps = products()
     gold_records = sum(p["records"] for p in ps)
+    live_ps = [p for p in ps if p["records"]]
     silver_types = {r["record_type"] for r in silver}
     pending = [d for d in decisions(200) if d["status"] == "PENDING"]
     all_dec = decisions(1000)
@@ -699,7 +705,7 @@ def overview() -> dict:
         "kpis": {
             "datasets_governed": len(raw), "bronze_datasets": len({b["source_id"] for b in raw}),
             "silver_datasets": len(silver_types),
-            "gold_confidence": trust["score"], "gold_products": len(ps),
+            "gold_confidence": trust["score"], "gold_products": len(live_ps),
             "blocked_at_ingest": blocked, "bronze_records": bronze_rows,
             "open_alerts": sum(1 for q in open_q) + len(drift),
             "review_queue": len(open_q) + len(pending), "quarantine": len(open_q), "pending_decisions": len(pending),
@@ -713,7 +719,7 @@ def overview() -> dict:
                        "grade_mix": dict(grade_mix),
                        "history": layer_counts.get("history", 0), "duplicates": layer_counts.get("duplicate", 0),
                        "quarantine": layer_counts.get("quarantine", 0)},
-            "gold": {"datasets": len(ps), "records": gold_records, "avg_trust": trust["score"],
+            "gold": {"datasets": len(live_ps), "records": gold_records, "avg_trust": trust["score"],
                      "certified": sum(p["certification"] == "CERTIFIED" for p in ps)},
             "decisions": {"total": len(all_dec), "pending": len(pending), "decided": len(decided)},
         },
@@ -797,7 +803,7 @@ def stage(name: str) -> dict:
             stored = b.get("records_stored", 0)
             blocked = rows if (b.get("gate1") or {}).get("status") == "blocked" else 0
             replaced = max(stored - sum(ls.values()), 0)
-            balance.append({"batch_id": b["batch_id"][:10], "source": b["source_id"],
+            balance.append({"batch_id": b["batch_id"][:10], "batch_full": b["batch_id"], "source": b["source_id"],
                             "sheet": (b.get("meta") or {}).get("sheet"), "received": rows, "blocked": blocked,
                             "silver": ls.get("silver", 0), "quarantine": ls.get("quarantine", 0),
                             "duplicate": ls.get("duplicate", 0), "history": ls.get("history", 0),
@@ -811,3 +817,179 @@ def stage(name: str) -> dict:
         return {"monitor": ov["monitor"], "drift": list(db.drift.find({}, {"_id": 0})),
                 "quarantine": quarantine("open"), "decisions": decisions(50)}
     raise KeyError(name)
+
+
+# ---------------------------------------------------------------- drill-down
+
+LAYERS = ("silver", "quarantine", "duplicate", "history")
+_LIST_FIELDS = ("asset_id", "sku", "order_id", "shipment_id", "supplier", "gate", "subsystem", "device_id",
+                "fault_code", "description", "status", "location")
+
+
+def _sid(v):
+    return str(v) if v is not None else None
+
+
+def _summary(r: dict) -> dict:
+    t = r.get("trust") or {}
+    issues = t.get("issues") or []
+    top = next((i for i in issues if i["hard"]), issues[0] if issues else None)
+    label = " · ".join(str(r[f]) for f in _LIST_FIELDS if r.get(f) not in (None, ""))[:120]
+    return {"id": _sid(r["_id"]), "record_type": r["record_type"], "label": label or "(no key fields)",
+            "layer": r.get("layer"), "score": t.get("score"), "grade": t.get("grade"),
+            "issue": top, "issue_count": len(issues), "source_id": r.get("source_id"),
+            "sheet": (r.get("attributes") or {}).get("sheet"), "ingested_at": r.get("ingested_at")}
+
+
+def drill(product: Optional[str] = None, record_type: Optional[str] = None, layer: Optional[str] = None,
+          grade: Optional[str] = None, issue: Optional[str] = None, source: Optional[str] = None,
+          batch: Optional[str] = None, asset: Optional[str] = None, gold: bool = False,
+          skip: int = 0, limit: int = 100) -> dict:
+    """Filtered records plus facet counts, so every number on the page can be opened."""
+    cfg = config()
+    q: dict[str, Any] = {}
+    if product:
+        p = next((x for x in cfg["products"] if x["id"] == product), None)
+        if not p:
+            raise KeyError(product)
+        q["record_type"] = {"$in": p["entities"]}
+    if record_type:
+        q["record_type"] = record_type
+    if layer:
+        q["layer"] = layer
+    if gold:
+        q.update(gold_query())
+    if grade:
+        q["trust.grade"] = grade
+    if source:
+        q["source_id"] = source
+    if batch:
+        q["batch_id"] = batch
+    if asset:
+        q["asset_id"] = asset
+    proj = {"cleaning": 0, "attributes.board": 0, "attributes.notes": 0}
+    rows = list(get_db().records.find(q, proj).limit(20000))
+    if issue:
+        rows = [r for r in rows if any(i["code"] == issue for i in (r.get("trust") or {}).get("issues", []))]
+    facets = {"record_type": Counter(r["record_type"] for r in rows),
+              "layer": Counter(r.get("layer") for r in rows),
+              "grade": Counter((r.get("trust") or {}).get("grade") for r in rows),
+              "issue": Counter(i["code"] for r in rows for i in (r.get("trust") or {}).get("issues", [])),
+              "source": Counter(r.get("source_id") for r in rows)}
+    rows.sort(key=lambda r: ((r.get("trust") or {}).get("score") or 0, r["record_type"]))
+    return {"total": len(rows), "facets": {k: dict(v.most_common(30)) for k, v in facets.items()},
+            "items": [_summary(r) for r in rows[skip:skip + limit]]}
+
+
+def record_detail(rid: str) -> dict:
+    """One record with its scores, issues and lineage: Bronze file -> batch -> row -> Silver -> Gold."""
+    from bson import ObjectId
+    db = get_db()
+    r = db.records.find_one({"_id": ObjectId(rid)})
+    if not r:
+        raise KeyError(rid)
+    cfg = config()
+    batch = db.raw.find_one({"batch_id": r.get("batch_id")}) or {}
+    payload = batch.get("payload")
+    source_row = None
+    if isinstance(payload, list) and r.get("row_index") is not None and r["row_index"] < len(payload):
+        source_row = payload[r["row_index"]]
+    elif isinstance(payload, dict) and payload.get("cells"):
+        source_row = {"sheet_cells": payload["cells"][:40]}
+    meta = batch.get("meta") or {}
+    fname = meta.get("file") or r.get("source_id")
+    f = db.bronze_files.find_one({"filename": fname}, {"content": 0}, sort=[("received_at", -1)])
+    versions = []
+    kind, keys = cfg["keys"].get(r["record_type"], (None, []))
+    if keys:
+        kq = {"record_type": r["record_type"], **{k: r.get(k) for k in keys}}
+        for v in db.records.find(kq, {"layer": 1, "trust.score": 1, "trust.grade": 1, "ingested_at": 1,
+                                      "source_id": 1}).sort("ingested_at", 1):
+            versions.append({"id": _sid(v["_id"]), "layer": v.get("layer"), "grade": (v.get("trust") or {}).get("grade"),
+                             "score": (v.get("trust") or {}).get("score"), "ingested_at": v.get("ingested_at"),
+                             "source_id": v.get("source_id"), "this": v["_id"] == r["_id"]})
+    qd = db.quarantine.find_one({"record_id": r["_id"]}, sort=[("opened_at", -1)])
+    prods = [p["name"] for p in cfg["products"] if r["record_type"] in p["entities"]]
+    in_gold = r.get("layer") == "silver" and (r.get("trust") or {}).get("grade") in GOLD_GRADES
+    fields = {k: v for k, v in r.items() if k in ENTITIES.get(r["record_type"], {})}
+    return {
+        "id": rid, "record_type": r["record_type"], "fields": fields,
+        "attributes": {k: v for k, v in (r.get("attributes") or {}).items() if k != "board"},
+        "board": (r.get("attributes") or {}).get("board"),
+        "trust": r.get("trust"), "weights": cfg["weights"], "layer": r.get("layer"), "tags": r.get("tags"),
+        "cleaning": r.get("cleaning", []),
+        "lineage": {
+            "file": {k: f.get(k) for k in ("filename", "sha256", "size", "received_at")} if f else None,
+            "batch": {"batch_id": r.get("batch_id"), "source_id": batch.get("source_id"), "sheet": meta.get("sheet"),
+                      "template": meta.get("template"), "received_at": batch.get("received_at"),
+                      "payload_sha256": batch.get("payload_sha256"), "gate1": batch.get("gate1"),
+                      "mapping": meta.get("mapping")},
+            "row_index": r.get("row_index"), "row_hash": r.get("row_hash"), "source_row": source_row,
+            "gold": {"products": prods, "included": in_gold,
+                     "why_not": None if in_gold else (
+                         "superseded by a newer version" if r.get("layer") == "history" else
+                         "duplicate of another record" if r.get("layer") == "duplicate" else
+                         "in quarantine" if r.get("layer") == "quarantine" else
+                         f"grade {(r.get('trust') or {}).get('grade')} is below B")},
+        },
+        "versions": versions,
+        "quarantine": {k: (str(v) if k in ("_id", "record_id") else v) for k, v in qd.items()} if qd else None,
+    }
+
+
+def batch_detail(batch_id: str, limit: int = 200) -> dict:
+    b = get_db().raw.find_one({"batch_id": batch_id})
+    if not b:
+        raise KeyError(batch_id)
+    payload = b.get("payload")
+    rows = payload[:limit] if isinstance(payload, list) else (payload or {}).get("cells", [])[:limit] if isinstance(payload, dict) else []
+    cols = list(dict.fromkeys(c for r in rows if isinstance(r, dict) for c in r)) if rows and isinstance(rows[0], dict) else None
+    return {"batch_id": batch_id, "source_id": b.get("source_id"), "meta": b.get("meta"), "gate1": b.get("gate1"),
+            "received_at": b.get("received_at"), "rows_received": b.get("rows_received"),
+            "records_stored": b.get("records_stored"), "payload_sha256": b.get("payload_sha256"),
+            "columns": cols, "rows": rows, "truncated": isinstance(payload, list) and len(payload) > limit}
+
+
+def batches(blocked: Optional[bool] = None, source: Optional[str] = None) -> list[dict]:
+    q: dict[str, Any] = {}
+    if blocked is True:
+        q["gate1.status"] = "blocked"
+    if source:
+        q["source_id"] = source
+    out = []
+    for b in get_db().raw.find(q, {"payload": 0}).sort("received_at", -1).limit(500):
+        m = b.get("meta") or {}
+        out.append({"batch_id": b["batch_id"], "source_id": b["source_id"], "sheet": m.get("sheet"),
+                    "record_type": m.get("record_type"), "template": m.get("template"),
+                    "rows": b.get("rows_received"), "stored": b.get("records_stored"),
+                    "gate1": b.get("gate1"), "received_at": b.get("received_at"),
+                    "note": m.get("note")})
+    return out
+
+
+def diagnose(entities: list[str]) -> dict:
+    """Explain why a module that reads these entities has little or no Gold data."""
+    db = get_db()
+    recs = list(db.records.find({"record_type": {"$in": entities}}, {"layer": 1, "trust.grade": 1, "trust.issues": 1}))
+    layers = Counter(r.get("layer") for r in recs)
+    grades = Counter((r.get("trust") or {}).get("grade") for r in recs if r.get("layer") == "silver")
+    issues = Counter(i["code"] for r in recs if r.get("layer") in ("quarantine", "silver")
+                     for i in (r.get("trust") or {}).get("issues", []))
+    gold = sum(n for g, n in grades.items() if g in GOLD_GRADES)
+    blocked = db.raw.count_documents({"gate1.status": "blocked"})
+    forms = db.records.count_documents({"source_type": "excel", "attributes.document_kind": {"$exists": True}})
+    reasons = []
+    if not recs:
+        reasons.append(f"No {', '.join(entities)} records have been loaded. If you uploaded a tracker workbook, "
+                       "its sheets were not recognised as this data (see 02 Filter & dedup for how each sheet was read).")
+        if forms:
+            reasons.append(f"{forms} records were read by the AI from sheets that looked like forms; they may be this data "
+                           "in a layout the reader does not know yet.")
+    if layers.get("quarantine"):
+        reasons.append(f"{layers['quarantine']} records are in quarantine.")
+    if grades.get("C"):
+        reasons.append(f"{grades['C']} records are grade C and excluded from Gold.")
+    if blocked:
+        reasons.append(f"{blocked} uploaded tables were blocked at Gate 1 (schema not recognised).")
+    return {"entities": entities, "gold_records": gold, "layers": dict(layers), "silver_grades": dict(grades),
+            "top_issues": dict(issues.most_common(5)), "blocked_batches": blocked, "reasons": reasons}

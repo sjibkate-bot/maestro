@@ -57,6 +57,17 @@ th { color:var(--muted); font-weight:500 } td.n, th.n { text-align:right; font-v
 .matrix td { text-align:center; font-weight:600 } .matrix td:first-child { text-align:left }
 .user { display:flex; gap:6px; align-items:center }
 .log { font:12px var(--mono); white-space:pre-wrap; color:var(--ink2); max-height:220px; overflow:auto }
+a.dl { color:inherit; text-decoration:none; border-bottom:1px dashed var(--muted) } a.dl:hover { color:var(--accent); border-color:var(--accent) }
+.kpi a.dl { border:0 } .kpi:hover { background:var(--soft) }
+.facets { display:grid; grid-template-columns:repeat(5,1fr); gap:12px } .facet h4 { margin:0 0 6px } .facet a { display:flex; justify-content:space-between; padding:3px 6px; text-decoration:none; color:var(--ink); font-size:12.5px; border-radius:3px } .facet a:hover { background:var(--soft) }
+.chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; align-items:center } .chip { background:var(--soft); border:1px solid var(--line); padding:3px 8px; border-radius:12px; font-size:12px } .chip a { margin-left:6px; text-decoration:none; color:var(--muted) }
+tr.click { cursor:pointer } tr.click:hover td { background:var(--soft) }
+.drawer { position:fixed; top:0; right:0; bottom:0; width:min(760px,96vw); background:#fff; border-left:1px solid var(--line); box-shadow:-8px 0 24px rgba(0,0,0,.12); overflow:auto; padding:20px 24px; z-index:20; display:none }
+.drawer.open { display:block } .drawer .x { position:absolute; top:12px; right:16px; background:transparent; color:var(--ink); font-size:20px }
+.dimrow { display:grid; grid-template-columns:120px 1fr 60px 50px; gap:10px; align-items:center; margin:4px 0; font-size:12.5px }
+.bar { height:8px; background:color-mix(in srgb, var(--accent) 15%, transparent); border-radius:4px; overflow:hidden } .bar i { display:block; height:100%; background:var(--accent); border-radius:4px }
+.lineage { display:flex; flex-direction:column; gap:0; margin:8px 0 } .step { border-left:2px solid var(--line); padding:4px 0 10px 14px; position:relative } .step:before { content:""; position:absolute; left:-6px; top:8px; width:10px; height:10px; border-radius:50%; background:var(--c, var(--accent)) }
+.step b { font-size:12px; letter-spacing:.08em; text-transform:uppercase; font-family:var(--mono) } pre.row { background:var(--soft); padding:8px; font-size:11.5px; overflow:auto; max-height:220px; margin:4px 0 0 }
 .tip { position:fixed; pointer-events:none; background:#fff; border:1px solid var(--line); padding:6px 9px; font-size:12px; display:none; box-shadow:0 4px 12px rgba(0,0,0,.12) }
 </style>
 </head>
@@ -71,6 +82,7 @@ th { color:var(--muted); font-weight:500 } td.n, th.n { text-align:right; font-v
 </nav>
 <main id="view"></main>
 <div class="tip" id="tip"></div>
+<aside class="drawer" id="drawer" aria-label="Record detail"><button class="x" onclick="closeDrawer()" aria-label="Close">×</button><div id="dbody"></div></aside>
 <script>
 const $ = s => document.querySelector(s);
 const esc = v => v == null ? "—" : String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -92,7 +104,8 @@ async function kpis() {
     ["Open alerts", k.open_alerts, "quarantine & drift", k.open_alerts ? "bad" : ""],
     ["Review queue", k.review_queue, "quarantine + decision", k.review_queue ? "warn" : ""],
     ["Drift alerts", k.drift_alerts, "features above threshold", k.drift_alerts ? "bad" : ""]];
-  $("#kpis").innerHTML = t.map(([l, v, s, c]) => `<div class="kpi"><div class="lab">${l}</div><div class="v ${c}">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join("");
+  const links = ["#batches", "#drill?gold=1", "#batches?blocked=1", "#drill?layer=quarantine", "#monitor", "#monitor"];
+  $("#kpis").innerHTML = t.map(([l, v, s, c], i) => `<a class="kpi dl" href="${links[i]}" title="Open"><div class="lab">${l}</div><div class="v ${c}">${esc(v)}</div><div class="s">${esc(s)}</div></a>`).join("");
   return o;
 }
 
@@ -133,23 +146,96 @@ function wireDecision(d, rerender) {
     try { await post("/api/ask", {question: $("#q").value}); } catch (err) { alert(err.message); } rerender(); };
 }
 
+const GATE_COLORS = {silver: "var(--silver)", quarantine: "var(--critical)", duplicate: "var(--muted)", history: "var(--muted)"};
+const layerPill = l => `<span class="pill ${l === "silver" ? "p-good" : l === "quarantine" ? "p-bad" : "p-muted"}">${esc(l)}</span>`;
+const FACET_NAMES = {record_type: "Entity", layer: "Layer", grade: "Grade", issue: "Issue", source: "Source"};
+const PARAM_NAMES = {product: "Product", record_type: "Entity", layer: "Layer", grade: "Grade", issue: "Issue", source: "Source", batch: "Batch", asset: "Asset", gold: "Gold only"};
+const withParam = (params, k, v) => { const p = new URLSearchParams(params); if (v == null) p.delete(k); else p.set(k, v); p.delete("skip"); return "#drill?" + p.toString(); };
+
+function closeDrawer() { $("#drawer").classList.remove("open"); }
+addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+async function openRecord(id) {
+  const d = await api("/api/governance/record/" + id), t = d.trust || {}, L = d.lineage, w = d.weights;
+  const dims = Object.keys(w).map(k => { const v = (t.dims || {})[k]; return `<div class="dimrow"><span>${esc(k)}</span><div class="bar"><i style="width:${v || 0}%"></i></div><b>${num(v, 0)}</b><span class="muted">×${w[k]}%</span></div>`; }).join("");
+  const issues = (t.issues || []).map(i => `<tr><td>${i.hard ? '<span class="pill p-bad">hard rule</span>' : '<span class="pill p-warn">deduct</span>'}</td><td>${esc(i.dimension)}</td><td class="mono">${esc(i.code)}</td><td>${esc(i.detail)}</td></tr>`).join("");
+  const fields = Object.entries(d.fields).map(([k, v]) => `<tr><td class="muted">${esc(k)}</td><td>${esc(typeof v === "string" && /^\d{4}-\d\d-\d\dT/.test(v) ? v.slice(0, 10) : v)}</td></tr>`).join("");
+  const attrs = Object.entries(d.attributes || {}).filter(([k]) => !["sheet", "tab_color"].includes(k)).map(([k, v]) => `<tr><td class="muted">${esc(k)}</td><td>${esc(Array.isArray(v) ? v.join("; ") : typeof v === "object" ? JSON.stringify(v) : v)}</td></tr>`).join("");
+  const src = L.source_row ? `<pre class="row">${esc(L.source_row.sheet_cells ? L.source_row.sheet_cells.map(r => r.map(c => c == null ? "" : c).join(" | ")).join("\n") : JSON.stringify(L.source_row, null, 1))}</pre>` : "";
+  $("#dbody").innerHTML = `<div class="lab">${esc(d.record_type)}</div><h2 style="margin:4px 0 8px">${esc(d.fields.asset_id || d.fields.sku || d.fields.order_id || d.fields.shipment_id || d.fields.gate || d.record_type)}</h2>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">${badge(t.grade, t.score)} ${layerPill(d.layer)} ${d.tags && d.tags.sensitivity === "CUI" ? '<span class="pill p-warn">CUI</span>' : ""}
+      <span class="muted" style="font-size:12px">${L.gold.included ? "✓ In Gold: " + esc(L.gold.products.join(", ")) : "Not in Gold: " + esc(L.gold.why_not)}</span></div>
+    <div class="card"><div class="lab"><b>Data Trust Score</b> · ${num(t.score, 1)} = weighted sum of six dimensions</div>${dims}
+      ${issues ? `<table style="margin-top:10px"><tr><th>Effect</th><th>Dimension</th><th>Code</th><th>Detail</th></tr>${issues}</table>` : '<p class="muted">No issues found.</p>'}</div>
+    ${d.quarantine ? `<div class="card" style="border-color:var(--critical)"><div class="lab"><b>Quarantine</b> · ${esc(d.quarantine.status)}</div><p style="margin:6px 0"><span class="pill p-bad">${esc(d.quarantine.reason_code)}</span> ${esc(d.quarantine.reason)}</p>
+      <p class="muted" style="margin:0;font-size:12px">Steward: ${esc(d.quarantine.steward)} · opened ${dt(d.quarantine.opened_at)} · due ${dt(d.quarantine.due_at)}${d.quarantine.resolution ? " · " + esc(d.quarantine.resolution) : ""}</p></div>` : ""}
+    <div class="card"><div class="lab"><b>Lineage</b> · source to decision</div><div class="lineage">
+      <div class="step" style="--c:var(--bronze)"><b>Bronze file</b><div>${L.file ? `${esc(L.file.filename)} · ${num(L.file.size)} bytes · <span class="mono">${esc(L.file.sha256.slice(0, 16))}…</span> · ${dt(L.file.received_at)}` : "not uploaded as a file (API / IoT)"}</div></div>
+      <div class="step" style="--c:var(--bronze)"><b>Bronze batch</b><div>${esc(L.batch.source_id)}${L.batch.sheet ? " / " + esc(L.batch.sheet) : ""}${L.batch.template ? " · template " + esc(L.batch.template) : ""} · Gate 1 ${esc((L.batch.gate1 || {}).status || "pass")} · <a class="dl" href="#batch?id=${L.batch.batch_id}" onclick="closeDrawer()">open batch</a></div></div>
+      <div class="step" style="--c:var(--bronze)"><b>Source row</b><div>${L.row_index != null ? "row " + (L.row_index + 1) + " · " : ""}hash <span class="mono">${esc(L.row_hash)}</span></div>${src}</div>
+      <div class="step" style="--c:var(--silver)"><b>Silver record</b><div>${esc(d.layer)} · grade ${esc(t.grade)} (${num(t.score, 1)})${d.cleaning.length ? " · " + d.cleaning.length + " value(s) standardised or rejected" : ""}</div></div>
+      <div class="step" style="--c:${L.gold.included ? "var(--gold)" : "var(--line)"}"><b>Gold</b><div>${L.gold.included ? esc(L.gold.products.join(", ")) : "excluded: " + esc(L.gold.why_not)}</div></div></div></div>
+    <div class="card"><div class="lab"><b>Fields</b></div><table>${fields}${attrs}</table>
+      ${L.batch.mapping ? `<details><summary class="muted">Column mapping used</summary><table>${Object.entries(L.batch.mapping).map(([c, f]) => `<tr><td>${esc(c)}</td><td>→ ${esc(f || "kept as attribute")}</td></tr>`).join("")}</table></details>` : ""}</div>
+    ${d.versions.length > 1 ? `<div class="card"><div class="lab"><b>Versions</b> · same key over time</div><table><tr><th>Loaded</th><th>Source</th><th>Layer</th><th>Grade</th><th></th></tr>${d.versions.map(v => `<tr class="click" onclick="openRecord('${v.id}')"><td>${dt(v.ingested_at)}</td><td>${esc(v.source_id)}</td><td>${layerPill(v.layer)}</td><td>${badge(v.grade, v.score)}</td><td>${v.this ? "this record" : ""}</td></tr>`).join("")}</table></div>` : ""}`;
+  $("#drawer").classList.add("open"); $("#drawer").scrollTop = 0;
+}
+
 const VIEWS = {
+  async drill(v, o, params) {
+    const p = new URLSearchParams(params); const d = await api("/api/governance/drill?" + p.toString() + "&limit=" + (p.get("limit") || 100));
+    const chips = [...p.entries()].filter(([k]) => PARAM_NAMES[k]).map(([k, val]) => `<span class="chip">${PARAM_NAMES[k]}: <b>${esc(k === "gold" ? "yes" : val)}</b><a href="${withParam(params, k, null)}" aria-label="Remove filter">×</a></span>`).join("");
+    const facets = Object.entries(d.facets).map(([k, counts]) => `<div class="facet"><h4 class="lab">${FACET_NAMES[k]}</h4>${Object.entries(counts).map(([val, n]) =>
+      `<a href="${withParam(params, k, val)}"><span>${k === "grade" ? (val === "null" ? "—" : badge(val)) : k === "layer" ? layerPill(val) : esc(val)}</span><span class="muted">${num(n)}</span></a>`).join("") || '<span class="muted">—</span>'}</div>`).join("");
+    let why = "";
+    if (p.get("product") && d.total === 0) {
+      const prod = (o.products || []).find(x => x.id === p.get("product"));
+      const dg = await api("/api/governance/diagnose?entities=" + encodeURIComponent(prod ? prod.entities.join(",") : ""));
+      why = `<div class="card" style="border-color:var(--warning)"><div class="lab"><b>Why there is no data</b></div><ul>${dg.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul><a class="dl" href="#filter">Open 02 Filter &amp; dedup to see how each sheet was read</a></div>`;
+    }
+    v.innerHTML = `<div class="chips"><span class="lab"><b>Records</b> · ${num(d.total)} match</span>${chips}${chips ? `<a class="dl" href="#drill" style="font-size:12px">clear all</a>` : ""}</div>${why}
+      <div class="card"><div class="facets">${facets}</div></div>
+      <div class="card"><table><tr><th>Record</th><th>Entity</th><th>Layer</th><th>Grade</th><th>Main issue</th><th>Source</th></tr>
+      ${d.items.map(r => `<tr class="click" onclick="openRecord('${r.id}')"><td>${esc(r.label)}</td><td>${esc(r.record_type)}</td><td>${layerPill(r.layer)}</td><td>${badge(r.grade, r.score)}</td>
+        <td>${r.issue ? `<span class="mono">${esc(r.issue.code)}</span> ${esc(r.issue.detail)}${r.issue_count > 1 ? ` <span class="muted">+${r.issue_count - 1}</span>` : ""}` : '<span class="muted">none</span>'}</td><td>${esc(r.source_id)}${r.sheet ? " / " + esc(r.sheet) : ""}</td></tr>`).join("") || '<tr><td colspan=6 class="empty">No records match these filters</td></tr>'}</table>
+      ${d.total > d.items.length ? `<p class="muted">Showing ${d.items.length} of ${num(d.total)}, lowest scores first. <a class="dl" href="${withParam(params, "limit", Math.min(500, (+p.get("limit") || 100) + 200))}">Show more</a></p>` : ""}</div>`;
+  },
+  async batches(v, o, params) {
+    const p = new URLSearchParams(params), bs = await api("/api/governance/batches?" + p.toString());
+    v.innerHTML = `<div class="chips"><span class="lab"><b>Bronze batches</b> · ${bs.length}${p.get("blocked") ? " blocked at Gate 1" : ""}</span>${p.get("blocked") ? `<a class="dl" href="#batches" style="font-size:12px">show all</a>` : `<a class="dl" href="#batches?blocked=1" style="font-size:12px">blocked only</a>`}</div>
+      <div class="card"><table><tr><th>Received</th><th>Source</th><th>Sheet</th><th>Read as</th><th class="n">Rows</th><th class="n">To Silver</th><th>Gate 1</th></tr>
+      ${bs.map(b => `<tr class="click" onclick="location.hash='#batch?id=${b.batch_id}'"><td>${dt(b.received_at)}</td><td>${esc(b.source_id)}</td><td>${esc(b.sheet)}</td><td>${esc(b.record_type)}${b.template ? ` <span class="pill p-good">${esc(b.template)}</span>` : ""}</td><td class="n">${num(b.rows)}</td><td class="n">${num(b.stored)}</td>
+        <td>${b.gate1 && b.gate1.status === "blocked" ? `<span class="pill p-bad">▲ blocked</span> ${esc(b.gate1.reason)}` : '<span class="pill p-good">✓ pass</span>'}</td></tr>`).join("") || '<tr><td colspan=7 class="empty">No batches</td></tr>'}</table></div>`;
+  },
+  async batch(v, o, params) {
+    const b = await api("/api/governance/batch/" + new URLSearchParams(params).get("id")), m = b.meta || {};
+    const rows = b.columns ? `<table><tr>${b.columns.map(c => `<th>${esc(c)}</th>`).join("")}</tr>${b.rows.map(r => `<tr>${b.columns.map(c => `<td>${esc(r[c])}</td>`).join("")}</tr>`).join("")}</table>`
+      : `<pre class="row" style="max-height:520px">${esc(b.rows.map(r => Array.isArray(r) ? r.map(c => c == null ? "" : c).join(" | ") : JSON.stringify(r)).join("\n"))}</pre>`;
+    v.innerHTML = `<div class="card"><div class="lab"><b>Bronze batch</b> · exactly as received</div><h2 style="margin:6px 0">${esc(b.source_id)}${m.sheet ? " / " + esc(m.sheet) : ""}</h2>
+      <div class="facts" style="grid-template-columns:repeat(4,1fr)"><div class="fact"><div class="lab">Read as</div><div>${esc(m.record_type)}${m.template ? " (" + esc(m.template) + ")" : ""}</div></div>
+      <div class="fact"><div class="lab">Gate 1</div><div>${b.gate1 && b.gate1.status === "blocked" ? '<span class="pill p-bad">▲ blocked</span> ' + esc(b.gate1.reason) : '<span class="pill p-good">✓ pass</span>'}</div></div>
+      <div class="fact"><div class="lab">Rows received / to Silver</div><div>${num(b.rows_received)} / ${num(b.records_stored)}</div></div>
+      <div class="fact"><div class="lab">Payload SHA-256</div><div class="mono">${esc((b.payload_sha256 || "").slice(0, 24))}…</div></div></div>
+      ${m.mapping ? `<details style="margin-top:10px"><summary class="muted">Column mapping</summary><table>${Object.entries(m.mapping).map(([c, f]) => `<tr><td>${esc(c)}</td><td>→ ${esc(f || "kept as attribute")}</td></tr>`).join("")}</table></details>` : ""}
+      ${b.records_stored ? `<p><a class="dl" href="#drill?batch=${b.batch_id}">Open the ${num(b.records_stored)} records from this batch</a></p>` : ""}</div>
+      <div class="card" style="overflow:auto"><div class="lab"><b>Content</b>${b.truncated ? " · first 200 rows" : ""}</div>${rows}</div>`;
+  },
   async overview(v, o) {
     const L = o.layers, ps = o.products;
-    const layer = (c, k, t, p, nums) => `<div class="layer" style="--c:${c}"><div class="lab k">${k}</div><h2>${t}</h2><p>${p}</p><div class="nums">${nums.map(([a, b]) => `<div><b>${esc(a)}</b><span>${b}</span></div>`).join("")}</div></div>`;
+    const layer = (c, k, t, p, nums, href) => `<a class="layer" href="${href}" style="--c:${c};text-decoration:none;color:inherit"><div class="lab k">${k}</div><h2>${t}</h2><p>${p}</p><div class="nums">${nums.map(([a, b]) => `<div><b>${esc(a)}</b><span>${b}</span></div>`).join("")}</div></a>`;
     v.innerHTML = `<div class="layers">
-      ${layer("var(--bronze)", "Bronze", "SOURCE DATA", "Raw as received from files, ERP, APIs and IoT. Original evidence and full lineage.", [[L.bronze.datasets, "batches"], [num(L.bronze.records), "records"], [L.bronze.files, "files kept"]])}<div class="arrow">→</div>
-      ${layer("var(--silver)", "Silver", "CURATED DATA", "Filtered, de-duplicated, cleaned, matched to master data and scored A–D.", [[L.silver.datasets, "entities"], [num(L.silver.records), "records"], [num(L.silver.avg_trust, 2), "avg trust"]])}<div class="arrow">→</div>
-      ${layer("var(--gold)", "Gold", "DERIVED DATA", "Certified products built only from grade A/B Silver records.", [[L.gold.datasets, "products"], [num(L.gold.records), "records"], [num(L.gold.avg_trust, 2), "avg trust"]])}<div class="arrow">→</div>
-      ${layer("var(--accent)", "Decisions", "MAESTRO MODULES", "Docks, gates, fleet, supply analysis and AI read Gold products only.", [[L.decisions.total, "AI decisions"], [L.decisions.pending, "pending"], [L.gold.certified, "certified"]])}</div>
-      <div class="grid3">${ps.map(p => `<div class="card prod"><div class="top"><div><div class="lab">Gold data product</div><h3>${esc(p.name)}</h3></div>${badge(p.grade, p.score)}</div>
+      ${layer("var(--bronze)", "Bronze", "SOURCE DATA", "Raw as received from files, ERP, APIs and IoT. Original evidence and full lineage.", [[L.bronze.datasets, "batches"], [num(L.bronze.records), "records"], [L.bronze.files, "files kept"]], "#batches")}<div class="arrow">→</div>
+      ${layer("var(--silver)", "Silver", "CURATED DATA", "Filtered, de-duplicated, cleaned, matched to master data and scored A–D.", [[L.silver.datasets, "entities"], [num(L.silver.records), "records"], [num(L.silver.avg_trust, 2), "avg trust"]], "#drill?layer=silver")}<div class="arrow">→</div>
+      ${layer("var(--gold)", "Gold", "DERIVED DATA", "Certified products built only from grade A/B Silver records.", [[L.gold.datasets, "products"], [num(L.gold.records), "records"], [num(L.gold.avg_trust, 2), "avg trust"]], "#drill?gold=1")}<div class="arrow">→</div>
+      ${layer("var(--accent)", "Decisions", "MAESTRO MODULES", "Docks, gates, fleet, supply analysis and AI read Gold products only.", [[L.decisions.total, "AI decisions"], [L.decisions.pending, "pending"], [L.gold.certified, "certified"]], "#monitor")}</div>
+      <div class="grid3">${ps.map(p => `<div class="card prod"><div class="top"><div><div class="lab">Gold data product</div><h3><a class="dl" style="border:0" href="#drill?product=${p.id}">${esc(p.name)}</a></h3></div>${badge(p.grade, p.score)}</div>
         <p>${esc(p.description)}</p><div class="facts">
         <div class="fact"><div class="lab">Certification</div><div>${certPill(p.certification)}</div></div>
         <div class="fact"><div class="lab">Freshness</div><div>${p.freshness === "CURRENT" ? '<span class="pill p-good">✓ Current</span>' : '<span class="pill p-bad">▲ Stale</span>'}</div></div>
-        <div class="fact"><div class="lab">Records</div><div>${num(p.records)}</div></div>
-        <div class="fact"><div class="lab">Quarantine</div><div>${num(p.quarantined)}${p.excluded_c ? ` · ${p.excluded_c} grade C excluded` : ""}</div></div></div>
+        <div class="fact"><div class="lab">Records</div><div><a class="dl" href="#drill?product=${p.id}&gold=1">${num(p.records)}</a></div></div>
+        <div class="fact"><div class="lab">Quarantine</div><div><a class="dl" href="#drill?product=${p.id}&layer=quarantine">${num(p.quarantined)}</a>${p.excluded_c ? ` · <a class="dl" href="#drill?product=${p.id}&grade=C">${p.excluded_c} grade C excluded</a>` : ""}</div></div></div>
+        ${p.records ? "" : `<p class="muted" style="font-size:12px;margin:8px 0 0">No Gold records. <a class="dl" href="#drill?product=${p.id}">See why</a></p>`}
         <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="muted" style="font-size:12px">Owner: ${esc(p.owner)}${p.certified_by ? ` · certified by ${esc(p.certified_by)}` : ""}</span>
-        <button class="ghost" data-cert="${p.id}" ${p.certification === "CERTIFIED" || p.certification === "BLOCKED" ? "disabled" : ""}>Certify</button></div></div>`).join("") || '<p class="empty">No data yet: upload files on the Upload data tab.</p>'}</div>
+        <button class="ghost" data-cert="${p.id}" ${["CERTIFIED", "BLOCKED", "NO DATA"].includes(p.certification) ? "disabled" : ""}>Certify</button></div></div>`).join("") || '<p class="empty">No data yet: upload files on the Upload data tab.</p>'}</div>
       <div class="split"><div class="card"><div class="panel-h lab"><b>Data trust</b></div>${gauge(o.trust.score, o.trust.grade)}
         <p class="muted" style="text-align:center;font-size:12px;margin:0">Record-weighted score of the Gold products · six dimensions, weights set in 01 Plan &amp; govern</p></div>
       <div class="card"><div class="panel-h lab"><b>AI decision gate</b></div><div id="dec">${decisionPanel(o.latest_decision)}</div></div></div>`;
@@ -186,7 +272,7 @@ const VIEWS = {
       <div class="card"><div class="lab"><b>Bronze files</b> · kept exactly as received</div><table><tr><th>File</th><th>SHA-256</th><th class="n">Bytes</th><th>Received</th></tr>
       ${s.files.map(f => `<tr><td>${esc(f.filename)}</td><td class="mono">${esc(f.sha256.slice(0, 16))}…</td><td class="n">${num(f.size)}</td><td>${dt(f.received_at)}</td></tr>`).join("") || '<tr><td colspan=4 class="empty">No files yet</td></tr>'}</table></div>
       <div class="card"><div class="lab"><b>Batches through Gate 1</b></div><table><tr><th>Source</th><th>Sheet</th><th>Entity</th><th class="n">Rows</th><th class="n">To Silver</th><th>Gate 1</th><th>Payload hash</th></tr>
-      ${s.batches.map(b => `<tr><td>${esc(b.source)}</td><td>${esc(b.sheet)}</td><td>${esc(b.record_type)}</td><td class="n">${num(b.rows)}</td><td class="n">${num(b.stored)}</td>
+      ${s.batches.map(b => `<tr class="click" onclick="location.hash='#batch?id=${b.batch_id}'"><td>${esc(b.source)}</td><td>${esc(b.sheet)}</td><td>${esc(b.record_type)}</td><td class="n">${num(b.rows)}</td><td class="n">${num(b.stored)}</td>
         <td>${b.gate1 && b.gate1.status === "blocked" ? `<span class="pill p-bad">▲ blocked</span> ${esc(b.gate1.reason)}` : '<span class="pill p-good">✓ pass</span>'}</td><td class="mono">${esc(b.sha256)}</td></tr>`).join("")}</table></div>
       <div class="split"><div class="card"><div class="lab"><b>Duplicates removed</b> · same record sent twice</div><table><tr><th>Entity</th><th>Key</th><th>Source</th></tr>
       ${s.duplicates.map(d => `<tr><td>${esc(d.record_type)}</td><td>${esc(d.order_id || d.asset_id || d.sku)}</td><td>${esc(d.source_id)}</td></tr>`).join("") || '<tr><td colspan=3 class="empty">None found</td></tr>'}</table></div>
@@ -209,7 +295,7 @@ const VIEWS = {
   async audit(v) {
     const s = await api("/api/governance/stage/audit");
     v.innerHTML = `<div class="card"><div class="lab"><b>Control totals</b> · every row received is accounted for</div><table><tr><th>Batch</th><th>Source</th><th>Sheet</th><th class="n">Received</th><th class="n">Blocked</th><th class="n">Silver</th><th class="n">Quarantine</th><th class="n">Duplicate</th><th class="n">History</th><th class="n">Replaced</th><th>Balanced</th></tr>
-      ${s.balance.map(b => `<tr><td class="mono">${esc(b.batch_id)}</td><td>${esc(b.source)}</td><td>${esc(b.sheet)}</td><td class="n">${num(b.received)}</td><td class="n">${num(b.blocked)}</td><td class="n">${num(b.silver)}</td><td class="n">${num(b.quarantine)}</td><td class="n">${num(b.duplicate)}</td><td class="n">${num(b.history)}</td><td class="n">${num(b.replaced)}</td>
+      ${s.balance.map(b => `<tr class="click" onclick="location.hash='#batch?id=${b.batch_full}'"><td class="mono">${esc(b.batch_id)}</td><td>${esc(b.source)}</td><td>${esc(b.sheet)}</td><td class="n">${num(b.received)}</td><td class="n">${num(b.blocked)}</td><td class="n">${num(b.silver)}</td><td class="n">${num(b.quarantine)}</td><td class="n">${num(b.duplicate)}</td><td class="n">${num(b.history)}</td><td class="n">${num(b.replaced)}</td>
         <td>${b.balanced ? '<span class="pill p-good">✓ yes</span>' : '<span class="pill p-bad">▲ no</span>'}</td></tr>`).join("")}</table>
       <p class="muted" style="font-size:12px">Replaced = rows superseded when a newer upload of the same tail sheet arrived; the earlier file stays in Bronze.</p></div>
       <div class="card"><div class="lab"><b>Audit log</b></div><table><tr><th>When</th><th>Action</th><th>By</th><th>Detail</th></tr>
@@ -218,7 +304,7 @@ const VIEWS = {
   async monitor(v, o) {
     const s = await api("/api/governance/stage/monitor"), m = s.monitor, mix = o.layers.silver.grade_mix || {}, total = Object.values(mix).reduce((a, b) => a + b, 0) || 1;
     const seg = ["A", "B", "C", "D"].filter(g => mix[g]).map(g => { const pct = 100 * mix[g] / total;
-      return `<div style="flex:${mix[g]};background:${GRADE_COLOR[g]};${g === "B" || g === "C" ? "color:#0b0b0b" : ""}" title="Grade ${g}: ${mix[g]} records (${pct.toFixed(1)}%)">${pct >= 8 ? g + " " + pct.toFixed(0) + "%" : ""}</div>`; }).join("");
+      return `<div onclick="location.hash='#drill?grade=${g}'" style="cursor:pointer;flex:${mix[g]};background:${GRADE_COLOR[g]};${g === "B" || g === "C" ? "color:#0b0b0b" : ""}" title="Grade ${g}: ${mix[g]} records (${pct.toFixed(1)}%) - click to open">${pct >= 8 ? g + " " + pct.toFixed(0) + "%" : ""}</div>`; }).join("");
     const tile = (l, v, target, ok) => `<div class="kpi" style="border:1px solid var(--line);background:#fff"><div class="lab">${l}</div><div class="v ${ok == null ? "" : ok ? "good" : "bad"}">${esc(v)}</div><div class="s">${esc(target)}</div></div>`;
     v.innerHTML = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
       ${tile("Records grade A/B", m.gold_ab_pct == null ? "—" : num(m.gold_ab_pct, 1) + "%", `target ≥ ${m.gold_target_pct}%`, m.gold_ab_pct == null ? null : m.gold_ab_pct >= m.gold_target_pct)}
@@ -226,9 +312,9 @@ const VIEWS = {
       ${tile("Acceptance rate", m.acceptance_rate == null ? "—" : num(m.acceptance_rate, 1) + "%", "AI recommendations accepted", null)}
       ${tile("Override rate", m.override_rate == null ? "—" : num(m.override_rate, 1) + "%", "every override carries a reason", null)}</div>
       <div class="card"><div class="lab"><b>Grade mix</b> · current records in Silver and quarantine</div><div class="seg" role="img" aria-label="Grade mix">${seg}</div>
-      <div class="legend">${["A", "B", "C", "D"].map(g => `<span><i style="background:${GRADE_COLOR[g]}"></i>${g} · ${num(mix[g] || 0)}</span>`).join("")}</div></div>
+      <div class="legend">${["A", "B", "C", "D"].map(g => `<a class="dl" href="#drill?grade=${g}"><i style="background:${GRADE_COLOR[g]}"></i>${g} · ${num(mix[g] || 0)}</a>`).join("")}</div></div>
       <div class="card"><div class="lab"><b>Quarantine</b> · fixed at the source, never edited in place</div><table><tr><th>Entity</th><th>Key</th><th>Reason</th><th>Steward</th><th class="n">Age</th><th>Due</th><th></th></tr>
-      ${s.quarantine.map(q => `<tr><td>${esc(q.record_type)}</td><td>${esc(q.key)}</td><td><span class="pill p-bad">${esc(q.reason_code)}</span> ${esc(q.reason)}</td><td>${esc(q.steward)}</td><td class="n">${q.age_days} d</td>
+      ${s.quarantine.map(q => `<tr><td>${esc(q.record_type)}</td><td><a class="dl" href="javascript:openRecord('${q.record_id}')">${esc(q.key)}</a></td><td><span class="pill p-bad">${esc(q.reason_code)}</span> ${esc(q.reason)}</td><td>${esc(q.steward)}</td><td class="n">${q.age_days} d</td>
         <td>${q.overdue ? '<span class="pill p-bad">▲ overdue</span>' : dt(q.due_at)}</td><td><button class="ghost" data-close="${q.id}">Close</button></td></tr>`).join("") || '<tr><td colspan=7 class="empty">Quarantine is empty</td></tr>'}</table></div>
       <div class="card"><div class="lab"><b>Drift alerts</b> · newest batch vs earlier batches</div><table><tr><th>Entity</th><th>Field</th><th class="n">Previous mean</th><th class="n">Current mean</th><th class="n">Change</th></tr>
       ${s.drift.map(d => `<tr><td>${esc(d.record_type)}</td><td>${esc(d.field)}</td><td class="n">${num(d.previous_mean, 2)}</td><td class="n">${num(d.current_mean, 2)}</td><td class="n">${d.change_pct > 0 ? "+" : ""}${num(d.change_pct, 1)}%</td></tr>`).join("") || '<tr><td colspan=5 class="empty">No drift above threshold</td></tr>'}</table></div>
@@ -252,9 +338,11 @@ const VIEWS = {
 };
 
 async function route() {
-  const key = location.hash.slice(1) || "overview";
+  const [key0, params = ""] = location.hash.slice(1).split("?"), key = key0 || "overview";
+  closeDrawer();
   document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + key));
-  try { const o = await kpis(); await (VIEWS[key] || VIEWS.overview)($("#view"), o); }
+  try { const o = await kpis();
+    await (VIEWS[key] || VIEWS.overview)($("#view"), o, params); }
   catch (e) { $("#view").innerHTML = `<p class="empty">Could not load (${esc(e.message)}).</p>`; }
 }
 addEventListener("hashchange", route); route();

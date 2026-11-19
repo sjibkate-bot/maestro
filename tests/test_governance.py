@@ -185,3 +185,47 @@ def test_drift_compares_same_sheet_only():
     upload("inventory_week2.xlsx", buf.getvalue())
     drift = list(get_db().drift.find({}))
     assert [d["field"] for d in drift] == ["quantity"] and drift[0]["change_pct"] > 100
+
+
+def test_drill_down_facets_and_record_lineage():
+    upload("B-52_Fixer_Chart_Data.xlsx")
+    upload("Dashboard_Supporting_Data.xlsx")
+    upload("faults.csv", faults_csv(["60-1234,2026-05-20,X999,Catastrophic,Bad code,SSgt A"]))
+    d = client.get("/api/governance/drill", params={"product": "fleet_health", "layer": "quarantine"}).json()
+    assert d["total"] == 1 and d["facets"]["issue"] == {"INVALID_CODE": 1}
+    rid = d["items"][0]["id"]
+    r = client.get(f"/api/governance/record/{rid}").json()
+    assert r["lineage"]["file"]["filename"] == "faults.csv"
+    assert r["lineage"]["source_row"]["Severity"] == "Catastrophic"           # exact Bronze row
+    assert r["lineage"]["gold"]["included"] is False and r["quarantine"]["reason_code"] == "INVALID_CODE"
+    # every Post Dock record of one tail is reachable by asset
+    a = client.get("/api/governance/drill", params={"asset": "60-4003", "record_type": "gate_event"}).json()
+    assert a["total"] == 10
+    t = client.get(f"/api/governance/record/{a['items'][0]['id']}").json()
+    assert t["lineage"]["batch"]["template"] == "pdm_tail_sheet" and t["lineage"]["source_row"]["sheet_cells"][0][3] == "60-4003"
+
+
+def test_issue_filter_and_batch_view():
+    upload("B-52_Fixer_Chart_Data.xlsx")
+    d = client.get("/api/governance/drill", params={"issue": "DATES_REVERSED"}).json()
+    assert d["total"] >= 1 and all(i["record_type"] == "gate_event" for i in d["items"])
+    upload("Dashboard_Supporting_Data.xlsx")
+    blocked = client.get("/api/governance/batches", params={"blocked": True}).json()
+    assert [b["sheet"] for b in blocked] == ["Health Score"]
+    b = client.get(f"/api/governance/batch/{blocked[0]['batch_id']}").json()
+    assert b["rows_received"] == 4 and b["columns"][0] == "Health Score Range"
+
+
+def test_empty_module_explains_why():
+    upload("Dashboard_Supporting_Data.xlsx")   # fleet data only, no depot tracker
+    d = client.get("/api/governance/diagnose", params={"entities": "asset_flow,gate_event"}).json()
+    assert d["gold_records"] == 0 and "No asset_flow, gate_event records" in d["reasons"][0]
+    ps = {p["id"]: p for p in governance.products()}
+    assert ps["depot_flow"]["certification"] == "NO DATA"
+
+
+def test_tail_number_suffix_is_standardised():
+    upload("Dashboard_Supporting_Data.xlsx")
+    upload("faults.csv", faults_csv(["60-1234 (R),2026-05-22,F012,Major,Bus 2 overload,SSgt A"]))
+    r = get_db().records.find_one({"fault_code": "F012", "date_logged": {"$gte": __import__("datetime").datetime(2026, 5, 22)}})
+    assert r["asset_id"] == "60-1234" and r["attributes"]["asset_suffix"] == "R" and r["layer"] == "silver"

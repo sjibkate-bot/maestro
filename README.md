@@ -23,6 +23,8 @@ Open **http://localhost:8000/governance**. It follows the DFSP IP Data Governanc
 | **Monitor loop** | Records graded A/B (target ≥ 95%), quarantine aging (target < 5 days), acceptance and override rates, and drift alerts (newest load of a sheet vs earlier loads). |
 | **Audit & balance** | Control totals per batch (received = blocked + silver + quarantine + duplicate + history + replaced) and an audit log of every governance action. |
 
+**Drill-down:** every number on the governance page opens the records behind it. Facets let you narrow by entity, layer, grade, issue and source. Clicking a record shows its six dimension scores, each issue (a hard rule or a deduction), its quarantine status, every version of it, and its lineage: Bronze file (SHA-256) → batch and Gate 1 result → the exact source row → Silver → Gold, or why it was excluded. Bronze batches open to show the content exactly as received. In Maestro, tail numbers on dock cards and gate-graph bars open that aircraft's records. A module with no Gold data explains why: nothing loaded, quarantined, grade C, or blocked at Gate 1.
+
 Weights, grade thresholds, SLA, drift threshold and roles are editable under **01 Plan & govern**. They stay proposals until a governance council ratifies them, and changing them re-scores everything and is audited. Actions are recorded against the name in **Acting as**. There is no login yet, so this is not access control.
 
 ## Maestro-SC module (depot / maintenance)
@@ -88,7 +90,7 @@ MONGO_URI=mongomock:// uvicorn app.main:app --reload
 ```
 Open http://localhost:8000 and drop the files from `samples/` onto the page (`python samples/make_samples.py` regenerates them).
 
-Tests: `pytest -q` (41 tests, including the Maestro reference workbooks and the governance rules)
+Tests: `pytest -q` (45 tests, including the Maestro reference workbooks and the governance rules)
 
 ## API
 

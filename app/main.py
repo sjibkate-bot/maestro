@@ -307,6 +307,43 @@ def gov_records(grade: Optional[str] = None, layer: Optional[str] = None, record
     return list(get_db().records.find(q, {"_id": 0, "cleaning": 0}).limit(limit))
 
 
+@app.get("/api/governance/drill")
+def gov_drill(product: Optional[str] = None, record_type: Optional[str] = None, layer: Optional[str] = None,
+              grade: Optional[str] = None, issue: Optional[str] = None, source: Optional[str] = None,
+              batch: Optional[str] = None, asset: Optional[str] = None, gold: bool = False,
+              skip: int = 0, limit: int = Query(100, le=500)):
+    try:
+        return governance.drill(product, record_type, layer, grade, issue, source, batch, asset, gold, skip, limit)
+    except KeyError:
+        raise HTTPException(404, "Unknown product")
+
+
+@app.get("/api/governance/record/{rid}")
+def gov_record(rid: str):
+    try:
+        return governance.record_detail(rid)
+    except Exception:
+        raise HTTPException(404, "Unknown record")
+
+
+@app.get("/api/governance/batches")
+def gov_batches(blocked: Optional[bool] = None, source: Optional[str] = None):
+    return governance.batches(blocked, source)
+
+
+@app.get("/api/governance/batch/{batch_id}")
+def gov_batch(batch_id: str):
+    try:
+        return governance.batch_detail(batch_id)
+    except KeyError:
+        raise HTTPException(404, "Unknown batch")
+
+
+@app.get("/api/governance/diagnose")
+def gov_diagnose(entities: str):
+    return governance.diagnose([e.strip() for e in entities.split(",") if e.strip()])
+
+
 @app.get("/api/governance/decisions")
 def gov_decisions():
     return governance.decisions()

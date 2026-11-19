@@ -2,6 +2,7 @@
 import hashlib
 import logging
 import math
+import re
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Iterable, Optional
@@ -15,6 +16,7 @@ from .models import DATE_FIELDS, ENTITIES, NUMERIC_FIELDS, MappingResult, now
 
 log = logging.getLogger(__name__)
 SAMPLE_ROWS = 8
+TAIL_WITH_SUFFIX = re.compile(r"^\s*(\d{2}-\d{4,5})\s*(\(?[A-Za-z]{1,3}\)?)?\s*$")
 
 
 def _clean(v: Any) -> Any:
@@ -84,6 +86,13 @@ def build_record(record_type: str, source_id: str, source_type: str,
     rec = {"record_type": record_type, "source_id": source_id, "source_type": source_type,
            "attributes": attributes or {}, "ingested_at": now()}
     cleaning = []
+    aid = _clean(fields.get("asset_id"))
+    if isinstance(aid, str):
+        m = TAIL_WITH_SUFFIX.match(aid)
+        if m and m.group(2):
+            fields = {**fields, "asset_id": m.group(1)}
+            rec["attributes"]["asset_suffix"] = m.group(2).strip(" ()")
+            cleaning.append({"field": "asset_id", "raw": aid, "issue": "tail number standardised"})
     for f, v in fields.items():
         rec[f] = coerce(f, v)
         raw = _clean(v)
@@ -166,6 +175,8 @@ def store(records: list[dict], raw: Any, source_id: str, source_type: str, meta:
     for i, r in enumerate(records):
         r["batch_id"] = batch_id
         r["row_hash"] = hashlib.sha256(f"{payload_hash}:{i}".encode()).hexdigest()[:16]
+        if isinstance(raw, list):
+            r["row_index"] = i
     if records:
         db.records.insert_many(records)
     db.sources.update_one({"_id": source_id},
