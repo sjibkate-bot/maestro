@@ -1,0 +1,30 @@
+End Item,Parent,Child,Description,Quantity,Level
+B-52H,B-52H,SYS-PROP,Propulsion system,1,1
+B-52H,B-52H,SYS-WING,Wing structure,1,1
+B-52H,B-52H,SYS-FUS,Fuselage and access,1,1
+B-52H,B-52H,SYS-HYD,Hydraulic system,1,1
+B-52H,B-52H,SYS-AVI,Avionics and electrical,1,1
+B-52H,SYS-PROP,ASM-ENG,Engine installation,8,2
+B-52H,SYS-PROP,ASM-NAC,Nacelle and cowls,4,2
+B-52H,ASM-ENG,B52-ENG-TF33,"TF33-P-103 engine, overhauled",1,3
+B-52H,ASM-ENG,B52-OIL-XMTR,Oil pressure transmitter,1,3
+B-52H,ASM-NAC,B52-NC-LH01,"Nose cowl, LH",1,3
+B-52H,ASM-NAC,B52-NC-RH01,"Nose cowl, RH",1,3
+B-52H,SYS-WING,ASM-WBOX,"Wing box, BL55",1,2
+B-52H,SYS-WING,ASM-CWING,Center wing,1,2
+B-52H,SYS-WING,ASM-FLAP,Flaps,2,2
+B-52H,ASM-WBOX,B52-SPL-BL55,BL55 splice plate,4,3
+B-52H,ASM-WBOX,B52-FIT-ASM-R,"ASM fitting, RH",1,3
+B-52H,ASM-WBOX,B52-FIT-ASM-L,"ASM fitting, LH",1,3
+B-52H,ASM-CWING,B52-STR-CW100,Center wing stringer,6,3
+B-52H,ASM-FLAP,B52-FLP-TRK,Flap track assembly,3,3
+B-52H,SYS-WING,B52-HRN-W2,Wing wiring harness,2,2
+B-52H,SYS-FUS,B52-PNL-ACC,Access panel set,1,2
+B-52H,SYS-FUS,B52-FST-KIT,"Fastener kit, structural",10,2
+B-52H,SYS-FUS,B52-SEAL-PR,Sealant and primer kit,6,2
+B-52H,SYS-HYD,B52-HYD-PMP,"Hydraulic pump, engine driven",4,2
+B-52H,SYS-HYD,B52-HYD-ACT-BD,Bomb door actuator,2,2
+B-52H,SYS-AVI,B52-RDR-RCV,Radar receiver LRU,1,2
+B-52H,SYS-AVI,B52-NAV-INU,Inertial nav unit,2,2
+B-52H,SYS-AVI,B52-CPC-01,Cabin pressure controller,1,2
+B-52H,SYS-AVI,B52-GEN-CTR,Generator control unit (Bus 2),4,2

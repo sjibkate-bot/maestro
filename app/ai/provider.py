@@ -84,6 +84,22 @@ _SYNONYMS: dict[str, list[str]] = {
     "impact_days": ["impactdays", "timeimpact", "scheduleimpact", "daysimpact", "impact"],
     "owner": ["owner", "assignedto", "poc", "responsible", "office"],
     "title": ["title", "issue", "issuetitle", "summary", "headline"],
+    "parent": ["parent", "parentpart", "parentpn", "assembly", "nextassembly", "higherassembly"],
+    "child": ["child", "component", "childpart", "componentpn", "partnumberchild"],
+    "level": ["level", "indenture", "indenturelevel", "bomlevel"],
+    "end_item": ["enditem", "topassembly", "endassembly"],
+    "gate": ["gate", "phase", "gatename", "depotgate"],
+    "skill": ["skill", "skillcode", "shop", "afsc", "trade"],
+    "work_package": ["workpackage", "wp", "package", "workpackagename"],
+    "task": ["task", "operation", "taskname", "operationdescription", "jobdescription"],
+    "task_id": ["taskid", "jcn", "operationno", "opno", "taskno"],
+    "planned_start_day": ["plannedstartday", "startday", "scriptday", "planstartday"],
+    "planned_days": ["planneddays", "durationdays", "duration", "scriptdays"],
+    "hours_planned": ["hoursplanned", "plannedhours", "stdhours", "standardhours"],
+    "hours_actual": ["hoursactual", "actualhoursworked", "chargedhours"],
+    "found_work": ["foundwork", "found", "unscheduled", "addedwork"],
+    "part_number": ["partnumber", "waitingonpart", "shortagepart", "awppart"],
+    "closed_date": ["closeddate", "closedon", "completeddate", "closuredate"],
 }
 _LOOKUP: dict[str, list[str]] = {}
 for _field, _syns in _SYNONYMS.items():

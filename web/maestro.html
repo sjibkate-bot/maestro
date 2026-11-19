@@ -63,7 +63,7 @@ button { background:var(--accent); color:var(--accent-ink); border-color:var(--a
 .dock ul { margin:4px 0 0; padding-left:16px; color:var(--ink2) }
 .tag { font-family:var(--mono); font-size:10px; letter-spacing:.08em; padding:2px 6px; border:1px solid currentColor; display:inline-flex; gap:5px; align-items:center }
 .tag.critical { color:var(--critical) } .tag.warning { color:#b07a00 } :root[data-theme="dark"] .tag.warning { color:var(--warning) }
-.tag.good { color:var(--good) }
+.tag.good { color:var(--good) } .tag.serious { color:#b8532c } :root[data-theme="dark"] .tag.serious { color:var(--serious) }
 /* charts */
 .viz { background:var(--surface); border:1px solid var(--line); padding:16px 16px 8px; position:relative }
 .viz h3 { margin:0; font-size:18px } .viz .sub { color:var(--ink2); margin-bottom:6px }
@@ -98,7 +98,7 @@ button:disabled { opacity:.4; cursor:not-allowed }
   <a class="logo" href="#modules"><i>M</i>MAESTRO-SC</a><span class="sep"></span>
   <input class="search" id="search" placeholder="SEARCH_SYSTEM...  [Ctrl+K]" aria-label="Search tail number">
   <nav class="mono" id="nav">
-    <a href="#modules">Modules</a><a href="/supply">Supply</a><a href="#docks">Docks</a><a href="#gates">Gates</a><a href="#machine">Machine</a>
+    <a href="#modules">Modules</a><a href="#amxg">AMXG</a><a href="/supply">Supply</a><a href="#docks">Docks</a><a href="#gates">Gates</a><a href="#machine">Machine</a>
     <a href="#fleet">Fleet</a><a href="#alerts">Alerts</a><a href="/governance">Governance</a><a href="#config">Configuration</a>
   </nav>
   <button id="theme" class="mono themebtn" aria-label="Toggle paper or dark mode">Paper</button>
@@ -116,6 +116,7 @@ button:disabled { opacity:.4; cursor:not-allowed }
 </form></dialog>
 
 
+<script src="/static/amxg.js"></script>
 <script>
 const $ = s => document.querySelector(s);
 const esc = v => v == null ? "—" : String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -164,7 +165,7 @@ const MODULES = [
   ["M_01", "Event management", "Monitor supply chain events and logistical windows in real-time.", "#alerts"],
   ["M_02", "Supply analysis", "Supplier risk, network, single points of failure, stock coverage and mitigation.", "/supply"],
   ["M_03", "Tiered dashboards", "Gate and production-machine performance with trend and watch list.", "#machine"],
-  ["M_04", "AMXG", "Aircraft Maintenance Cross-Group operational command board.", "#docks"],
+  ["M_04", "AMXG", "Aircraft Maintenance Cross-Group: events, timelines, docks, tiered dashboards, status report, machine health and concept boards.", "#amxg"],
   ["M_05", "Workflow engine", "Compose tasks into executable workflows; attach alert and simulation rules per node.", null],
   ["M_06", "Data curation", "Bronze → Silver → Gold governance: trust scores, quarantine, certified products.", "/governance"],
   ["M_07", "Configuration tool", "The one place data enters Maestro - upload files, link an ERP or API, stream IoT.", "#config"],
@@ -186,7 +187,7 @@ function viewModules(v) {
 
 async function viewDocks(v) {
   const d = await api("/api/maestro/docks");
-  v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Operational module // AMXG</div><h1>DOCK OVERVIEW</h1>
+  v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow"><a href="#amxg" style="text-decoration:none">AMXG</a> // AMX_03</div><h1>DOCK OVERVIEW</h1>
     <div class="mono" style="color:var(--muted)">Status as of ${dt(d.as_of)} · ${d.aircraft.length} aircraft in work${d.trust ? ` · data trust <a href="/governance#drill?product=depot_flow&gold=1">${esc(d.trust.label)}</a>` : ""}</div></div></div><div class="docks" id="cards"></div>`;
   if (!d.aircraft.length) { $("#cards").outerHTML = await whyEmpty(["asset_flow", "gate_event"], "aircraft in work"); return; }
   $("#cards").innerHTML = d.aircraft.map(c => {
@@ -527,10 +528,10 @@ async function whyEmpty(entities, what) {
     <a class="tag" style="color:var(--accent)" href="#config">Load data in Configuration</a></div></div>`;
 }
 
-const VIEWS = {modules: viewModules, supply: () => { location.href = "/supply"; }, docks: viewDocks, gates: viewGates, machine: viewMachine, fleet: viewFleet, alerts: viewAlerts, config: viewConfig, data: viewConfig};
+const VIEWS = {...(window.AMXG_VIEWS || {}), modules: viewModules, supply: () => { location.href = "/supply"; }, docks: viewDocks, gates: viewGates, machine: viewMachine, fleet: viewFleet, alerts: viewAlerts, config: viewConfig, data: viewConfig};
 async function route() {
-  const key = (location.hash.slice(1).split("/")[0]) || "modules";
-  document.querySelectorAll("nav a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + key));
+  const key = (location.hash.slice(1).split(/[/?]/)[0]) || "modules";
+  document.querySelectorAll("nav a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + key || (a.getAttribute("href") === "#amxg" && key.startsWith("amxg-"))));
   const v = $("#view"); hideTip();
   try { await (VIEWS[key] || viewModules)(v); } catch (e) { v.innerHTML = `<p class="empty">Could not load this view (${esc(e.message)}).</p>`; }
 }

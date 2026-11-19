@@ -73,4 +73,5 @@ file,sheet,cell,before,after,kind,reason
 04_OC-ALC_Weapon_System_Summary.xlsx,Production Summary,"OO-ALC, WR-ALC rows",,FY30 totals,synthetic,Weapon systems from the AFSC view slide; numbers invented for the demo
 04_OC-ALC_Weapon_System_Summary.xlsx,Issue Register,all rows,AFSC view slide (coloured cells),13 issues,synthetic,Status and text from the slide; impact days and dates invented; B-52 rows tied to the tail notes
 05-09 supply files,,,,dated relative to 2026-11-19,synthetic,"Fictional suppliers (no real companies) around the parts named in the tail notes: engines, nose cowls, BL55 splice plates, ASM fittings. Government sources (448 SCMW, DLA) as named in the AFSC slide."
+10-11 BOM and work tasks,,,,,synthetic,"For the concept screens (BOM icicle, Dockboard icicle, Gate script). Skill codes from the status-board photo; skill names, scripts and BOM structure invented; task progress set from each aircraft's real day in gate."
 90_Governance_Demo_Bad_Fault_Entries.csv,,,,4 rows,synthetic,"Deliberate errors to show quarantine: bad tail format, invalid severity, missing tail, impossible date"

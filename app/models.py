@@ -127,6 +127,20 @@ ENTITIES: dict[str, dict[str, tuple[str, str]]] = {
         "title": (S, "Short description"), "impact_days": (N, "Schedule impact in days"),
         "owner": (S, "Person or office working it"), "date_logged": (D, "When raised"), "notes": (S, "Detail"),
     },
+    "bom_line": {
+        "parent": (S, "Parent assembly part number (the end item for top-level lines)"),
+        "child": (S, "Component part number"), "description": (S, "Component description"),
+        "quantity": (N, "Quantity per parent"), "level": (N, "Indenture level (1 = directly under the end item)"),
+        "end_item": (S, "End item / weapon system, e.g. B-52H"),
+    },
+    "work_task": {
+        "asset_id": (S, "Tail number"), "gate": (S, "Gate / phase"), "skill": (S, "Skill or shop code"),
+        "work_package": (S, "Work package"), "task": (S, "Task / operation"), "task_id": (S, "Task identifier (JCN, operation)"),
+        "planned_start_day": (N, "Planned start, day of the gate (1 = first day)"), "planned_days": (N, "Planned duration in days"),
+        "hours_planned": (N, "Planned hours"), "hours_actual": (N, "Actual hours charged"),
+        "status": (S, "Not started / In work / Done / Blocked"), "found_work": (S, "yes if added after inspection (found work)"),
+        "part_number": (S, "Part the task waits on, if any"), "closed_date": (D, "Closure date"),
+    },
     "risk_signal": {
         "signal_id": (S, "Identifier of the signal in its source feed"), "source": (S, "Feed that produced it"),
         "category": (S, "sanctions, hazard, stability or unrest"), "country": (S, "ISO 3166 alpha-3 country code"),

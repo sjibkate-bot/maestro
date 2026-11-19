@@ -12,7 +12,7 @@ from fastapi import Body, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel
 
-from . import analytics, governance, pdm, risk_feeds, supply_risk
+from . import amxg, analytics, governance, pdm, risk_feeds, supply_risk
 from .ai.claude import AIError
 from .ai.provider import get_provider
 from .connectors.files import ingest_file
@@ -227,6 +227,11 @@ def maestro_page():
     return FileResponse(WEB / "maestro.html")
 
 
+@app.get("/static/amxg.js", include_in_schema=False)
+def amxg_js():
+    return FileResponse(WEB / "amxg.js", media_type="text/javascript")
+
+
 @app.get("/api/maestro/gates")
 def maestro_gates():
     return [{"gate": g, "gate_number": pdm.GATE_NUMBER[g], "is_queue": pdm.IS_QUEUE[g]} for g in pdm.GATE_ORDER]
@@ -257,6 +262,74 @@ def maestro_fleet():
 @app.get("/api/maestro/alerts")
 def maestro_alerts():
     return pdm.alerts()
+
+
+# ---------------------------------------------------------------- AMXG modules
+@app.get("/api/amxg/hub")
+def amxg_hub():
+    return amxg.hub()
+
+
+@app.get("/api/amxg/events")
+def amxg_events():
+    return amxg.events()
+
+
+@app.post("/api/amxg/events/{event_id}")
+def amxg_event_update(event_id: str, body: dict = Body(...)):
+    try:
+        return amxg.update_event(event_id, body.get("state", "acknowledged"), body.get("user") or "unknown",
+                                 body.get("assignee"), body.get("note"))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/api/amxg/timelines")
+def amxg_timelines(filter: str = Query("all", pattern="^(all|in_work|delivered|incoming)$")):
+    return amxg.timelines(filter)
+
+
+@app.get("/api/amxg/tiered")
+def amxg_tiered():
+    return amxg.tiered()
+
+
+@app.get("/api/amxg/status")
+def amxg_status():
+    return amxg.status_report()
+
+
+@app.get("/api/amxg/dockboard")
+def amxg_dockboard():
+    return amxg.dockboard()
+
+
+@app.get("/api/amxg/bom")
+def amxg_bom(asset: Optional[str] = None):
+    return amxg.bom(asset or None)
+
+
+@app.get("/api/amxg/script/{asset}")
+def amxg_script(asset: str, gate: Optional[str] = None):
+    return amxg.gate_script(asset, gate)
+
+
+@app.post("/api/amxg/script/{asset}/close")
+def amxg_close(asset: str, body: dict = Body(...)):
+    try:
+        return amxg.close_task(asset, body["task_id"], body.get("user") or "unknown")
+    except KeyError:
+        raise HTTPException(404, "task not found")
+
+
+@app.post("/api/amxg/script/{asset}/found-work")
+def amxg_found(asset: str, body: dict = Body(...)):
+    try:
+        return amxg.add_found_work(asset, body.get("gate"), body.get("work_package"), body.get("task"), body.get("skill", ""),
+                                   int(body.get("start_day") or 0), int(body.get("days") or 0), float(body.get("hours") or 0),
+                                   body.get("user") or "unknown", body.get("part_number") or None)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 # ---------------- Supply analysis (risk) ----------------

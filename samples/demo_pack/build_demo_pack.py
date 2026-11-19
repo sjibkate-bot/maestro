@@ -388,6 +388,104 @@ def supply(today: date) -> dict:
             "demand": sorted(dem_rows, key=lambda r: r["Request Date"])}
 
 
+# ---------------------------------------------------------------- 10 BOM, 11 work tasks (SYNTHETIC, for the concept screens)
+
+SKILLS = {"AA": "Structures", "AB": "Sheet metal", "AE": "Engines", "AG": "Hydraulics", "AH": "Electrical",
+          "AM": "Fuel systems", "AS": "Avionics", "BA": "NDI", "BS": "Corrosion & paint"}
+GATE_SCRIPTS = {   # gate: [(work package, task, skill, start day, days, hours, part)]
+    "PreDock": [("Induction", "Wash and defuel", "BS", 1, 4, 64, None), ("Induction", "Configuration download", "AS", 3, 5, 40, None),
+                ("Engines", "Remove engines", "AE", 5, 6, 192, None), ("Induction", "Move to dock", "AB", 18, 3, 24, None)],
+    "Inspection": [("Access", "Strip and open panels", "AB", 1, 4, 160, None), ("Inspection", "NDI wing and fuselage structure", "BA", 3, 10, 240, None),
+                   ("Inspection", "Fuel tank entry inspection", "AM", 5, 8, 128, None), ("Inspection", "Wiring inspection", "AH", 6, 8, 96, None),
+                   ("Inspection", "Write up discrepancies (202 requests)", "AA", 14, 6, 60, None)],
+    "Repair": [("Wing structure", "Remove wing panels", "AB", 1, 5, 120, None),
+               ("Wing structure", "BL55 splice plate replacement", "AA", 6, 20, 640, "B52-SPL-BL55"),
+               ("Wing structure", "Center wing stringer repair", "AA", 10, 25, 560, "B52-STR-CW100"),
+               ("Wing structure", "Install wing panels", "AB", 45, 8, 160, None),
+               ("Flight controls", "Flap track replacement", "AA", 15, 12, 220, "B52-FLP-TRK"),
+               ("Flight controls", "Rig flaps", "AH", 52, 5, 60, None),
+               ("Hydraulics", "Replace engine-driven pumps", "AG", 20, 8, 96, "B52-HYD-PMP"),
+               ("Hydraulics", "Bomb door actuator overhaul", "AG", 30, 10, 80, "B52-HYD-ACT-BD"),
+               ("Hydraulics", "System leak check", "AG", 55, 3, 30, None),
+               ("Electrical", "Wing harness replacement", "AH", 25, 15, 300, "B52-HRN-W2"),
+               ("Electrical", "Bus 2 generator control unit", "AH", 40, 4, 24, "B52-GEN-CTR"),
+               ("Corrosion", "NDI wing fittings", "BA", 4, 6, 48, None),
+               ("Corrosion", "Corrosion treatment, wing box", "BS", 5, 15, 200, None)],
+    "Restore": [("Engines", "Install engines", "AE", 1, 6, 192, "B52-ENG-TF33"), ("Engines", "Install nose cowls", "AE", 6, 3, 48, "B52-NC-LH01"),
+                ("Systems", "Hydraulic ops checks", "AG", 9, 3, 36, None), ("Systems", "Avionics ops check", "AS", 8, 4, 48, "B52-RDR-RCV"),
+                ("Close-up", "Close panels", "AB", 11, 3, 72, None)],
+    "Post Dock": [("Fuel", "Fuel cell leak check", "AM", 1, 10, 120, None), ("Paint", "Paint and markings", "BS", 8, 20, 400, None),
+                  ("FCF", "Engine runs", "AE", 30, 5, 80, None), ("FCF", "FCF preparation", "AS", 38, 8, 64, None),
+                  ("FCF", "Functional check flight and fixes", "AE", 46, 8, 120, None)],
+}
+FOUND_WORK = [("Wing structure", "RH ASM fitting replacement (202)", "AA", 12, 10, 180, "B52-FIT-ASM-R"),
+              ("Wing structure", "LH ASM fitting replacement (202)", "AA", 18, 10, 180, "B52-FIT-ASM-L"),
+              ("Wing structure", "Additional stringer splice, station 1327 (202)", "AA", 28, 12, 240, "B52-STR-CW100")]
+SHORT_PARTS = {"B52-NC-LH01", "B52-SPL-BL55", "B52-ENG-TF33", "B52-RDR-RCV"}   # low cover in the supply data
+
+
+def current_gates(path: Path) -> dict:
+    """tail -> (gate, day in gate) from a cleaned Fixer workbook (only aircraft in a working gate)."""
+    wb = openpyxl.load_workbook(path, data_only=True)
+    out = {}
+    for ws in wb.worksheets:
+        if not re.match(r"^\d{2}-\d{4}$", ws.title):
+            continue
+        as_of = ws["K1"].value
+        hdr = next(r for r in range(1, 15) if ws.cell(r, 2).value == "G1 Q")
+        last = None
+        for c in range(2, 12):
+            st, fin, days = ws.cell(hdr + 1, c).value, ws.cell(hdr + 3, c).value, ws.cell(hdr + 4, c).value
+            if isinstance(st, datetime) and st <= as_of:
+                last = (ws.cell(hdr, c).value, fin, days, st)
+        if last and last[1] is None and last[0] in GATE_SCRIPTS:
+            out[ws.title] = (last[0], int(last[2] if isinstance(last[2], (int, float)) else (as_of - last[3]).days))
+    return out
+
+
+def work_tasks(path: Path) -> list[dict]:
+    rows = []
+    for tail, (gate, day) in sorted(current_gates(path).items()):
+        script = list(GATE_SCRIPTS[gate])
+        if gate == "Repair":
+            script += FOUND_WORK[: 1 + (day > 20) + (day > 35)]
+        for n, (wp, task, skill, start, dur, hrs, part) in enumerate(script, 1):
+            end = start + dur - 1
+            found = "(202)" in task
+            if end < day:
+                status, frac = ("Done", 1.0) if random.random() > 0.15 else ("In work", 0.85)
+            elif start <= day:
+                status, frac = "In work", (day - start + 1) / dur
+            else:
+                status, frac = "Not started", 0.0
+            if part in SHORT_PARTS and status != "Done":
+                status = "Blocked"
+            rows.append({"Tail Number": tail, "Gate": {"PreDock": "Pre Dock"}.get(gate, gate), "Skill": skill, "Skill Name": SKILLS[skill], "Work Package": wp,
+                         "Task": task, "Task ID": f"{tail}-{gate[:3].upper()}-{n:03d}", "Planned Start Day": start,
+                         "Planned Days": dur, "Hours Planned": hrs, "Hours Actual": round(hrs * frac * random.uniform(0.9, 1.25)),
+                         "Status": status, "Found Work": "yes" if found else "no", "Part Number": part or ""})
+    return rows
+
+
+BOM = [  # parent, child, description, qty, level
+    ("B-52H", "SYS-PROP", "Propulsion system", 1, 1), ("B-52H", "SYS-WING", "Wing structure", 1, 1),
+    ("B-52H", "SYS-FUS", "Fuselage and access", 1, 1), ("B-52H", "SYS-HYD", "Hydraulic system", 1, 1),
+    ("B-52H", "SYS-AVI", "Avionics and electrical", 1, 1),
+    ("SYS-PROP", "ASM-ENG", "Engine installation", 8, 2), ("SYS-PROP", "ASM-NAC", "Nacelle and cowls", 4, 2),
+    ("ASM-ENG", "B52-ENG-TF33", "TF33-P-103 engine, overhauled", 1, 3), ("ASM-ENG", "B52-OIL-XMTR", "Oil pressure transmitter", 1, 3),
+    ("ASM-NAC", "B52-NC-LH01", "Nose cowl, LH", 1, 3), ("ASM-NAC", "B52-NC-RH01", "Nose cowl, RH", 1, 3),
+    ("SYS-WING", "ASM-WBOX", "Wing box, BL55", 1, 2), ("SYS-WING", "ASM-CWING", "Center wing", 1, 2), ("SYS-WING", "ASM-FLAP", "Flaps", 2, 2),
+    ("ASM-WBOX", "B52-SPL-BL55", "BL55 splice plate", 4, 3), ("ASM-WBOX", "B52-FIT-ASM-R", "ASM fitting, RH", 1, 3),
+    ("ASM-WBOX", "B52-FIT-ASM-L", "ASM fitting, LH", 1, 3), ("ASM-CWING", "B52-STR-CW100", "Center wing stringer", 6, 3),
+    ("ASM-FLAP", "B52-FLP-TRK", "Flap track assembly", 3, 3), ("SYS-WING", "B52-HRN-W2", "Wing wiring harness", 2, 2),
+    ("SYS-FUS", "B52-PNL-ACC", "Access panel set", 1, 2), ("SYS-FUS", "B52-FST-KIT", "Fastener kit, structural", 10, 2),
+    ("SYS-FUS", "B52-SEAL-PR", "Sealant and primer kit", 6, 2),
+    ("SYS-HYD", "B52-HYD-PMP", "Hydraulic pump, engine driven", 4, 2), ("SYS-HYD", "B52-HYD-ACT-BD", "Bomb door actuator", 2, 2),
+    ("SYS-AVI", "B52-RDR-RCV", "Radar receiver LRU", 1, 2), ("SYS-AVI", "B52-NAV-INU", "Inertial nav unit", 2, 2),
+    ("SYS-AVI", "B52-CPC-01", "Cabin pressure controller", 1, 2), ("SYS-AVI", "B52-GEN-CTR", "Generator control unit (Bus 2)", 4, 2),
+]
+
+
 # ---------------------------------------------------------------- writers
 
 def write_xlsx(path: Path, sheets: dict[str, list[dict]]):
@@ -440,6 +538,12 @@ def main():
     log("05-09 supply files", "", "", "", f"dated relative to {today.isoformat()}",
         "Fictional suppliers (no real companies) around the parts named in the tail notes: engines, nose cowls, "
         "BL55 splice plates, ASM fittings. Government sources (448 SCMW, DLA) as named in the AFSC slide.", kind="synthetic")
+    write_csv(OUT / "10_BOM_B-52H.csv", [{"End Item": "B-52H", "Parent": p, "Child": c, "Description": dsc, "Quantity": q, "Level": lv}
+                                          for p, c, dsc, q, lv in BOM])
+    write_xlsx(OUT / "11_Work_Tasks_2030-09-16.xlsx", {"Work Tasks": work_tasks(OUT / "02_B-52_Fixer_2030-09-16.xlsx")})
+    log("10-11 BOM and work tasks", "", "", "", "",
+        "For the concept screens (BOM icicle, Dockboard icicle, Gate script). Skill codes from the status-board photo; "
+        "skill names, scripts and BOM structure invented; task progress set from each aircraft's real day in gate.", kind="synthetic")
     bad = [
         {"Tail_Number": "B52-7531", "Date_Logged": as_of.isoformat(), "Fault_Code": "F077", "Severity": "Major",
          "Description": "Fuel leak - aft body tank", "Technician_Assigned": "SSgt Ortiz"},

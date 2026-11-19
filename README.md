@@ -81,11 +81,33 @@ Open **http://localhost:8000/maestro#config** (Configuration) and load the files
 | View | What it shows | Built from |
 |---|---|---|
 | Modules | The 14 Maestro components. Built ones are marked LIVE, the rest DESIGN | – |
-| Docks (AMXG) | One card per aircraft in work: current gate, Day x/goal, Flow x/AMREP days, In-dock x/goal, Queue, milestones, next big thing, notes, AMREP risk | PDM tail sheets |
+| Docks (AMX_03) | One card per aircraft in work: current gate, Day x/goal, Flow x/AMREP days, In-dock x/goal, Queue, milestones, next big thing, notes, AMREP risk | PDM tail sheets |
 | Gates | Gate graph per *FIXER DATA TO GRAPHS* process: last X aircraft (default 6) + aircraft in the gate (actual + remaining), rolling last-X average, requirement, and the WIP plan vs actual inset | tail sheets + Machine Info |
 | Machine | Last-X average days per gate and queue vs requirement, last-X flow and in-dock days, last aircraft produced | same |
 | Fleet | MC rate with FMC/PMC/Degraded/NMC band, MTBM vs target, subsystem health, telemetry against limits, fault registry | Dashboard supporting data |
 | Alerts | Critical and warning alerts from the fault registry, telemetry breaches, AMREP risk and gate overruns | all |
+
+### AMXG specific modules
+
+Open **http://localhost:8000/maestro#amxg** (or **AMXG** in the top bar).
+
+![AMXG hub](docs-amxg-hub.png)
+
+| Card | Screen | Built from |
+|---|---|---|
+| AMX_01 Event management | One feed of fault-registry entries, telemetry breaches, AMREP and gate risks, the issue register, blocked work and supply shortages. Filter by state, source and level; acknowledge, assign, close or reopen (each action asks for a name and goes in the audit log) | all depot, fleet and supply data |
+| AMX_02 Product specific timelines | Gantt of every aircraft through the gates: queues vs gates, gates over goal, AMREP date, projected/actual finish, an as-of line. Filters All / In work / Sold-delivered / Incoming | tail sheets + FY schedule |
+| AMX_03 Dock overview | The Docks board | tail sheets |
+| AMX_04 Tiered dashboards | Drill AFSC → ALC → weapon system → B-52 PDM line → dock → aircraft. Produced vs goal by quarter, attainment, on-time, hours, yield, open issues at each level; the PDM line adds WIP-over-plan and slow gates | ALC summary + issue register + tail sheets |
+| AMX_05 Aircraft status report | Aircraft × gate grid (days / goal, in gate now, over goal), AMREP margin, health band, blocked work; a detail panel per aircraft | tail sheets + fleet + work tasks |
+| AMX_06 Machine health | The Fleet view. It reads any `asset_status` / `subsystem_health` / `fault` / telemetry data, so shop equipment loaded the same way appears here too | dashboard data |
+| Concept: Dockboard icicle | Floor → dock → aircraft → gate → skill → work package → task, width = planned hours, click to zoom. Lenses: status, schedule against the script, priority, parts, hours charged vs planned, skill backlog | work tasks |
+| Concept: BOM icicle | End item → system → assembly → piece part. Lenses: availability (worst-of rollup), supplier lead time, extended cost, supplier on-time conformance. Blocked-only filter and single-aircraft zoom (only the parts its open work needs) | BOM + supply data + work tasks |
+| Concept: Gate script | The gate's days across the top, task rows grouped by skill code, today and goal lines. **+ Found work** splices a task into a work package and pushes overlapping not-started tasks after it; **Close** completes a task. Both appear in the PMSS mirror, which only records what would be sent: PMSS is not connected | work tasks |
+
+Work tasks (`work_task`: tail, gate, skill, work package, task, planned start day and days, hours, status, found work, part) and BOM lines (`bom_line`: parent, child, quantity, level, end item) are new entity types and are governed like everything else. Acknowledgements, closures and found work added on screen are stored beside the data (`amxg_overlay`) and never change the governed records; **Delete all data** clears them too.
+
+![gate script](docs-amxg-gate-script.png)
 
 How the workbooks are read:
 * **Tail sheets** are recognised by their labels (`G1 Q … Post Dock`, `# of Actual Days`), not by fixed cells, so inserted rows don't break them. Green and blue tabs are kept as `tab_color`, and in-work vs produced comes from the actual finish date. A queue left open on the sheet counts as finished once a later gate has started (on or before the sheet's "Today's Date"). A mismatch between the sheet name and cell D1 is flagged as a data check.
@@ -148,6 +170,8 @@ Tests: `pytest -q` (75 tests, including the Maestro reference workbooks and the 
 | `GET /api/analytics/overview` and `/api/analytics/{inventory,suppliers,shipments,demand,iot}` | KPIs |
 | `POST /api/ask` | Natural-language question → answer, findings, actions |
 | `GET /api/records`, `/api/sources`, `/api/mappings` | Browse data, sources and the AI's learned mappings |
+| `GET /api/amxg/hub`, `/events`, `/timelines?filter=`, `/tiered`, `/status`, `/dockboard`, `/bom?asset=`, `/script/{tail}?gate=` | AMXG screens |
+| `POST /api/amxg/events/{id}`, `/api/amxg/script/{tail}/close`, `/api/amxg/script/{tail}/found-work` | Acknowledge / close events, close tasks, add found work (audited) |
 
 ERP examples: SAP S/4HANA (`/sap/opu/odata/sap/API_PURCHASEORDER_PROCESS_SRV/A_PurchaseOrderItem`, records path `d.results`), Dynamics 365 (`/data/PurchaseOrderLinesV2`), plus Oracle Fusion, NetSuite and Odoo REST endpoints.
 

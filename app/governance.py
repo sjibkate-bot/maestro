@@ -39,7 +39,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "gold_target_pct": 95,
     "asset_id_pattern": r"^\d{2}-\d{4,5}$",
     "domains": {
-        "depot": {"entities": ["asset_flow", "gate_event", "gate_plan", "production_schedule", "production_summary", "issue"],
+        "depot": {"entities": ["asset_flow", "gate_event", "gate_plan", "production_schedule", "production_summary", "issue",
+                               "bom_line", "work_task"],
                   "owner": "AMXG Production Superintendent", "steward": "Depot Scheduling Steward",
                   "sensitivity": "CUI"},
         "fleet": {"entities": ["asset_status", "subsystem_health", "sensor_reading", "fault"],
@@ -70,6 +71,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "risk_signal": ["signal_id", "source", "category", "risk_score", "title"],
         "production_summary": ["organization", "weapon_system", "period", "produced", "goal"],
         "issue": ["organization", "weapon_system", "status", "title"],
+        "bom_line": ["parent", "child", "quantity"],
+        "work_task": ["asset_id", "gate", "skill", "work_package", "task", "planned_days", "status"],
     },
     # natural keys; "snapshot" keeps the newest version, "event" removes duplicate copies
     "keys": {
@@ -90,6 +93,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "risk_signal": ("snapshot", ["source", "signal_id"]),
         "production_summary": ("snapshot", ["organization", "weapon_system", "period"]),
         "issue": ("snapshot", ["organization", "weapon_system", "title"]),
+        "bom_line": ("snapshot", ["parent", "child"]),
+        "work_task": ("snapshot", ["asset_id", "task_id"]),
     },
     # identity fields whose absence is a hard rule (record cannot be placed or matched)
     "hard_keys": {
@@ -101,6 +106,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "risk_signal": ["signal_id", "source"],
         "production_summary": ["weapon_system", "period"],
         "issue": ["weapon_system", "title"],
+        "bom_line": ["parent", "child"],
+        "work_task": ["asset_id", "task"],
     },
     # field used for timeliness and how old it may be relative to the newest record of that type
     "freshness": {
@@ -135,6 +142,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
         {"id": "alc_summary", "name": "ALC Production & Issues", "domain": "depot",
          "description": "Weapon-system production vs goal, hours and yield, and open issues by organization.",
          "entities": ["production_summary", "issue"], "freshness_days": 30},
+        {"id": "work_and_bom", "name": "Work Packages & BOM", "domain": "depot",
+         "description": "Gate work tasks by skill and work package, and the indentured bill of materials.",
+         "entities": ["work_task", "bom_line"], "freshness_days": 7},
         {"id": "risk_signals", "name": "External Risk Signals", "domain": "external",
          "description": "Sanctions matches, natural hazards, political stability and unrest from public feeds.",
          "entities": ["risk_signal"], "freshness_days": 2},
@@ -1081,7 +1091,7 @@ def delete_data(source_id: Optional[str], confirm: str, user: str, reason: str =
     if source_id:
         db.sources.delete_one({"_id": source_id})
     else:
-        for c in ("sources", "drift", "mappings"):
+        for c in ("sources", "drift", "mappings", "amxg_overlay"):
             db[c].delete_many({})
     # Gold built on removed data must be re-certified by its owner.
     pids = [p["id"] for p in config()["products"] if p["name"] in preview["products_affected"]]
