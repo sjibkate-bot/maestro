@@ -98,7 +98,7 @@ button:disabled { opacity:.4; cursor:not-allowed }
   <a class="logo" href="#modules"><i>M</i>MAESTRO-SC</a><span class="sep"></span>
   <input class="search" id="search" placeholder="SEARCH_SYSTEM...  [Ctrl+K]" aria-label="Search tail number">
   <nav class="mono" id="nav">
-    <a href="#modules">Modules</a><a href="#supply">Supply</a><a href="#docks">Docks</a><a href="#gates">Gates</a><a href="#machine">Machine</a>
+    <a href="#modules">Modules</a><a href="/supply">Supply</a><a href="#docks">Docks</a><a href="#gates">Gates</a><a href="#machine">Machine</a>
     <a href="#fleet">Fleet</a><a href="#alerts">Alerts</a><a href="/governance">Governance</a><a href="#config">Configuration</a>
   </nav>
   <button id="theme" class="mono themebtn" aria-label="Toggle paper or dark mode">Paper</button>
@@ -162,7 +162,7 @@ async function loadAlerts() {
 // ---------- views ----------
 const MODULES = [
   ["M_01", "Event management", "Monitor supply chain events and logistical windows in real-time.", "#alerts"],
-  ["M_02", "Supply analysis", "Inventory, supplier on-time, late POs and shipments from any source.", "#supply"],
+  ["M_02", "Supply analysis", "Supplier risk, network, single points of failure, stock coverage and mitigation.", "/supply"],
   ["M_03", "Tiered dashboards", "Gate and production-machine performance with trend and watch list.", "#machine"],
   ["M_04", "AMXG", "Aircraft Maintenance Cross-Group operational command board.", "#docks"],
   ["M_05", "Workflow engine", "Compose tasks into executable workflows; attach alert and simulation rules per node.", null],
@@ -399,7 +399,7 @@ const DEST = {
   asset_status: ["fleet", "Fleet"], subsystem_health: ["fleet", "Fleet"], fault: ["fleet", "Fleet"],
   sensor_reading: ["fleet", "Fleet / Supply IoT"],
 };
-const destLink = rt => { const d = DEST[rt]; return d ? `<a href="#${d[0]}">→ ${esc(d[1])}</a>` : '<span style="color:var(--muted)">not shown in a module</span>'; };
+const destLink = rt => { const d = DEST[rt]; return d ? `<a href="${d[0] === "supply" ? "/supply" : "#" + d[0]}">→ ${esc(d[1])}</a>` : '<span style="color:var(--muted)">not shown in a module</span>'; };
 
 async function viewConfig(v) {
   v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Configuration tool // Maestro connect</div><h1>CONFIGURATION</h1>
@@ -493,31 +493,6 @@ async function viewConfig(v) {
   const reload = $("#up").onclick; $("#up").onclick = async () => { await reload(); sources(); };
 }
 
-async function viewSupply(v) {
-  const [o, ps] = await Promise.all([api("/api/analytics/overview"), api("/api/governance/products").catch(() => [])]);
-  const k = o.kpis, trust = id => { const p = ps.find(x => x.id === id); return p && p.records ? `<a href="/governance#drill?product=${id}&gold=1" class="mono" style="font-size:11px;color:var(--ink2)">trust ${esc(p.trust_label)}</a>` : ""; };
-  const supplyCount = ["inventory", "product", "purchase_order", "supplier", "sales_order", "shipment"].reduce((a, t) => a + (o.record_counts[t] || 0), 0);
-  const head = `<div class="titlebar"><div><div class="mono eyebrow">Supply analysis</div><h1>SUPPLY CHAIN</h1>
-    <div class="mono" style="color:var(--muted)">Governed Gold data only · load data in <a href="#config">Configuration</a></div></div></div>`;
-  if (!supplyCount && !o.iot.readings) { v.innerHTML = head + await whyEmpty(["inventory", "purchase_order", "shipment", "product", "supplier"], "supply data"); return; }
-  const tbl = (rows, cols) => rows && rows.length ? `<div style="max-height:420px;overflow:auto"><table><tr>${cols.map(c => `<th class="${c[2] || ""}">${c[0]}</th>`).join("")}</tr>${rows.map(r => `<tr>${cols.map(c => `<td class="${c[2] || ""}">${c[1](r)}</td>`).join("")}</tr>`).join("")}</table></div>` : '<p class="empty">Nothing to show.</p>';
-  const pct = x => x == null ? "—" : (x * 100).toFixed(1) + "%";
-  const tile = (l, val, cls = "") => `<div class="stat"><div class="l mono">${l}</div><div class="v ${cls}">${esc(val)}</div></div>`;
-  v.innerHTML = head + `<div class="stats">
-      ${tile("Supply records", num(supplyCount, 0))}${tile("Inventory value", num(k.inventory_value, 0))}
-      ${tile("Below reorder point", num(k.skus_below_reorder_point, 0), k.skus_below_reorder_point ? "over" : "")}${tile("Stockouts", num(k.stockouts, 0), k.stockouts ? "over" : "")}
-      ${tile("Supplier on-time", pct(k.supplier_on_time_rate))}${tile("Late PO lines", num(k.late_po_lines, 0), k.late_po_lines ? "over" : "")}
-      ${tile("Delayed shipments", num(k.delayed_shipments, 0), k.delayed_shipments ? "over" : "")}${tile("Sensor anomalies", num(k.sensor_anomalies, 0), k.sensor_anomalies ? "over" : "")}</div>
-    <div class="split" style="grid-template-columns:1fr 1fr">
-    <div class="panel"><h2 class="mono">Below reorder point ${trust("inventory_position")}</h2>${tbl(o.inventory.below_reorder_point, [["SKU", r => esc(r.sku)], ["Location", r => esc(r.location)], ["On hand", r => num(r.on_hand, 0), "n"], ["Reorder pt", r => num(r.reorder_point, 0), "n"], ["Shortfall", r => num(r.shortfall, 0), "n"]])}</div>
-    <div class="panel"><h2 class="mono">Supplier performance ${trust("supplier_performance")}</h2>${tbl(o.suppliers.suppliers, [["Supplier", r => esc(r.supplier)], ["Lines", r => r.po_lines, "n"], ["Spend", r => num(r.spend, 0), "n"],
-      ["On-time", r => `<div class="row" style="flex-wrap:nowrap;gap:8px"><div class="meter" style="width:90px;margin:0"><i style="width:${(r.on_time_rate || 0) * 100}%"></i></div>${pct(r.on_time_rate)}</div>`], ["Lead time (d)", r => num(r.avg_lead_time_days), "n"]])}</div>
-    <div class="panel"><h2 class="mono">Late PO lines</h2>${tbl(o.suppliers.late_lines, [["PO", r => esc(r.order_id)], ["SKU", r => esc(r.sku)], ["Supplier", r => esc(r.supplier)], ["Days late", r => r.days_late + (r.open ? " (open)" : ""), "n"]])}</div>
-    <div class="panel"><h2 class="mono">Delayed shipments ${trust("logistics")}</h2>${tbl(o.shipments.delayed, [["Shipment", r => esc(r.shipment_id)], ["Route", r => `${esc(r.origin)} → ${esc(r.destination)}`], ["Status", r => esc(r.status)], ["Days late", r => r.days_late, "n"]])}</div>
-    <div class="panel"><h2 class="mono">Top demand</h2>${tbl(o.demand.top_skus, [["SKU", r => esc(r.sku)], ["Quantity", r => num(r.quantity, 0), "n"]])}</div>
-    <div class="panel"><h2 class="mono">IoT sensor anomalies</h2>${tbl(o.iot.anomalies, [["Device", r => esc(r.device_id)], ["Metric", r => esc(r.metric)], ["Value", r => num(r.value), "n"], ["z-score", r => r.z, "n"], ["When", r => dt(r.timestamp)]])}</div></div>`;
-}
-
 async function whyEmpty(entities, what) {
   let d; try { d = await api("/api/governance/diagnose?entities=" + entities.join(",")); } catch { d = {reasons: []}; }
   const prods = {asset_flow: "depot_flow", gate_event: "depot_flow", asset_status: "fleet_health", inventory: "inventory_position"};
@@ -531,7 +506,7 @@ async function whyEmpty(entities, what) {
     <a class="tag" style="color:var(--accent)" href="#config">Load data in Configuration</a></div></div>`;
 }
 
-const VIEWS = {modules: viewModules, supply: viewSupply, docks: viewDocks, gates: viewGates, machine: viewMachine, fleet: viewFleet, alerts: viewAlerts, config: viewConfig, data: viewConfig};
+const VIEWS = {modules: viewModules, supply: () => { location.href = "/supply"; }, docks: viewDocks, gates: viewGates, machine: viewMachine, fleet: viewFleet, alerts: viewAlerts, config: viewConfig, data: viewConfig};
 async function route() {
   const key = (location.hash.slice(1).split("/")[0]) || "modules";
   document.querySelectorAll("nav a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + key));

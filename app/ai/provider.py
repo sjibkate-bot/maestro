@@ -29,7 +29,7 @@ _SYNONYMS: dict[str, list[str]] = {
     "supplier": ["supplier", "vendor", "lifnr", "suppliername", "vendorname"],
     "customer": ["customer", "client", "kunnr", "customername", "soldto"],
     "order_id": ["po", "ponumber", "orderid", "ordernumber", "ebeln", "vbeln",
-                 "invoice", "invoiceno", "documentno"],
+                 "invoice", "invoiceno", "documentno", "sonumber", "salesorder", "salesordernumber", "sono"],
     "shipment_id": ["shipmentid", "tracking", "trackingno", "awb", "bol", "consignment"],
     "carrier": ["carrier", "scac"],
     "status": ["status", "state", "statusicon"],
@@ -63,6 +63,12 @@ _SYNONYMS: dict[str, list[str]] = {
     "due_date": ["duedate", "amrep", "amrepdate", "contractdate"],
     "sold_date": ["solddate", "sold", "outputdate"],
     "notes": ["notes", "remarks", "comment", "comments"],
+    "country": ["country", "countrycode", "land1", "origincountry", "countryoforigin"],
+    "tier": ["tier", "suppliertier", "tierlevel"],
+    "supplies_to": ["suppliesto", "parentsupplier", "customersupplier", "feeds", "deliversto", "tier1supplier"],
+    "commodity": ["commodity", "category", "materialgroup", "matkl", "partfamily", "suppliedpart", "partcategory"],
+    "sole_source": ["solesource", "singlesource", "sourcing", "solesourced"],
+    "annual_spend": ["annualspend", "spend", "yearlyspend", "spendyr", "annualvalue"],
 }
 _LOOKUP: dict[str, list[str]] = {}
 for _field, _syns in _SYNONYMS.items():

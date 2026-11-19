@@ -56,6 +56,29 @@ for dev in ["reefer-01", "reefer-02"]:
                          "ts": (now - timedelta(minutes=5 * (120 - m))).isoformat(), "site": "DC-Dallas"})
 (OUT / "iot_readings.json").write_text(json.dumps(readings, indent=1))
 
+# CSV: supplier master with sub-tiers (who supplies whom), country, commodity, sourcing and spend
+master = [
+    ("Acme Components", 1, "", "United States", "Controller PCBAs", "no", 2_400_000, 18),
+    ("Globex Metals", 1, "", "Germany", "Machined housings", "yes", 3_100_000, 25),
+    ("Initech Plastics", 1, "", "Mexico", "Injection-moulded parts", "no", 1_900_000, 21),
+    ("Umbrella Packaging", 1, "", "Canada", "Packaging", "no", 900_000, 14),
+    ("Stark Electronics", 1, "", "Taiwan", "Power electronics", "yes", 4_200_000, 30),
+    ("Wayne Foundry", 2, "Globex Metals", "Poland", "Aluminium castings", "yes", 0, 35),
+    ("Cyberdyne Semis", 2, "Stark Electronics", "Malaysia", "GaN power FETs", "yes", 0, 60),
+    ("Tyrell Resins", 2, "Initech Plastics", "United States", "Polymer resin", "no", 0, 20),
+]
+pd.DataFrame(master, columns=["Supplier", "Tier", "Supplies To", "Country", "Commodity", "Sole Source",
+                              "Annual Spend", "Lead Time"]).to_csv(OUT / "supplier_master.csv", index=False)
+
+# CSV: customer orders (demand), used for days-of-cover
+so = []
+for n in range(1, 91):
+    d = today - timedelta(days=random.randint(1, 60))
+    so.append({"SO Number": f"SO-{7000 + n}", "Customer": random.choice(["North America OEM", "EU Distribution", "Aftermarket"]),
+               "Item": random.choice(SKUS), "Qty": random.randint(5, 60), "Order Date": d.isoformat(),
+               "Requested Date": (d + timedelta(days=10)).isoformat()})
+pd.DataFrame(so).to_csv(OUT / "sales_orders.csv", index=False)
+
 # Text: a supplier email (unstructured -> needs AI extraction)
 (OUT / "supplier_email.txt").write_text(f"""From: orders@globexmetals.example
 Subject: Delay notice for PO-4512 and PO-4530

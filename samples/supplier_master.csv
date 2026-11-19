@@ -1,0 +1,9 @@
+Supplier,Tier,Supplies To,Country,Commodity,Sole Source,Annual Spend,Lead Time
+Acme Components,1,,United States,Controller PCBAs,no,2400000,18
+Globex Metals,1,,Germany,Machined housings,yes,3100000,25
+Initech Plastics,1,,Mexico,Injection-moulded parts,no,1900000,21
+Umbrella Packaging,1,,Canada,Packaging,no,900000,14
+Stark Electronics,1,,Taiwan,Power electronics,yes,4200000,30
+Wayne Foundry,2,Globex Metals,Poland,Aluminium castings,yes,0,35
+Cyberdyne Semis,2,Stark Electronics,Malaysia,GaN power FETs,yes,0,60
+Tyrell Resins,2,Initech Plastics,United States,Polymer resin,no,0,20

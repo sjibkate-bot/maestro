@@ -48,7 +48,12 @@ ENTITIES: dict[str, dict[str, tuple[str, str]]] = {
         "promised_date": (D, "ETA / promised date"), "delivered_date": (D, "Actual arrival"),
     },
     "supplier": {
-        "supplier": (S, "Supplier name / id"), "location": (S, "Country / site"),
+        "supplier": (S, "Supplier name / id"), "location": (S, "Site / city"),
+        "country": (S, "Country of the supplying site"), "tier": (N, "Supply tier: 1 = direct supplier, 2+ = sub-tier"),
+        "supplies_to": (S, "For a sub-tier supplier: the supplier it delivers to"),
+        "commodity": (S, "What it supplies (category / commodity)"),
+        "sole_source": (S, "yes if it is the only qualified source for what it supplies"),
+        "annual_spend": (N, "Annual spend with the supplier"),
         "lead_time_days": (N, "Standard lead time"), "status": (S, "Approval status"),
     },
     "product": {

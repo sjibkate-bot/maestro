@@ -7,7 +7,7 @@ It follows the same idea as Praxie (AI supply-chain workspace on connected data)
 Everything runs in one application, **Maestro-SC** (http://localhost:8000/maestro):
 
 * **Configuration** is the only place data enters: file upload, API/ERP pull and IoT. After each load it shows which module the data feeds. **Loaded data** lists every source and deletes one source, or everything. You must type the source name (or `DELETE ALL`) and your name. Deletion removes the source from Bronze, Silver, Gold and quarantine, withdraws certification of the affected Gold products, makes any older version of the same records current again, and is recorded in the audit log.
-* **Modules** show the governed data: **Supply** (inventory, suppliers, POs, shipments, IoT), **Docks / Gates / Machine** (depot flow) and **Fleet** (health and faults).
+* **Modules** show the governed data: **Supply analysis** (http://localhost:8000/supply), **Docks / Gates / Machine** (depot flow) and **Fleet** (health and faults).
 * **Governance** shows quality, quarantine and lineage for everything that was loaded.
 
 ![gate graph](docs-maestro-gates.png)
@@ -32,6 +32,24 @@ Open **http://localhost:8000/governance**. It follows the DFSP IP Data Governanc
 **Drill-down:** every number on the governance page opens the records behind it. Facets let you narrow by entity, layer, grade, issue and source. Clicking a record shows its six dimension scores, each issue (a hard rule or a deduction), its quarantine status, every version of it, and its lineage: Bronze file (SHA-256) → batch and Gate 1 result → the exact source row → Silver → Gold, or why it was excluded. Bronze batches open to show the content exactly as received. In Maestro, tail numbers on dock cards and gate-graph bars open that aircraft's records. A module with no Gold data explains why: nothing loaded, quarantined, grade C, or blocked at Gate 1.
 
 Weights, grade thresholds, SLA, drift threshold and roles are editable under **01 Plan & govern**. They stay proposals until a governance council ratifies them, and changing them re-scores everything and is audited. Actions are recorded against the name in **Acting as**. There is no login yet, so this is not access control.
+
+## Supply analysis (risk & resilience)
+
+Open **http://localhost:8000/supply**. It's a light-theme screen computed only from governed Gold supply data: supplier master, purchase orders, inventory, item master and customer orders. The samples are in `samples/` (`supplier_master.csv`, `sales_orders.csv`, `inventory.xlsx`, `purchase_orders.csv`).
+
+![supply analysis](docs-supply.png)
+
+| View | What it shows |
+|---|---|
+| Overview | Supply risk index (spend-weighted, 0–100), critical/high suppliers, spend at risk, single points of failure, items under 14 days of cover, data confidence; plus what needs attention, the rating mix and spend by country |
+| Supply network | Sub-tier → tier 1 → items → sites → customers. Click a node to trace what it depends on and what it feeds. Sole-sourced items and sub-tiers are marked as single points of failure |
+| Supplier risk | Scorecard per supplier: rating = **likelihood × impact** (1–5 each), built in four shown steps. Likelihood = 50% delivery + 20% lead time + 30% country concentration, over the factors with data. Impact = 40% spend share + 60% continuity (sole sourcing × days of cover). A sub-tier inherits the impact of the supplier it feeds, and missing inputs widen the ± range. Shows recommended actions, plans and items, plus "Ask why" (AI, through the decision gate) |
+| Risk matrix | 5×5 likelihood × impact grid and the risk register |
+| Stock coverage | Days of cover per item (demand from customer orders; purchase orders as a proxy), run-out date, next receipt, and a safety-stock what-if: suggested reorder point = daily demand × (lead time + buffer days) |
+| Delivery | On-time trend by month and late or overdue lines |
+| Mitigation | Supplier segmentation (supply risk × business impact, split at the median: strategic, bottleneck, leverage, non-critical) with a strategy per segment. A 4T plan board (Treat / Transfer / Tolerate / Terminate) moves plans through Proposed → Approved → In progress → Done; every move is audited |
+
+The weights and thresholds are starting proposals. They are documented in `app/supply_risk.py` so they can be agreed and tuned.
 
 ## Maestro-SC module (depot / maintenance)
 
@@ -96,7 +114,7 @@ MONGO_URI=mongomock:// uvicorn app.main:app --reload
 ```
 Open http://localhost:8000. It goes to Maestro's Supply module. Load the files from `samples/` and `samples/maestro/` in **Configuration** (`python samples/make_samples.py` regenerates the supply samples).
 
-Tests: `pytest -q` (51 tests, including the Maestro reference workbooks and the governance rules)
+Tests: `pytest -q` (60 tests, including the Maestro reference workbooks and the governance rules)
 
 ## API
 

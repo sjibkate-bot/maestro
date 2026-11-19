@@ -10,7 +10,7 @@ from fastapi import Body, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel
 
-from . import analytics, governance, pdm
+from . import analytics, governance, pdm, supply_risk
 from .ai.claude import AIError
 from .ai.provider import get_provider
 from .connectors.files import ingest_file
@@ -33,7 +33,7 @@ def _source_id(name: Optional[str]) -> str:
 @app.get("/")
 def index():
     # One application: Maestro. Supply analysis is its Supply module; data loads in Configuration.
-    return RedirectResponse("/maestro#supply")
+    return RedirectResponse("/supply")
 
 
 @app.get("/api/health")
@@ -249,6 +249,85 @@ def maestro_fleet():
 @app.get("/api/maestro/alerts")
 def maestro_alerts():
     return pdm.alerts()
+
+
+# ---------------- Supply analysis (risk) ----------------
+
+@app.get("/supply")
+def supply_page():
+    return FileResponse(WEB / "supply.html")
+
+
+@app.get("/api/supply/overview")
+def supply_overview():
+    return supply_risk.overview()
+
+
+@app.get("/api/supply/suppliers")
+def supply_suppliers():
+    return supply_risk.suppliers()
+
+
+@app.get("/api/supply/supplier")
+def supply_supplier(name: str):
+    try:
+        return supply_risk.supplier(name)
+    except KeyError:
+        raise HTTPException(404, "Unknown supplier")
+
+
+@app.get("/api/supply/network")
+def supply_network():
+    return supply_risk.network()
+
+
+@app.get("/api/supply/coverage")
+def supply_coverage(buffer_days: float = Query(7, ge=0, le=180)):
+    return supply_risk.coverage(buffer_days)
+
+
+@app.get("/api/supply/delivery")
+def supply_delivery():
+    return supply_risk.delivery()
+
+
+@app.get("/api/supply/plans")
+def supply_plans(supplier: Optional[str] = None):
+    return supply_risk.plans(supplier)
+
+
+class PlanIn(BaseModel):
+    supplier: str
+    strategy: str
+    action: str
+    owner: Optional[str] = None
+    due: Optional[str] = None
+    target_rating: Optional[int] = None
+    user: str
+
+
+@app.post("/api/supply/plans")
+def supply_plan_create(body: PlanIn):
+    try:
+        return supply_risk.create_plan(body.model_dump(), body.user)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+class PlanStatus(BaseModel):
+    status: str
+    user: str
+    note: str = ""
+
+
+@app.post("/api/supply/plans/{pid}/status")
+def supply_plan_status(pid: str, body: PlanStatus):
+    try:
+        return supply_risk.update_plan(pid, body.status, body.user, body.note)
+    except KeyError:
+        raise HTTPException(404, "Unknown plan")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 # ---------------- Data governance ----------------

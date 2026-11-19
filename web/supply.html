@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAESTRO-SC · Supply Analysis</title>
+<style>
+:root {
+  --bg:#f4f6f5; --card:#ffffff; --ink:#13202b; --ink2:#4a5866; --muted:#7d8996; --line:#e1e6e8; --soft:#f7f9f9;
+  --accent:#0f7c74; --accent-soft:#e3f2f0; --ai:#5b4fd6; --ai-soft:#eeecfd;
+  /* validated chart palette (light) */
+  --s1:#2a78d6; --s1-light:#cde2fb; --s2:#eb6834; --s3:#1baf7a; --grid:#e1e0d9; --axis:#c3c2b7; --surface:#fcfcfb;
+  /* status: fills + readable text tones */
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  --good-ink:#006300; --warning-ink:#8a5a00; --serious-ink:#a3431b; --critical-ink:#b42323;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+* { box-sizing:border-box } html { scroll-behavior:smooth }
+body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif }
+a { color:inherit }
+.top { display:flex; align-items:center; gap:18px; padding:14px 28px; background:var(--card); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5 }
+.logo { display:flex; align-items:center; gap:9px; font:700 16px var(--mono); text-decoration:none; letter-spacing:.02em }
+.logo i { width:24px; height:24px; border:2px solid var(--accent); color:var(--accent); display:grid; place-items:center; border-radius:6px; font-style:normal; font-size:12px }
+.crumb { font:11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--muted) } .crumb b { color:var(--accent); font-weight:600 }
+.top nav { margin-left:auto; display:flex; gap:6px; align-items:center }
+.top nav a { font:11px var(--mono); letter-spacing:.12em; text-transform:uppercase; text-decoration:none; padding:7px 10px; border:1px solid var(--line); border-radius:6px; color:var(--ink2) }
+.top nav a:hover { border-color:var(--accent); color:var(--accent) }
+.top nav a.ai { background:var(--ai-soft); border-color:#cfc9f7; color:var(--ai) }
+.lab { font:11px var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--muted) }
+.shell { display:grid; grid-template-columns:230px 1fr; gap:0; min-height:calc(100vh - 57px) }
+.rail { border-right:1px solid var(--line); padding:26px 18px; background:var(--card) }
+.rail a { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 12px; border-radius:8px; text-decoration:none; color:var(--ink2); margin-bottom:2px }
+.rail a:hover { background:var(--soft) } .rail a.on { background:var(--accent-soft); color:var(--accent); font-weight:600 }
+.rail a small { font:11px var(--mono); color:var(--muted) } .rail .sec { margin:18px 12px 6px }
+.rail .note { margin:22px 12px 0; font-size:12px; color:var(--muted) } .rail .note a { display:inline; padding:0; margin:0; color:var(--accent) }
+main { padding:26px 32px 70px; min-width:0 }
+.hero { display:flex; justify-content:space-between; align-items:flex-end; gap:20px; margin-bottom:18px }
+.hero h1 { font-size:40px; line-height:1; margin:8px 0 8px; font-weight:850; letter-spacing:-.02em }
+.hero p { margin:0; color:var(--ink2); max-width:640px }
+.chips { display:flex; gap:6px; flex-wrap:wrap }
+.chip { font:11px var(--mono); padding:4px 8px; border-radius:6px; border:1px solid var(--line); background:var(--card); color:var(--ink2); text-decoration:none; white-space:nowrap }
+.band { display:grid; grid-template-columns:1.4fr repeat(5,1fr); background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:22px }
+.band a { padding:16px 18px; border-right:1px solid var(--line); text-decoration:none } .band a:last-child { border:0 } .band a:hover { background:var(--soft) }
+.band .v { font-size:28px; font-weight:750; margin:6px 0 2px; letter-spacing:-.01em } .band .s { color:var(--muted); font-size:12px }
+.idx { display:flex; gap:14px; align-items:center } .idx .v { font-size:40px }
+.card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:18px; min-width:0 }
+.card h3 { margin:0 0 4px; font-size:15px } .sub { color:var(--muted); font-size:12.5px; margin-bottom:12px }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:18px } .grid32 { display:grid; grid-template-columns:3fr 2fr; gap:18px }
+@media (max-width:1100px) { .grid2, .grid32 { grid-template-columns:1fr } .band { grid-template-columns:repeat(3,1fr) } .shell { grid-template-columns:1fr } .rail { display:none } }
+table { width:100%; border-collapse:collapse; font-size:13px } th, td { text-align:left; padding:8px 8px; border-bottom:1px solid var(--line); vertical-align:middle }
+th { font:11px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:500 } td.n, th.n { text-align:right; font-variant-numeric:tabular-nums }
+tr.click { cursor:pointer } tr.click:hover td { background:var(--soft) } tr.sel td { background:var(--accent-soft) }
+.pill { display:inline-flex; align-items:center; gap:6px; font:600 11.5px var(--mono); padding:3px 8px; border-radius:999px; white-space:nowrap; border:1px solid currentColor }
+.pill i { width:8px; height:8px; border-radius:50% }
+.st-critical { color:var(--critical-ink) } .st-critical i { background:var(--critical) }
+.st-serious { color:var(--serious-ink) } .st-serious i { background:var(--serious) }
+.st-warning { color:var(--warning-ink) } .st-warning i { background:var(--warning) }
+.st-good { color:var(--good-ink) } .st-good i { background:var(--good) }
+.st-neutral { color:var(--muted) } .st-neutral i { background:var(--axis) }
+.tag { font:11px var(--mono); padding:2px 7px; border-radius:5px; background:var(--soft); border:1px solid var(--line); color:var(--ink2) }
+.tag.spof { background:#fdeceb; border-color:#f3c3c0; color:var(--critical-ink) }
+.attn { display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center; padding:11px 0; border-bottom:1px solid var(--line) } .attn:last-child { border:0 }
+.attn b { display:block } .attn span { color:var(--ink2); font-size:13px }
+button { font:600 12px var(--mono); letter-spacing:.06em; text-transform:uppercase; padding:8px 13px; border-radius:7px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer }
+button.ghost { background:var(--card); color:var(--accent) } button.ai { background:var(--ai-soft); border-color:#cfc9f7; color:var(--ai) } button:disabled { opacity:.45; cursor:not-allowed }
+input, select, textarea { font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:7px; background:#fff; color:var(--ink) }
+.empty { color:var(--muted); padding:24px 0 }
+/* scorecard */
+.eq { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; align-items:stretch; margin:12px 0 }
+.eq .st { background:var(--soft); border:1px solid var(--line); border-radius:10px; padding:12px }
+.eq .st b { display:block; font-size:20px; margin:4px 0 } .eq .st div:last-child { color:var(--ink2); font-size:12.5px }
+.eq .res { grid-column:1 / -1; border:2px solid var(--accent); background:#fff; border-radius:10px; padding:10px 16px; display:flex; align-items:center; gap:18px; flex-wrap:wrap }
+.eq .res b { font-size:30px }
+.fac { display:grid; grid-template-columns:150px 1fr 48px; gap:12px; align-items:center; margin:7px 0; font-size:13px }
+.fbar { height:8px; border-radius:4px; background:var(--s1-light); overflow:hidden } .fbar i { display:block; height:100%; background:var(--s1); border-radius:4px }
+.fbar.nodata { background:repeating-linear-gradient(45deg, var(--line) 0 4px, transparent 4px 8px) }
+/* matrix */
+.mx { display:grid; grid-template-columns:40px repeat(5,1fr); grid-auto-rows:minmax(92px,auto); gap:4px }
+.mx .c { border-radius:8px; padding:6px; display:flex; flex-wrap:wrap; gap:4px; align-content:flex-start; position:relative }
+.mx .c small { position:absolute; right:6px; bottom:4px; font:10px var(--mono); color:var(--muted) }
+.mx .ax { display:grid; place-items:center; font:11px var(--mono); color:var(--muted) }
+.mx .chipbtn { font:600 11.5px system-ui; padding:3px 7px; border-radius:6px; background:#fff; border:1px solid var(--line); cursor:pointer; text-transform:none; letter-spacing:0; color:var(--ink) }
+/* board */
+.board { display:grid; grid-template-columns:repeat(4,1fr); gap:12px }
+.col { background:var(--soft); border:1px solid var(--line); border-radius:10px; padding:10px; min-height:120px }
+.plan { background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:8px; font-size:13px }
+.plan .meta { color:var(--muted); font-size:12px; margin-top:4px }
+.tip { position:fixed; pointer-events:none; background:#fff; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:12px; box-shadow:0 6px 18px rgba(16,32,43,.12); display:none; z-index:30; max-width:280px }
+.tip b { font-size:14px; display:block } .tip div { color:var(--ink2) }
+svg text { font:11.5px system-ui,sans-serif; fill:var(--ink2) } svg .muted { fill:var(--muted) }
+svg .halo { paint-order:stroke; stroke:var(--surface); stroke-width:4px; stroke-linejoin:round }
+.legend { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--ink2); margin:4px 0 10px; align-items:center }
+.legend .k { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-2px }
+.legend .kl { display:inline-block; width:16px; height:2px; margin-right:5px; vertical-align:3px }
+.panel-side { position:sticky; top:80px }
+dialog { border:1px solid var(--line); border-radius:12px; padding:22px; width:min(560px,94vw); color:var(--ink) } dialog::backdrop { background:rgba(19,32,43,.35) }
+dialog label { display:block; font-size:12px; color:var(--ink2); margin:10px 0 4px } dialog input, dialog select, dialog textarea { width:100% }
+.answer { background:var(--ai-soft); border:1px solid #d9d4fb; border-radius:10px; padding:12px 14px; margin-top:10px }
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="logo" href="/maestro"><i>M</i>MAESTRO-SC</a>
+  <span class="crumb">Modules / <b>Supply analysis</b> / <span id="crumb">Overview</span></span>
+  <nav><a href="/maestro">Modules</a><a href="/maestro#config">Configuration</a><a href="/governance">Governance</a><a class="ai" href="#" id="askTop">✦ Ask Maestro</a></nav>
+</header>
+<div class="shell">
+  <aside class="rail" aria-label="Supply analysis sections">
+    <div class="lab sec">Analyse</div>
+    <a href="#overview">Overview</a><a href="#network">Supply network <small id="r-net"></small></a><a href="#suppliers">Supplier risk <small id="r-sup"></small></a><a href="#matrix">Risk matrix</a>
+    <div class="lab sec">Protect</div>
+    <a href="#coverage">Stock coverage <small id="r-cov"></small></a><a href="#delivery">Delivery</a><a href="#mitigation">Mitigation <small id="r-mit"></small></a>
+    <p class="note">Computed from governed Gold data loaded in <a href="/maestro#config">Configuration</a>. Every rating shows how it was built.</p>
+  </aside>
+  <main>
+    <section class="hero"><div><div class="lab" style="color:var(--accent)">M_02 · Supply analysis</div><h1>SUPPLY RISK &amp; RESILIENCE</h1>
+      <p>Who you depend on, where one failure stops you, how long your stock lasts, and what to do about it.</p></div>
+      <div class="chips" id="trust"></div></section>
+    <section class="band" id="band" aria-label="Key indicators"></section>
+    <div id="view"></div>
+  </main>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+<dialog id="planDlg"><form id="planForm" method="dialog">
+  <h3 style="margin:0 0 6px">New mitigation plan</h3><div class="sub" style="color:var(--muted);font-size:12.5px">Treat, Transfer, Tolerate or Terminate the risk.</div>
+  <label for="pSup">Supplier</label><select id="pSup" required></select>
+  <label for="pStr">Strategy</label><select id="pStr"><option>Treat</option><option>Transfer</option><option>Tolerate</option><option>Terminate</option></select>
+  <label for="pAct">Action</label><textarea id="pAct" rows="2" required></textarea>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label for="pOwn">Owner</label><input id="pOwn"></div><div><label for="pDue">Due</label><input id="pDue" type="date"></div></div>
+  <label for="pUser">Your name or role (recorded)</label><input id="pUser" required>
+  <div id="pErr" style="color:var(--critical-ink);margin-top:8px"></div>
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button type="button" class="ghost" id="pCancel">Cancel</button><button type="button" id="pSave">Create plan</button></div>
+</form></dialog>
+<dialog id="askDlg"><h3 style="margin:0 0 8px">Ask Maestro</h3>
+  <form id="askForm" style="display:flex;gap:8px"><input id="askQ" style="flex:1" placeholder="e.g. What happens if we lose Stark Electronics?"><button class="ai">Ask</button></form>
+  <div id="askOut"></div><div style="text-align:right;margin-top:12px"><button class="ghost" onclick="askDlg.close()">Close</button></div></dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = v => v == null ? "—" : String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = (v, d = 0) => v == null ? "—" : Number(v).toLocaleString(undefined, {maximumFractionDigits: d, minimumFractionDigits: d});
+const money = v => v == null ? "—" : Math.abs(v) >= 1e6 ? (v / 1e6).toFixed(1) + "M" : Math.abs(v) >= 1e3 ? (v / 1e3).toFixed(0) + "K" : num(v);
+const pct = v => v == null ? "—" : (v * 100).toFixed(0) + "%";
+const dt = v => v ? new Date(v).toLocaleDateString(undefined, {day: "2-digit", month: "short", year: "numeric"}) : "—";
+const api = (p, o) => fetch(p, o).then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.detail || r.status); return j; });
+const post = (p, b) => api(p, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(b)});
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const SVG = "http://www.w3.org/2000/svg";
+const el = (t, a = {}, p) => { const e = document.createElementNS(SVG, t); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
+const STATUS_ICON = {critical: "▲", serious: "◆", warning: "●", good: "✓", neutral: "○"};
+const statusPill = (st, text) => `<span class="pill st-${st || "neutral"}"><i></i>${esc(text)}</span>`;
+const ratingPill = s => statusPill(s.rating_class.status, `${s.rating} · ${s.rating_class.label}`);
+const tip = $("#tip");
+function showTip(e, value, rows) { tip.replaceChildren(); const b = document.createElement("b"); b.textContent = value; tip.appendChild(b);
+  rows.forEach(r => { const d = document.createElement("div"); d.textContent = r; tip.appendChild(d); }); tip.style.display = "block";
+  tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 10) + "px"; tip.style.top = Math.min(e.clientY + 14, innerHeight - tip.offsetHeight - 10) + "px"; }
+const hideTip = () => tip.style.display = "none";
+const hover = (n, v, rows) => { n.setAttribute("tabindex", "0"); n.addEventListener("pointermove", e => showTip(e, v, rows)); n.addEventListener("pointerleave", hideTip);
+  n.addEventListener("focus", () => { const r = n.getBoundingClientRect(); showTip({clientX: r.right, clientY: r.top}, v, rows); }); n.addEventListener("blur", hideTip); };
+const user = () => localStorage.govUser || "";
+let OV = null;
+
+async function header() {
+  OV = await api("/api/supply/overview"); const k = OV.kpis;
+  const idxStatus = k.risk_index == null ? "neutral" : k.risk_index >= 60 ? "critical" : k.risk_index >= 40 ? "serious" : k.risk_index >= 20 ? "warning" : "good";
+  $("#band").innerHTML = `
+    <a href="#suppliers"><div class="lab">Supply risk index</div><div class="idx"><div class="v">${k.risk_index == null ? "—" : num(k.risk_index)}</div>${k.risk_index == null ? "" : statusPill(idxStatus, idxStatus === "critical" ? "Severe" : idxStatus === "serious" ? "Elevated" : idxStatus === "warning" ? "Guarded" : "Low")}</div><div class="s">spend-weighted rating of ${k.suppliers} suppliers · 0–100</div></a>
+    <a href="#matrix"><div class="lab">Critical / high</div><div class="v">${k.critical} / ${k.high}</div><div class="s">suppliers rated ≥ 10 of 25</div></a>
+    <a href="#suppliers"><div class="lab">Spend at risk</div><div class="v">${money(k.value_at_risk)}</div><div class="s">likelihood-weighted, of ${money(k.spend)}</div></a>
+    <a href="#network"><div class="lab">Single points of failure</div><div class="v">${k.spofs}</div><div class="s">sole-sourced items &amp; sub-tiers</div></a>
+    <a href="#coverage"><div class="lab">Items under 14 days</div><div class="v">${k.low_cover}</div><div class="s">of ${k.items} items with stock</div></a>
+    <a href="/governance#drill?gold=1"><div class="lab">Data confidence</div><div class="v">${k.data_confidence == null ? "—" : num(k.data_confidence, 1)}</div><div class="s">governed trust score</div></a>`;
+  $("#trust").innerHTML = k.trust.map(t => `<a class="chip" href="/governance#drill?product=${t.id}&gold=1" title="Governed data product">${esc(t.name)} · ${esc(t.label)}</a>`).join("");
+  $("#r-sup").textContent = k.suppliers || ""; $("#r-net").textContent = k.spofs ? k.spofs + " SPOF" : ""; $("#r-cov").textContent = k.low_cover || "";
+}
+
+function emptyState() {
+  const h = OV.has; const miss = [["Supplier master", h.master], ["Purchase orders", h.po], ["Inventory", h.inventory], ["Customer orders (demand)", h.demand]];
+  return `<div class="card"><h3>No supply data in Gold yet</h3><div class="sub">Supply analysis reads governed data loaded in Configuration.</div>
+    <table>${miss.map(([n, ok]) => `<tr><td>${n}</td><td>${ok ? statusPill("good", "loaded") : statusPill("neutral", "not loaded")}</td></tr>`).join("")}</table>
+    <p><a href="/maestro#config">Load data in Configuration</a> · <a href="/governance#drill?product=supplier_performance">See what was loaded and why it is not in Gold</a></p></div>`;
+}
+
+const V = {};
+V.overview = async v => {
+  if (!OV.has_data) { v.innerHTML = emptyState(); return; }
+  const sups = await api("/api/supply/suppliers"); const k = OV.kpis, d = OV.distribution;
+  const order = [["Critical", "critical"], ["High", "serious"], ["Moderate", "warning"], ["Low", "good"]], total = sups.length || 1;
+  const seg = order.filter(([l]) => d[l]).map(([l, st]) => `<div style="flex:${d[l]};background:var(--${st});border-radius:4px;color:${st === "warning" ? "#0b0b0b" : "#fff"};font-size:12px;font-weight:600;display:flex;align-items:center;padding-left:8px;min-width:0;overflow:hidden" title="${l}: ${d[l]}">${d[l] / total >= .12 ? l + " " + d[l] : ""}</div>`).join("");
+  const countries = {}; sups.forEach(s => { if (s.country && s.spend) countries[s.country] = (countries[s.country] || 0) + s.spend; });
+  const cl = Object.entries(countries).sort((a, b) => b[1] - a[1]), cmax = cl.length ? cl[0][1] : 1, csum = cl.reduce((a, [, x]) => a + x, 0) || 1;
+  v.innerHTML = `<div class="grid32"><div class="card"><h3>Needs attention</h3><div class="sub">Highest-rated suppliers and items about to run out</div>
+      ${OV.attention.map(a => `<div class="attn">${statusPill(a.level, STATUS_ICON[a.level])}<div><b>${esc(a.title)}</b><span>${esc(a.text)}</span></div>
+        <a class="chip" href="${a.kind === "supplier" ? "#suppliers/" + encodeURIComponent(a.ref) : "#coverage"}">Open</a></div>`).join("") || '<p class="empty">Nothing above the thresholds.</p>'}</div>
+    <div><div class="card"><h3>Rating mix</h3><div class="sub">${sups.length} suppliers by likelihood × impact</div>
+      <div style="display:flex;gap:2px;height:28px">${seg}</div>
+      <div class="legend" style="margin-top:10px">${order.map(([l, st]) => `<span><span class="k" style="background:var(--${st})"></span>${l} · ${d[l] || 0}</span>`).join("")}</div></div>
+    <div class="card"><h3>Spend by country</h3><div class="sub">Where your supply base sits (supplier master)</div>
+      ${cl.length ? cl.map(([c, x]) => `<div class="fac" style="grid-template-columns:120px 1fr 56px"><span>${esc(c)}</span><div class="fbar"><i style="width:${100 * x / cmax}%"></i></div><span class="n" style="text-align:right">${(100 * x / csum).toFixed(0)}%</span></div>`).join("") : '<p class="empty">Add countries to the supplier master to see concentration.</p>'}</div></div></div>
+    <div class="card"><h3>Top supplier risks</h3><div class="sub">Click a supplier to see how its rating was built</div>
+      <table><tr><th>Supplier</th><th>Tier</th><th>Supplies</th><th class="n">Spend</th><th>Rating</th><th>Main action</th></tr>
+      ${sups.slice(0, 8).map(s => `<tr class="click" onclick="location.hash='#suppliers/${encodeURIComponent(s.supplier)}'"><td><b>${esc(s.supplier)}</b><div style="color:var(--muted);font-size:12px">${esc(s.country || "")}</div></td><td>${s.tier || "—"}</td>
+        <td>${esc(s.commodity || s.items.length + " items")}${s.sole_items.length ? ' <span class="tag spof">sole source</span>' : ""}</td><td class="n">${money(s.spend)}</td><td>${ratingPill(s)}</td><td style="color:var(--ink2)">${esc(s.actions[0] || "")}</td></tr>`).join("")}</table></div>`;
+};
+
+V.network = async v => {
+  if (!OV.has_data) { v.innerHTML = emptyState(); return; }
+  const n = await api("/api/supply/network");
+  v.innerHTML = `<div class="grid32" style="grid-template-columns:3fr 1fr"><div class="card" style="overflow-x:auto"><h3>Supply network</h3>
+    <div class="sub">From sub-tier suppliers to demand. Click a node to trace what it depends on and what depends on it.</div>
+    <div class="legend"><span>● supplier</span><span>■ item</span><span>◆ site</span><span>▬ customer</span>
+      <span><span class="k" style="background:var(--critical)"></span>Critical</span><span><span class="k" style="background:var(--serious)"></span>High / &lt;14 d cover</span><span><span class="k" style="background:var(--warning)"></span>Moderate</span><span><span class="k" style="background:var(--good)"></span>Low</span>
+      <span style="color:var(--critical-ink)">▲ single point of failure</span></div><div id="net"></div></div>
+    <div class="card panel-side" id="nodePanel"><h3>Select a node</h3><div class="sub">Upstream and downstream paths are highlighted.</div>
+      <p class="lab" style="margin-top:14px">Single points of failure</p>${n.spofs.length ? n.spofs.slice(0, 16).map(s => `<span class="tag spof" style="display:inline-block;margin:2px">${esc(s)}</span>`).join("") : '<p class="empty">None found.</p>'}</div></div>`;
+  drawNetwork($("#net"), n);
+};
+
+function drawNetwork(host, n) {
+  const cols = n.columns, colW = Math.max(170, Math.floor((host.clientWidth - 30) / cols.length)), rowH = 34, top = 34;
+  const byCol = Object.fromEntries(cols.map(c => [c, n.nodes.filter(x => x.column === c)]));
+  const rank = x => x.kind === "supplier" ? -(x.rating || 0) : x.kind === "item" ? (x.cover == null ? 999 : x.cover) : 0;
+  cols.forEach(c => byCol[c].sort((a, b) => rank(a) - rank(b)));
+  const H = top + Math.max(...cols.map(c => byCol[c].length)) * rowH + 20, W = cols.length * colW + 40;
+  const pos = {}; cols.forEach((c, ci) => { const list = byCol[c], off = (H - top - list.length * rowH) / 2; list.forEach((x, i) => pos[x.id] = {x: 24 + ci * colW, y: top + off + i * rowH + rowH / 2}); });
+  const svg = el("svg", {width: W, height: H, role: "img", "aria-label": "Supply network"});
+  cols.forEach((c, ci) => el("text", {x: 24 + ci * colW - 6, y: 16, class: "muted", style: "font:11px ui-monospace,monospace;letter-spacing:.12em"}, svg).textContent = c.toUpperCase());
+  const color = x => ({critical: css("--critical"), serious: css("--serious"), warning: css("--warning"), good: css("--good")}[x.status] || css("--axis"));
+  const eg = el("g", {}, svg), ng = el("g", {}, svg);
+  const edgeEls = n.edges.filter(e => pos[e.from] && pos[e.to]).map(e => { const a = pos[e.from], b = pos[e.to], mx = (a.x + b.x) / 2;
+    return {e, p: el("path", {d: `M${a.x + 8},${a.y} C${mx},${a.y} ${mx},${b.y} ${b.x - 8},${b.y}`, fill: "none", stroke: css("--axis"), "stroke-width": 1.2, opacity: .7}, eg)}; });
+  const adj = {up: {}, down: {}}; n.edges.forEach(e => { (adj.down[e.from] ||= []).push(e.to); (adj.up[e.to] ||= []).push(e.from); });
+  const walk = (id, dir, acc = new Set()) => { (adj[dir][id] || []).forEach(x => { if (!acc.has(x)) { acc.add(x); walk(x, dir, acc); } }); return acc; };
+  const nodeEls = {};
+  n.nodes.forEach(x => { const p = pos[x.id]; if (!p) return; const g = el("g", {style: "cursor:pointer"}, ng); nodeEls[x.id] = g;
+    const c = color(x), ring = {fill: c, stroke: css("--surface"), "stroke-width": 2};
+    if (x.kind === "supplier") el("circle", {cx: p.x, cy: p.y, r: 8, ...ring}, g);
+    else if (x.kind === "item") el("rect", {x: p.x - 6, y: p.y - 6, width: 12, height: 12, rx: 2, ...ring}, g);
+    else if (x.kind === "site") el("path", {d: `M${p.x},${p.y - 8} L${p.x + 8},${p.y} L${p.x},${p.y + 8} L${p.x - 8},${p.y} Z`, ...ring}, g);
+    else el("rect", {x: p.x - 9, y: p.y - 5, width: 18, height: 10, rx: 5, ...ring}, g);
+    if (x.spof) el("text", {x: p.x + 7, y: p.y - 6, style: `fill:${css("--critical-ink")};font-size:10px`}, g).textContent = "▲";
+    const t = el("text", {x: p.x + 14, y: p.y + 4, class: "halo"}, g); t.textContent = x.label.length > 22 ? x.label.slice(0, 21) + "…" : x.label;
+    el("rect", {x: p.x - 12, y: p.y - 14, width: colW - 20, height: 28, fill: "transparent"}, g);
+    hover(g, x.label, [x.kind === "supplier" ? `Rating ${x.rating} · ${x.klass}${x.country ? " · " + x.country : ""}` : x.kind === "item" ? `${x.cover == null ? "cover unknown" : x.cover + " days of cover"}${x.description ? " · " + x.description : ""}` : x.kind,
+      x.spof ? "Single point of failure" : "", x.kind === "supplier" ? "Click to trace · double-click for scorecard" : "Click to trace"].filter(Boolean));
+    g.addEventListener("click", () => select(x));
+    if (x.kind === "supplier") g.addEventListener("dblclick", () => location.hash = "#suppliers/" + encodeURIComponent(x.label));
+  });
+  function select(x) {
+    const keep = new Set([x.id, ...walk(x.id, "up"), ...walk(x.id, "down")]);
+    Object.entries(nodeEls).forEach(([id, g]) => g.style.opacity = keep.has(id) ? 1 : .18);
+    edgeEls.forEach(({e, p}) => { const on = keep.has(e.from) && keep.has(e.to); p.setAttribute("stroke", on ? css("--accent") : css("--axis")); p.setAttribute("opacity", on ? 1 : .12); p.setAttribute("stroke-width", on ? 1.8 : 1.2); });
+    const up = [...walk(x.id, "up")].map(id => n.nodes.find(z => z.id === id)).filter(Boolean), down = [...walk(x.id, "down")].map(id => n.nodes.find(z => z.id === id)).filter(Boolean);
+    const list = arr => arr.length ? arr.map(z => `<span class="tag" style="display:inline-block;margin:2px">${esc(z.label)}</span>`).join("") : '<span style="color:var(--muted)">none</span>';
+    $("#nodePanel").innerHTML = `<div class="lab">${esc(x.kind)}</div><h3 style="margin:4px 0">${esc(x.label)}</h3>
+      ${x.kind === "supplier" ? ratingPill({rating: x.rating, rating_class: {status: x.status, label: x.klass}}) : x.kind === "item" ? statusPill(x.status, x.cover == null ? "cover unknown" : x.cover + " days cover") : ""}
+      ${x.spof ? ' <span class="tag spof">single point of failure</span>' : ""}
+      <p class="lab" style="margin-top:14px">Depends on (${up.length})</p>${list(up)}<p class="lab" style="margin-top:12px">Feeds (${down.length})</p>${list(down)}
+      ${x.kind === "supplier" ? `<p style="margin-top:14px"><a href="#suppliers/${encodeURIComponent(x.label)}">Open scorecard →</a></p>` : ""}
+      <p style="margin-top:10px"><button class="ghost" onclick="location.reload()">Clear</button></p>`;
+  }
+  host.appendChild(svg);
+}
+
+V.suppliers = async (v, arg) => {
+  if (!OV.has_data) { v.innerHTML = emptyState(); return; }
+  const sups = await api("/api/supply/suppliers"); const sel = arg ? decodeURIComponent(arg) : (sups[0] || {}).supplier;
+  v.innerHTML = `<div class="grid32" style="grid-template-columns:minmax(300px,1fr) 2fr"><div class="card"><h3>Suppliers</h3><div class="sub">Sorted by rating, then spend</div>
+    <table>${sups.map(s => `<tr class="click ${s.supplier === sel ? "sel" : ""}" onclick="location.hash='#suppliers/${encodeURIComponent(s.supplier)}'"><td><b>${esc(s.supplier)}</b><div style="color:var(--muted);font-size:12px">T${s.tier || "?"} · ${esc(s.country || "country unknown")}</div></td><td>${ratingPill(s)}</td></tr>`).join("")}</table></div>
+    <div id="score"></div></div>`;
+  if (sel) scorecard($("#score"), sel);
+};
+
+async function scorecard(host, name) {
+  const s = await api("/api/supply/supplier?name=" + encodeURIComponent(name)), f = s.factors;
+  const bar = (label, val, w, note) => `<div class="fac"><span>${label} <span style="color:var(--muted);font-size:11px">×${w}</span></span><div class="fbar ${val == null ? "nodata" : ""}" title="${val == null ? "no data" : num(val)}"><i style="width:${val || 0}%"></i></div><b class="n" style="text-align:right">${val == null ? "n/a" : num(val)}</b></div>${note ? `<div style="margin:-4px 0 6px 162px;color:var(--muted);font-size:12px">${note}</div>` : ""}`;
+  host.innerHTML = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px"><div><div class="lab">Supplier scorecard</div><h3 style="font-size:22px;margin:4px 0">${esc(s.supplier)}</h3>
+      <div class="chips">${s.tier ? `<span class="tag">Tier ${s.tier}</span>` : ""}${s.country ? `<span class="tag">${esc(s.country)}</span>` : ""}${s.commodity ? `<span class="tag">${esc(s.commodity)}</span>` : ""}${s.sole_items.length ? '<span class="tag spof">sole source</span>' : ""}<span class="tag">${s.segment}</span>${s.in_master ? "" : '<span class="tag">not in supplier master</span>'}</div></div>
+      <div style="display:flex;gap:8px"><button class="ai" id="why">✦ Ask why</button><button class="ghost" id="mkPlan">+ Plan</button></div></div>
+    <div class="eq">${s.explain.map((e, i) => `<div class="st"><div class="lab">${i + 1} · ${esc(e.step)}</div><b>${esc(e.value)}</b><div>${esc(e.detail)}</div></div>`).join("")}
+      <div class="res"><div class="lab">Rating</div><b>${s.rating}<span style="font-size:15px;color:var(--muted)"> / 25</span></b>${ratingPill(s)}<span style="color:var(--ink2)">= likelihood L${s.likelihood} × impact I${s.impact}</span>${s.uncertainty ? `<span style="color:var(--muted);font-size:12.5px">±${s.uncertainty} · ${pct(s.confidence)} of rating inputs have data</span>` : ""}</div></div>
+    <div id="whyOut"></div></div>
+    <div class="grid2"><div class="card"><h3>Likelihood · ${num(s.likelihood_score)}</h3><div class="sub">How likely a disruption is</div>
+        ${bar("Delivery", f.delivery, "50%", s.on_time_rate == null ? "no received lines yet" : `on-time ${pct(s.on_time_rate)} · ${s.open_late} overdue open`)}
+        ${bar("Lead time", f.lead_time, "20%", s.lead_time_days == null ? "" : `${num(s.lead_time_days)} days`)}${bar("Country concentration", f.concentration, "30%", s.country ? "" : "country unknown")}</div>
+      <div class="card"><h3>Impact · ${num(s.impact_score)}</h3><div class="sub">What losing it does to continuity</div>
+        ${bar("Spend share", f.spend_share, "40%", `${(s.spend_share * 100).toFixed(1)}% of spend · ${esc(s.spend_basis)}`)}${bar("Continuity", f.continuity, "60%", `${s.sole_items.length} sole-sourced · lowest cover ${s.min_days_cover == null ? "unknown" : num(s.min_days_cover) + " d"}`)}
+        ${s.inherits_from ? `<p style="color:var(--ink2);font-size:12.5px">Sub-tier: inherits impact from <a href="#suppliers/${encodeURIComponent(s.inherits_from)}">${esc(s.inherits_from)}</a>.</p>` : ""}</div></div>
+    <div class="grid2"><div class="card"><h3>Recommended actions</h3><div class="sub">Derived from the factors above</div>
+        ${s.actions.map(a => `<div class="attn" style="grid-template-columns:1fr auto"><span style="color:var(--ink)">${esc(a)}</span><button class="ghost" data-act="${esc(a)}">Plan</button></div>`).join("") || '<p class="empty">None.</p>'}</div>
+      <div class="card"><h3>Plans</h3><div class="sub">Mitigation for this supplier</div>${s.plans.map(p => `<div class="plan"><b>${esc(p.strategy)}</b> · ${esc(p.action)}<div class="meta">${esc(p.status)} · ${esc(p.owner || "no owner")} · due ${p.due ? dt(p.due) : "—"}</div></div>`).join("") || '<p class="empty">No plans yet.</p>'}</div></div>
+    <div class="card"><h3>Items supplied</h3><div class="sub">${s.sub_tiers.length ? "Sub-tier suppliers: " + s.sub_tiers.map(esc).join(", ") : "No sub-tier suppliers recorded"}</div>
+      <table><tr><th>Item</th><th class="n">On hand</th><th class="n">Daily demand</th><th>Cover</th><th>Sourcing</th><th>Next receipt</th></tr>
+      ${s.item_detail.map(i => `<tr><td><b>${esc(i.sku)}</b> <span style="color:var(--muted)">${esc(i.description || "")}</span></td><td class="n">${num(i.on_hand)}</td><td class="n">${num(i.daily_demand, 1)}</td>
+        <td>${i.days_cover == null ? '<span style="color:var(--muted)">unknown</span>' : statusPill(i.days_cover < 7 ? "critical" : i.days_cover < 14 ? "serious" : i.days_cover < 30 ? "warning" : "good", num(i.days_cover) + " d")}</td>
+        <td>${i.sole_sourced ? '<span class="tag spof">sole source</span>' : `${i.suppliers.length} suppliers`}</td><td>${dt(i.next_receipt)}</td></tr>`).join("") || '<tr><td colspan=6 class="empty">No items linked through orders or the item master.</td></tr>'}</table></div>`;
+  $("#mkPlan").onclick = () => openPlan(s.supplier, s.actions[0] || "");
+  host.querySelectorAll("[data-act]").forEach(b => b.onclick = () => openPlan(s.supplier, b.dataset.act));
+  $("#why").onclick = () => ask(`Explain the supply risk rating of ${s.supplier} (${s.rating}/25, likelihood ${s.likelihood}, impact ${s.impact}) and what we should do first.`, $("#whyOut"));
+}
+
+V.matrix = async v => {
+  if (!OV.has_data) { v.innerHTML = emptyState(); return; }
+  const sups = await api("/api/supply/suppliers");
+  const cellStatus = r => r >= 16 ? "critical" : r >= 10 ? "serious" : r >= 5 ? "warning" : "good";
+  let cells = "";
+  for (let L = 5; L >= 1; L--) { cells += `<div class="ax">L${L}</div>`;
+    for (let I = 1; I <= 5; I++) { const r = L * I, st = cellStatus(r), here = sups.filter(s => s.likelihood === L && s.impact === I);
+      cells += `<div class="c" style="background:color-mix(in srgb, var(--${st}) ${10 + Math.min(r, 25)}%, white)">${here.map(s => `<button class="chipbtn" title="${esc(s.supplier)}: ${s.rating}" onclick="location.hash='#suppliers/${encodeURIComponent(s.supplier)}'">${esc(s.supplier)}</button>`).join("")}<small>${r}</small></div>`; } }
+  cells += `<div></div>` + [1, 2, 3, 4, 5].map(i => `<div class="ax">I${i}</div>`).join("");
+  v.innerHTML = `<div class="grid32"><div class="card"><h3>Risk matrix</h3><div class="sub">Likelihood (rows) × impact (columns). Top-right needs action first. Click a supplier for its scorecard.</div><div class="mx">${cells}</div>
+      <div class="legend" style="margin-top:12px"><span><span class="k" style="background:var(--critical)"></span>Critical ≥ 16</span><span><span class="k" style="background:var(--serious)"></span>High 10–15</span><span><span class="k" style="background:var(--warning)"></span>Moderate 5–9</span><span><span class="k" style="background:var(--good)"></span>Low &lt; 5</span></div></div>
+    <div class="card"><h3>Risk register</h3><div class="sub">Every supplier with a rating of 5 or more</div><table><tr><th>Supplier</th><th>Rating</th><th>Owner action</th></tr>
+      ${sups.filter(s => s.rating >= 5).map(s => `<tr class="click" onclick="location.hash='#suppliers/${encodeURIComponent(s.supplier)}'"><td><b>${esc(s.supplier)}</b></td><td>${ratingPill(s)}</td><td style="color:var(--ink2);font-size:12.5px">${esc(s.actions[0] || "")}</td></tr>`).join("") || '<tr><td colspan=3 class="empty">No supplier rated 5 or more.</td></tr>'}</table></div></div>`;
+};
+
+V.coverage = async v => {
+  if (!OV.has_data) { v.innerHTML = emptyState(); return; }
+  const buf = +(sessionStorage.buf || 7); const c = await api("/api/supply/coverage?buffer_days=" + buf); const S = c.summary;
+  const maxCover = 60;
+  v.innerHTML = `<div class="card"><div style="display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:flex-end"><div><h3>Stock coverage</h3>
+      <div class="sub">Days of cover = on hand ÷ daily demand (customer orders; purchase orders as a proxy where there are none).</div>
+      <div class="chips">${statusPill("critical", S.under_7 + " under 7 days")} ${statusPill("serious", S.under_14 + " under 14 days")} <span class="tag">${S.below_reorder} below reorder point</span> <span class="tag spof">${S.sole_sourced} sole-sourced</span> <span class="tag">${S.unknown_demand} demand unknown</span></div></div>
+      <div style="min-width:280px"><label class="lab" for="buf">Safety-stock what-if · buffer days</label><div style="display:flex;gap:10px;align-items:center"><input id="buf" type="range" min="0" max="45" value="${buf}" style="flex:1"><b id="bufv">${buf} d</b></div>
+      <div style="color:var(--muted);font-size:12px">Suggested reorder point = daily demand × (supplier lead time + buffer)</div></div></div></div>
+    <div class="card"><table><tr><th>Item</th><th>Days of cover</th><th>Runs out</th><th class="n">On hand</th><th class="n">Daily demand</th><th class="n">Reorder pt</th><th class="n">Suggested</th><th>Sourcing</th><th>Next receipt</th></tr>
+      ${c.items.map(i => { const st = i.days_cover == null ? "neutral" : i.days_cover < 7 ? "critical" : i.days_cover < 14 ? "serious" : i.days_cover < 30 ? "warning" : "good";
+        return `<tr><td><b>${esc(i.sku)}</b><div style="color:var(--muted);font-size:12px">${esc(i.description || "")}</div></td>
+        <td style="min-width:170px"><div style="display:flex;gap:8px;align-items:center"><div class="fbar" style="flex:1;background:color-mix(in srgb, var(--${st === "neutral" ? "axis" : st}) 22%, white)"><i style="width:${i.days_cover == null ? 0 : Math.min(100, 100 * i.days_cover / maxCover)}%;background:var(--${st === "neutral" ? "axis" : st})"></i></div><span style="min-width:44px;text-align:right">${i.days_cover == null ? "?" : num(i.days_cover) + " d"}</span></div></td>
+        <td>${i.stockout_date && i.days_cover < 60 ? dt(i.stockout_date) : "—"}</td><td class="n">${num(i.on_hand)}</td><td class="n" title="${esc(i.demand_basis || "")}">${num(i.daily_demand, 1)}</td><td class="n">${num(i.reorder_point)}</td>
+        <td class="n">${i.suggested_reorder_point == null ? "—" : num(i.suggested_reorder_point) + (i.gap > 0 ? ` <span style="color:var(--critical-ink)">+${num(i.gap)}</span>` : "")}</td>
+        <td>${i.sole_sourced ? '<span class="tag spof">sole · ' + esc(i.suppliers[0]) + "</span>" : i.suppliers.length + " suppliers"}</td><td>${i.next_receipt ? dt(i.next_receipt) : (i.days_cover != null && i.days_cover < 14 ? '<span style="color:var(--critical-ink)">no open order</span>' : "—")}</td></tr>`; }).join("")}</table></div>`;
+  $("#buf").oninput = e => $("#bufv").textContent = e.target.value + " d";
+  $("#buf").onchange = e => { sessionStorage.buf = e.target.value; V.coverage(v); };
+};
+
+V.delivery = async v => {
+  if (!OV.has_data) { v.innerHTML = emptyState(); return; }
+  const d = await api("/api/supply/delivery");
+  v.innerHTML = `<div class="card"><h3>On-time delivery by month</h3><div class="sub">Share of received purchase-order lines that arrived by the promised date</div><div id="trend"></div>
+      <details><summary style="color:var(--muted);cursor:pointer;font-size:12.5px">Table view</summary><table><tr><th>Month</th><th class="n">On time</th><th class="n">Lines</th></tr>${d.trend.map(t => `<tr><td>${t.month}</td><td class="n">${pct(t.on_time)}</td><td class="n">${t.lines}</td></tr>`).join("")}</table></details></div>
+    <div class="card"><h3>Late and overdue lines</h3><div class="sub">Open overdue lines first</div><table><tr><th>PO</th><th>Item</th><th>Supplier</th><th>Promised</th><th class="n">Days late</th><th>Status</th></tr>
+      ${d.late.slice(0, 80).map(l => `<tr><td>${esc(l.order_id)}</td><td>${esc(l.sku)}</td><td><a href="#suppliers/${encodeURIComponent(l.supplier)}">${esc(l.supplier)}</a></td><td>${dt(l.promised)}</td><td class="n">${l.days_late}</td><td>${l.open ? statusPill("critical", "overdue, open") : statusPill("warning", "received late")}</td></tr>`).join("") || '<tr><td colspan=6 class="empty">No late lines.</td></tr>'}</table></div>`;
+  lineChart($("#trend"), d.trend);
+};
+
+function lineChart(host, pts) {
+  if (!pts.length) { host.innerHTML = '<p class="empty">No received lines yet.</p>'; return; }
+  const W = Math.max(host.clientWidth, 520), H = 220, m = {t: 14, r: 70, b: 28, l: 44}, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const x = i => m.l + (pts.length === 1 ? iw / 2 : i * iw / (pts.length - 1)), y = v => m.t + ih - v * ih;
+  const svg = el("svg", {width: W, height: H, role: "img", "aria-label": "On-time delivery by month"});
+  [0, .25, .5, .75, 1].forEach(g => { el("line", {x1: m.l, x2: m.l + iw, y1: y(g), y2: y(g), stroke: g ? css("--grid") : css("--axis")}, svg); el("text", {x: m.l - 8, y: y(g) + 4, "text-anchor": "end", class: "muted"}, svg).textContent = g * 100 + "%"; });
+  pts.forEach((p, i) => { if (pts.length <= 12 || i % Math.ceil(pts.length / 12) === 0) el("text", {x: x(i), y: H - 8, "text-anchor": "middle", class: "muted"}, svg).textContent = p.month; });
+  el("path", {d: "M" + pts.map((p, i) => `${x(i)},${y(p.on_time)}`).join(" L"), fill: "none", stroke: css("--s1"), "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round"}, svg);
+  const last = pts[pts.length - 1]; el("circle", {cx: x(pts.length - 1), cy: y(last.on_time), r: 4, fill: css("--s1"), stroke: css("--surface"), "stroke-width": 2}, svg);
+  el("text", {x: x(pts.length - 1) + 8, y: y(last.on_time) + 4, style: "font-weight:600"}, svg).textContent = pct(last.on_time);
+  const cross = el("line", {y1: m.t, y2: m.t + ih, stroke: css("--axis"), visibility: "hidden"}, svg), hit = el("rect", {x: m.l, y: m.t, width: iw, height: ih, fill: "transparent"}, svg);
+  hit.addEventListener("pointermove", e => { const r = svg.getBoundingClientRect(), px = e.clientX - r.left; let bi = 0; pts.forEach((p, i) => { if (Math.abs(x(i) - px) < Math.abs(x(bi) - px)) bi = i; });
+    cross.setAttribute("x1", x(bi)); cross.setAttribute("x2", x(bi)); cross.setAttribute("visibility", "visible"); showTip(e, pct(pts[bi].on_time) + " on time", [pts[bi].month, pts[bi].lines + " lines received"]); });
+  hit.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); hideTip(); });
+  host.appendChild(svg);
+}
+
+V.mitigation = async v => {
+  if (!OV.has_data) { v.innerHTML = emptyState(); return; }
+  const [sups, plans] = await Promise.all([api("/api/supply/suppliers"), api("/api/supply/plans")]);
+  const segs = {Strategic: "Partner: dual-source critical inputs, joint continuity plans, map sub-tiers.", Bottleneck: "Secure supply: buffer stock, pre-qualified alternates, longer agreements.",
+    Leverage: "Use buying power: competitive bids, consolidate volume.", "Non-critical": "Simplify: catalogue buying, automation, fewer suppliers."};
+  const cols = ["Proposed", "Approved", "In progress", "Done"];
+  v.innerHTML = `<div class="grid32"><div class="card"><h3>Supplier segmentation</h3><div class="sub">Supply risk (likelihood) × business impact, split at the median of your suppliers. Bubble = spend, colour = rating.</div><div id="seg"></div></div>
+    <div class="card"><h3>Strategy by segment</h3>${Object.entries(segs).map(([k, t]) => { const m = sups.filter(s => s.segment === k);
+      return `<div style="padding:10px 0;border-bottom:1px solid var(--line)"><b>${k}</b> <span style="color:var(--muted);font-size:12px">${m.length} · ${money(m.reduce((a, s) => a + s.spend, 0))}</span><div style="color:var(--ink2);font-size:13px">${t}</div>
+        <div style="margin-top:4px">${m.map(s => `<a class="tag" style="display:inline-block;margin:2px;text-decoration:none" href="#suppliers/${encodeURIComponent(s.supplier)}">${esc(s.supplier)}</a>`).join("")}</div></div>`; }).join("")}</div></div>
+    <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><h3>Mitigation plans</h3><div class="sub">Treat · Transfer · Tolerate · Terminate. Moves are recorded in the audit log.</div></div><button id="newPlan">+ New plan</button></div>
+      <div class="board">${cols.map(c => `<div class="col"><div class="lab">${c} · ${plans.filter(p => p.status === c).length}</div>${plans.filter(p => p.status === c).map(p => `<div class="plan"><b>${esc(p.supplier)}</b> · <span class="tag">${esc(p.strategy)}</span><div>${esc(p.action)}</div>
+        <div class="meta">${esc(p.owner || "no owner")} · due ${p.due ? dt(p.due) : "—"}${p.rating_at_creation ? " · rating " + p.rating_at_creation : ""}</div>
+        ${c !== "Done" ? `<button class="ghost" style="margin-top:8px;padding:5px 9px" data-move="${p.id}" data-to="${cols[cols.indexOf(c) + 1]}">→ ${cols[cols.indexOf(c) + 1]}</button>` : ""}</div>`).join("")}</div>`).join("")}</div></div>`;
+  bubble($("#seg"), sups);
+  $("#newPlan").onclick = () => openPlan((sups[0] || {}).supplier, (sups[0] || {actions: []}).actions[0] || "");
+  v.querySelectorAll("[data-move]").forEach(b => b.onclick = async () => { const u = user() || prompt("Your name or role (recorded):"); if (!u) return; localStorage.govUser = u;
+    try { await post(`/api/supply/plans/${b.dataset.move}/status`, {status: b.dataset.to, user: u}); route(); } catch (e) { alert(e.message); } });
+};
+
+function bubble(host, sups) {
+  const W = Math.max(host.clientWidth, 480), H = 380, m = {t: 18, r: 18, b: 36, l: 44}, iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const xs = sups.map(s => s.impact_score).sort((a, b) => a - b), ys = sups.map(s => s.likelihood_score).sort((a, b) => a - b);
+  const mx = xs[Math.floor(xs.length / 2)] || 50, my = ys[Math.floor(ys.length / 2)] || 50, maxSpend = Math.max(1, ...sups.map(s => s.spend));
+  const dom = vals => { const lo = Math.max(0, Math.min(...vals) - 10), hi = Math.min(100, Math.max(...vals) + 10); return [lo, Math.max(hi, lo + 20)]; };
+  const [x0, x1] = dom(xs), [y0, y1] = dom(ys);
+  const x = v => m.l + (v - x0) / (x1 - x0) * iw, y = v => m.t + ih - (v - y0) / (y1 - y0) * ih;
+  const svg = el("svg", {width: W, height: H, role: "img", "aria-label": "Supplier segmentation"});
+  const placed = [];
+  const labelY = (lx, ly) => { let yy = ly; for (let i = 0; i < 8; i++) { if (!placed.some(([px, py]) => Math.abs(px - lx) < 120 && Math.abs(py - yy) < 13)) break; yy += 13; } placed.push([lx, yy]); return yy; };
+  [["BOTTLENECK", m.l + 8, m.t + 14, "start"], ["STRATEGIC", m.l + iw - 8, m.t + 14, "end"], ["NON-CRITICAL", m.l + 8, m.t + ih - 8, "start"], ["LEVERAGE", m.l + iw - 8, m.t + ih - 8, "end"]]
+    .forEach(([t, a, b, an]) => el("text", {x: a, y: b, "text-anchor": an, class: "muted", style: "font:11px ui-monospace,monospace;letter-spacing:.14em"}, svg).textContent = t);
+  el("line", {x1: x(mx), x2: x(mx), y1: m.t, y2: m.t + ih, stroke: css("--axis")}, svg); el("line", {x1: m.l, x2: m.l + iw, y1: y(my), y2: y(my), stroke: css("--axis")}, svg);
+  el("line", {x1: m.l, x2: m.l + iw, y1: m.t + ih, y2: m.t + ih, stroke: css("--axis")}, svg);
+  el("text", {x: m.l + iw / 2, y: H - 6, "text-anchor": "middle", class: "muted"}, svg).textContent = `Business impact → (score ${Math.round(x0)}–${Math.round(x1)})`;
+  const yl = el("text", {x: 14, y: m.t + ih / 2, "text-anchor": "middle", class: "muted", transform: `rotate(-90 14 ${m.t + ih / 2})`}, svg); yl.textContent = "Supply risk →";
+  const color = st => css("--" + st);
+  [...sups].sort((a, b) => b.spend - a.spend).forEach(s => { const r = 6 + 22 * Math.sqrt(s.spend / maxSpend), cx = x(s.impact_score), cy = y(s.likelihood_score);
+    const g = el("g", {style: "cursor:pointer"}, svg);
+    el("circle", {cx, cy, r, fill: color(s.rating_class.status), "fill-opacity": .78, stroke: css("--surface"), "stroke-width": 2}, g);
+    const name = s.supplier.length > 18 ? s.supplier.slice(0, 17) + "…" : s.supplier, left = cx + r + 4 + name.length * 6.5 > W - 4;
+    const lx = left ? cx - r - 4 : cx + r + 4, ly = labelY(lx, cy + 4);
+    el("text", {x: lx, y: ly, class: "halo", "text-anchor": left ? "end" : "start"}, g).textContent = name;
+    hover(g, s.supplier, [`${s.segment} · rating ${s.rating} (${s.rating_class.label})`, `Spend ${money(s.spend)} · impact ${num(s.impact_score)} · risk ${num(s.likelihood_score)}`]);
+    g.addEventListener("click", () => location.hash = "#suppliers/" + encodeURIComponent(s.supplier)); });
+  host.appendChild(svg);
+}
+
+async function openPlan(supplier, action) {
+  const sups = await api("/api/supply/suppliers");
+  $("#pSup").innerHTML = sups.map(s => `<option ${s.supplier === supplier ? "selected" : ""}>${esc(s.supplier)}</option>`).join("");
+  $("#pAct").value = action || ""; $("#pOwn").value = ""; $("#pDue").value = ""; $("#pUser").value = user(); $("#pErr").textContent = "";
+  $("#pCancel").onclick = () => $("#planDlg").close();
+  $("#pSave").onclick = async () => { try { await post("/api/supply/plans", {supplier: $("#pSup").value, strategy: $("#pStr").value, action: $("#pAct").value,
+      owner: $("#pOwn").value || null, due: $("#pDue").value || null, user: $("#pUser").value}); localStorage.govUser = $("#pUser").value; $("#planDlg").close(); route(); }
+    catch (e) { $("#pErr").textContent = e.message; } };
+  $("#planDlg").showModal();
+}
+
+async function ask(q, out) {
+  out.innerHTML = '<div class="answer">Thinking…</div>';
+  try { const j = await post("/api/ask", {question: q}), g = (j.decision || {}).gate || {};
+    out.innerHTML = `<div class="answer"><div class="lab" style="color:var(--ai)">✦ Maestro · ${esc((g.verdict || "").replaceAll("_", " ").toLowerCase())}</div><p style="margin:6px 0">${esc(j.answer)}</p>
+      ${(j.recommended_actions || []).length ? `<ul style="margin:4px 0;padding-left:18px">${j.recommended_actions.map(a => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
+      <div style="color:var(--muted);font-size:12px">${esc(g.reason || "")} · <a href="/governance#overview">review decision</a></div></div>`; }
+  catch (e) { out.innerHTML = `<div class="answer">${esc(e.message)}</div>`; }
+}
+$("#askTop").onclick = e => { e.preventDefault(); $("#askOut").innerHTML = ""; $("#askDlg").showModal(); $("#askQ").focus(); };
+$("#askForm").onsubmit = e => { e.preventDefault(); if ($("#askQ").value.trim()) ask($("#askQ").value, $("#askOut")); };
+
+const NAMES = {overview: "Overview", network: "Supply network", suppliers: "Supplier risk", matrix: "Risk matrix", coverage: "Stock coverage", delivery: "Delivery", mitigation: "Mitigation"};
+async function route() {
+  const [key0, arg] = location.hash.slice(1).split("/"), key = NAMES[key0] ? key0 : "overview";
+  document.querySelectorAll(".rail a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + key));
+  $("#crumb").textContent = NAMES[key]; hideTip();
+  try { await header(); await V[key]($("#view"), arg); } catch (e) { $("#view").innerHTML = `<div class="card"><p class="empty">Could not load (${esc(e.message)}).</p></div>`; }
+}
+addEventListener("hashchange", route); route();
+</script>
+</body>
+</html>
