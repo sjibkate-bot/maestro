@@ -31,13 +31,23 @@ Supply dates are set relative to the day you build, so rebuild the day before th
 ## Load order (Configuration → Load files)
 
 1. Start clean: **Configuration → Loaded data → Delete all data**, or `docker compose down -v` then `docker compose up`.
-2. Load files 01 to 11 in order. 01 then 02 shows weekly history, and 02 becomes current.
+2. In **Configuration → Load files**, enter your name, select files **01 to 11 together**, and choose how to publish:
+   * **Review mappings… ticked (default; shows Mapping Studio):**
+     * The B-52 tracker tabs (tail sheets, Machine Info) publish straight away.
+     * The other 15 tables wait on the batch page: 14 are *Ready* and 1 needs a decision.
+     * Open **06_Item_Master.csv**, accept **Primary Supplier → supplier**, go back to the batch, and click **Validate, govern and publish**.
+     * Until you do, Governance shows only *Depot Flow & Gate Performance*, with a "Loaded, not yet published" banner that links to the batch.
+   * **Review mappings… unticked:** every table publishes as it loads, as in earlier versions.
+
+   01 then 02 shows weekly history, and 02 becomes current.
+
+   After you save a mapping profile for a table, the next load of the same layout publishes by itself.
 3. **Configuration → Risk feeds → Refresh now** (needs internet; about 2 minutes, GDELT may be partial).
-4. Keep file 90 for the governance part of the demo.
+4. Keep file 90 for the governance part of the demo. Load it on its own with *Review mappings…* unticked, so its bad rows go straight to quarantine.
 
 ## Demo script (about 25 minutes)
 
-1. **Configuration:** load the files and show where each sheet went ("→ Docks & Gates", "→ Fleet", "→ Supply").
+1. **Configuration:** load the files together, open one table in Mapping Studio, publish the batch, and show where each sheet went ("→ Docks & Gates", "→ Fleet", "→ Supply").
 2. **Governance → Overview:** everything is grade A and in Gold. Open **02 Filter & dedup**: the 09-09 and 09-16 tail sheets are versions of the same aircraft, and only the newer one is current.
 3. **Maestro → Docks:** 10 aircraft in work as of 16 Sep 2030, one per dock. Open a tail to show its lineage back to the Excel cell.
 4. **Gates → Repair:** last-6 average 61.8 against the 61-day requirement. WIP is **3 against a plan of 2.83**: the bottleneck from the Gate 3 analysis slide. Then **Post Dock**: 51.5 against 54.

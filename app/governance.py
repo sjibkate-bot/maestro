@@ -793,18 +793,23 @@ def overview() -> dict:
     ab = grade_mix["A"] + grade_mix["B"]
     scored = sum(grade_mix.values())
     trust = overall_trust()
+    from . import studio
+    waiting = studio.awaiting_summary()
+    for p in ps:   # rows of this product's entities loaded but not yet published
+        p["awaiting_rows"] = sum(waiting["rows_by_entity"].get(e, 0) for e in p.get("entities", []))
     return {
         "kpis": {
             "datasets_governed": len(raw), "bronze_datasets": len({b["source_id"] for b in raw}),
             "silver_datasets": len(silver_types),
             "gold_confidence": trust["score"], "gold_products": len(live_ps),
-            "blocked_at_ingest": blocked, "bronze_records": bronze_rows,
+            "blocked_at_ingest": blocked, "bronze_records": bronze_rows + waiting["rows"],
             "open_alerts": sum(1 for q in open_q) + len(drift),
             "review_queue": len(open_q) + len(pending), "quarantine": len(open_q), "pending_decisions": len(pending),
-            "drift_alerts": len(drift),
+            "drift_alerts": len(drift), "awaiting_publish": waiting["objects"],
         },
+        "awaiting_publish": waiting,
         "layers": {
-            "bronze": {"datasets": len(raw), "records": bronze_rows,
+            "bronze": {"datasets": len(raw), "records": bronze_rows + waiting["rows"], "awaiting_rows": waiting["rows"],
                        "files": db.bronze_files.count_documents({})},
             "silver": {"datasets": len(silver_types), "records": len(silver),
                        "avg_trust": round(mean(r["trust"]["score"] for r in silver), 1) if silver else None,

@@ -562,7 +562,7 @@ def batch_view(batch_id: str) -> dict:
         raise KeyError(batch_id)
     objs = list(db.source_objects.find({"batch_id": batch_id}, {"context": 0}))
     for o in objs:
-        o["gate"] = _gate(o)
+        o["gate"] = [] if o.get("direct") else _gate(o)   # template sheets and documents have no mapping step
         o["pending"] = sum(1 for f in o["fields"] if f["status"] in NEEDS_DECISION)
         o["decided"] = sum(1 for f in o["fields"] if f["status"] in DECIDED)
         o["fields"] = len(o["fields"])
@@ -691,3 +691,31 @@ def finish_batch(batch_id: str, files: list[dict], load: list[dict]) -> None:
     errors = [x for x in load if x.get("error")]
     get_db().ingest_batches.update_one({"_id": batch_id}, {"$set": {"files": files, "status": "DISCOVERED",
                                                                     "errors": errors, "discovered_at": now()}})
+
+
+def awaiting_summary() -> dict:
+    """Loaded but not yet published: tables staged in Mapping Studio. Governance shows this so a
+    product with no data says why (waiting for review) instead of looking empty."""
+    db = get_db()
+    objs = list(db.source_objects.find({"published": None, "direct": {"$exists": False}},
+                                       {"fields": 1, "batch_id": 1, "name": 1, "entity": 1, "rows": 1, "drift": 1, "drift_reviewed": 1}))
+    by_batch: dict[str, dict] = {}
+    by_entity = Counter()
+    for o in objs:
+        st = _object_status(o)
+        b = by_batch.setdefault(o["batch_id"], {"batch_id": o["batch_id"], "objects": 0, "rows": 0, "status": Counter()})
+        b["objects"] += 1
+        b["rows"] += o.get("rows") or 0
+        b["status"][st] += 1
+        by_entity[o.get("entity") or "other"] += o.get("rows") or 0
+    names = {b["_id"]: b for b in db.ingest_batches.find({"_id": {"$in": list(by_batch)}}, {"name": 1, "created_at": 1, "created_by": 1})}
+    batches_ = []
+    for bid, b in by_batch.items():
+        meta = names.get(bid, {})
+        batches_.append({**b, "status": dict(b["status"]), "name": meta.get("name"), "created_at": meta.get("created_at"),
+                         "created_by": meta.get("created_by")})
+    batches_.sort(key=lambda x: x.get("created_at") or now(), reverse=True)
+    return {"objects": len(objs), "rows": sum(o.get("rows") or 0 for o in objs),
+            "ready": sum(b["status"].get("READY", 0) for b in batches_),
+            "needs_mapping": sum(b["status"].get("MAPPING_REQUIRED", 0) + b["status"].get("DRIFT", 0) for b in batches_),
+            "batches": batches_, "rows_by_entity": dict(by_entity)}

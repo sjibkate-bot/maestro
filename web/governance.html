@@ -225,18 +225,23 @@ const VIEWS = {
   async overview(v, o) {
     const L = o.layers, ps = o.products;
     const layer = (c, k, t, p, nums, href) => `<a class="layer" href="${href}" style="--c:${c};text-decoration:none;color:inherit"><div class="lab k">${k}</div><h2>${t}</h2><p>${p}</p><div class="nums">${nums.map(([a, b]) => `<div><b>${esc(a)}</b><span>${b}</span></div>`).join("")}</div></a>`;
-    v.innerHTML = `<div class="layers">
-      ${layer("var(--bronze)", "Bronze", "SOURCE DATA", "Raw as received from files, ERP, APIs and IoT. Original evidence and full lineage.", [[L.bronze.datasets, "batches"], [num(L.bronze.records), "records"], [L.bronze.files, "files kept"]], "#batches")}<div class="arrow">→</div>
+    const W = o.awaiting_publish || {objects: 0, batches: []};
+    const waiting = W.objects ? `<div class="card" style="border-left:3px solid var(--warning);margin-bottom:14px"><div class="lab"><b>Loaded, not yet published</b></div>
+      <p style="margin:6px 0">${W.objects} source table(s) with ${num(W.rows)} rows are waiting in Mapping Studio: ${W.ready} ready to publish${W.needs_mapping ? `, ${W.needs_mapping} need a mapping decision` : ""}.
+      They are kept in Bronze and appear in Silver and Gold only after <b>Validate, govern and publish</b>.</p>
+      <ul style="margin:4px 0 0;padding-left:18px">${W.batches.map(b => `<li><a class="dl" href="/maestro#batch/${b.batch_id}">${esc(b.name || b.batch_id)}</a>: ${b.objects} table(s), ${num(b.rows)} rows · ${Object.entries(b.status).map(([k, n]) => `${n} ${k.replace("_", " ").toLowerCase()}`).join(", ")}</li>`).join("")}</ul></div>` : "";
+    v.innerHTML = waiting + `<div class="layers">
+      ${layer("var(--bronze)", "Bronze", "SOURCE DATA", "Raw as received from files, ERP, APIs and IoT. Original evidence and full lineage.", [[L.bronze.datasets, "batches"], [num(L.bronze.records), L.bronze.awaiting_rows ? `records (${num(L.bronze.awaiting_rows)} awaiting publish)` : "records"], [L.bronze.files, "files kept"]], "#batches")}<div class="arrow">→</div>
       ${layer("var(--silver)", "Silver", "CURATED DATA", "Filtered, de-duplicated, cleaned, matched to master data and scored A–D.", [[L.silver.datasets, "entities"], [num(L.silver.records), "records"], [num(L.silver.avg_trust, 2), "avg trust"]], "#drill?layer=silver")}<div class="arrow">→</div>
       ${layer("var(--gold)", "Gold", "DERIVED DATA", "Certified products built only from grade A/B Silver records.", [[L.gold.datasets, "products"], [num(L.gold.records), "records"], [num(L.gold.avg_trust, 2), "avg trust"]], "#drill?gold=1")}<div class="arrow">→</div>
       ${layer("var(--accent)", "Decisions", "MAESTRO MODULES", "Docks, gates, fleet, supply analysis and AI read Gold products only.", [[L.decisions.total, "AI decisions"], [L.decisions.pending, "pending"], [L.gold.certified, "certified"]], "#monitor")}</div>
       <div class="grid3">${ps.map(p => `<div class="card prod"><div class="top"><div><div class="lab">Gold data product</div><h3><a class="dl" style="border:0" href="#drill?product=${p.id}">${esc(p.name)}</a></h3></div>${badge(p.grade, p.score)}</div>
         <p>${esc(p.description)}</p><div class="facts">
         <div class="fact"><div class="lab">Certification</div><div>${certPill(p.certification)}</div></div>
-        <div class="fact"><div class="lab">Freshness</div><div>${p.freshness === "CURRENT" ? '<span class="pill p-good">✓ Current</span>' : '<span class="pill p-bad">▲ Stale</span>'}</div></div>
+        <div class="fact"><div class="lab">Freshness</div><div>${p.freshness === "CURRENT" ? '<span class="pill p-good">✓ Current</span>' : p.freshness === "STALE" ? '<span class="pill p-bad">▲ Stale</span>' : '<span class="pill p-muted">No data</span>'}</div></div>
         <div class="fact"><div class="lab">Records</div><div><a class="dl" href="#drill?product=${p.id}&gold=1">${num(p.records)}</a></div></div>
         <div class="fact"><div class="lab">Quarantine</div><div><a class="dl" href="#drill?product=${p.id}&layer=quarantine">${num(p.quarantined)}</a>${p.excluded_c ? ` · <a class="dl" href="#drill?product=${p.id}&grade=C">${p.excluded_c} grade C excluded</a>` : ""}</div></div></div>
-        ${p.records ? "" : `<p class="muted" style="font-size:12px;margin:8px 0 0">No Gold records. <a class="dl" href="#drill?product=${p.id}">See why</a></p>`}
+        ${p.records ? "" : p.awaiting_rows ? `<p style="font-size:12px;margin:8px 0 0">No Gold records yet: <b>${num(p.awaiting_rows)} rows are loaded and waiting to be published</b>. <a class="dl" href="${W.batches.length ? "/maestro#batch/" + W.batches[0].batch_id : "/maestro#config"}">Open the batch</a></p>` : `<p class="muted" style="font-size:12px;margin:8px 0 0">No Gold records. <a class="dl" href="#drill?product=${p.id}">See why</a></p>`}
         <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="muted" style="font-size:12px">Owner: ${esc(p.owner)}${p.certified_by ? ` · certified by ${esc(p.certified_by)}` : ""}</span>
         <button class="ghost" data-cert="${p.id}" ${["CERTIFIED", "BLOCKED", "NO DATA"].includes(p.certification) ? "disabled" : ""}>Certify</button></div></div>`).join("") || '<p class="empty">No data yet: load files in Configuration.</p>'}</div>
       <div class="split"><div class="card"><div class="panel-h lab"><b>Data trust</b></div>${gauge(o.trust.score, o.trust.grade)}

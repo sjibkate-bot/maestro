@@ -91,7 +91,7 @@ ENTITIES: dict[str, dict[str, tuple[str, str]]] = {
         "mc_rate": (N, "Mission-capable (availability) rate, percent"),
         "mtbm_actual": (N, "Mean time between maintenance, actual (hours)"),
         "mtbm_target": (N, "MTBM target (hours)"), "alert_count": (N, "Active alerts / squawks"),
-        "location": (S, "Base / site"),
+        "location": (S, "Base / site"), "as_of": (D, "Status date of the snapshot"),
     },
     "subsystem_health": {
         "asset_id": (S, "Tail number / asset"), "subsystem": (S, "Subsystem name"),

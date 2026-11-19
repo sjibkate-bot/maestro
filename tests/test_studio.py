@@ -141,3 +141,29 @@ def test_delete_all_clears_staging():
     r = c.post("/api/data/delete-all", json={"confirm": "DELETE ALL", "user": "tester"})
     assert r.status_code == 200
     assert get_db().source_objects.count_documents({}) == 0 and get_db().staged_rows.count_documents({}) == 0
+
+
+def test_governance_shows_tables_waiting_to_be_published():
+    b = upload(sorted(RC.glob("*.csv")))
+    ov = c.get("/api/governance/overview").json()
+    w = ov["awaiting_publish"]
+    assert w["objects"] == 11 and w["rows"] == 168 and w["ready"] == 8 and w["needs_mapping"] == 3
+    assert w["batches"][0]["batch_id"] == b["_id"]
+    assert ov["layers"]["bronze"]["awaiting_rows"] == 168 and ov["layers"]["bronze"]["records"] >= 168
+    inv = next(p for p in ov["products"] if p["id"] == "inventory_position")
+    assert inv["records"] == 0 and inv["awaiting_rows"] == 18 + 18 and inv["freshness"] == "NO DATA"   # inventory + forecast
+    resolve_all(b)
+    c.post(f"/api/batches/{b['_id']}/publish", json={"user": "tester"})
+    assert c.get("/api/governance/overview").json()["awaiting_publish"]["objects"] == 0
+
+
+def test_template_sheets_carry_no_mapping_reasons_and_fleet_status_keeps_as_of():
+    demo = Path(__file__).resolve().parents[1] / "samples" / "demo_pack" / "out"
+    if not (demo / "02_B-52_Fixer_2030-09-16.xlsx").exists():
+        pytest.skip("demo pack not built")
+    b = upload([demo / "02_B-52_Fixer_2030-09-16.xlsx", demo / "03_Fleet_Health_2030-09-16.xlsx"])
+    direct = [o for o in b["objects"] if o.get("direct")]
+    assert direct and all(o["gate"] == [] for o in direct)
+    fs = next(o for o in b["objects"] if o.get("sheet") == "Fleet Status")
+    f = {x["name"]: x for x in c.get(f"/api/objects/{fs['_id']}").json()["fields"]}
+    assert f["As_Of"]["canonical_field"] == "as_of" and f["As_Of"]["status"] == "AUTO"
