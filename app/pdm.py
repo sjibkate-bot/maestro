@@ -24,6 +24,7 @@ LAST_N = 6
 GATE_ORDER = [name for _, name, _, _ in GATES]
 GATE_NUMBER = {name: num for _, name, num, _ in GATES}
 IS_QUEUE = {name: q for _, name, _, q in GATES}
+IN_DOCK_GATES = {"Inspection", "Queue to Repair", "Repair", "Queue to Restore", "Restore"}
 
 # Default health bands (from the dashboard supporting data); used for MC rate.
 HEALTH_BANDS = [(95, "FMC", "Full Mission Capable", "good"),
@@ -183,7 +184,8 @@ def dock_overview() -> dict:
             goal = 0.0
         else:
             gate, day, goal = "Awaiting induction", None, None
-        dock = next((e.get("dock") for e in reversed(evs) if e.get("dock")), None)
+        # a dock is held only from Inspection to Restore; Pre Dock, Post Dock and their queues are off-dock
+        dock = next((e.get("dock") for e in reversed(evs) if e.get("dock")), None) if gate in IN_DOCK_GATES else None
         amrep, proj = _naive(f.get("amrep_date")), _naive(f.get("projected_finish"))
         milestones = [{"gate": e["gate"], "date": _naive(e.get("start_date"))}
                       for e in evs if e["gate"] in ("Inspection", "Repair", "Restore") and e.get("start_date")]

@@ -3,3 +3,4 @@ __pycache__/
 .env
 maestro.bundle
 maestro-src.zip
+samples/demo_pack/*.zip

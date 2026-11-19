@@ -1,0 +1,12 @@
+Supplier,Tier,Supplies To,Country,Commodity,Sole Source,Annual Spend,Lead Time
+448 SCMW Propulsion,1,,United States,TF33 engines (overhauled),yes,14500000,45
+DLA Aviation,1,,United States,Consumables and spares,no,3200000,20
+Prairie Aerostructures,1,,United States,Nose cowls and fairings,yes,4100000,60
+Red River Precision,1,,United States,Splice plates and fittings,no,2600000,35
+Cimarron Composites,1,,United States,Flap track and panels,no,1900000,30
+Keystone Hydraulics,1,,United States,Hydraulic pumps and actuators,no,2200000,40
+Sooner Avionics Repair,1,,United States,Radar and nav LRUs,yes,1700000,50
+Great Plains Harness,1,,Mexico,Wiring harnesses,no,900000,25
+Vistula Alloys,2,Red River Precision,Poland,Aluminium forgings,yes,0,70
+Penang Microsystems,2,Sooner Avionics Repair,Malaysia,Radar receiver modules,yes,0,90
+Rhine Sealants,2,Cimarron Composites,Germany,Sealants and primers,no,0,30

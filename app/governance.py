@@ -39,7 +39,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "gold_target_pct": 95,
     "asset_id_pattern": r"^\d{2}-\d{4,5}$",
     "domains": {
-        "depot": {"entities": ["asset_flow", "gate_event", "gate_plan", "production_schedule"],
+        "depot": {"entities": ["asset_flow", "gate_event", "gate_plan", "production_schedule", "production_summary", "issue"],
                   "owner": "AMXG Production Superintendent", "steward": "Depot Scheduling Steward",
                   "sensitivity": "CUI"},
         "fleet": {"entities": ["asset_status", "subsystem_health", "sensor_reading", "fault"],
@@ -68,6 +68,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "asset_flow": ["asset_id", "start_date", "amrep_date", "as_of"],
         "gate_plan": ["gate", "wip_plan", "required_days"],
         "risk_signal": ["signal_id", "source", "category", "risk_score", "title"],
+        "production_summary": ["organization", "weapon_system", "period", "produced", "goal"],
+        "issue": ["organization", "weapon_system", "status", "title"],
     },
     # natural keys; "snapshot" keeps the newest version, "event" removes duplicate copies
     "keys": {
@@ -86,6 +88,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "fault": ("event", ["asset_id", "fault_code", "date_logged"]),
         "sensor_reading": ("event", ["asset_id", "device_id", "metric", "timestamp"]),
         "risk_signal": ("snapshot", ["source", "signal_id"]),
+        "production_summary": ("snapshot", ["organization", "weapon_system", "period"]),
+        "issue": ("snapshot", ["organization", "weapon_system", "title"]),
     },
     # identity fields whose absence is a hard rule (record cannot be placed or matched)
     "hard_keys": {
@@ -95,11 +99,13 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "production_schedule": ["asset_id"], "gate_event": ["asset_id", "gate"], "gate_plan": ["gate"],
         "sensor_reading": [["asset_id", "device_id"]],
         "risk_signal": ["signal_id", "source"],
+        "production_summary": ["weapon_system", "period"],
+        "issue": ["weapon_system", "title"],
     },
     # field used for timeliness and how old it may be relative to the newest record of that type
     "freshness": {
         "sensor_reading": ["timestamp", 1], "fault": ["date_logged", 90], "asset_flow": ["as_of", 14],
-        "purchase_order": ["order_date", 180], "shipment": ["promised_date", 60],
+        "purchase_order": ["order_date", 365], "shipment": ["promised_date", 60],
         "production_schedule": ["induction_date", 730],
     },
     "enums": {
@@ -126,6 +132,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
         {"id": "logistics", "name": "Logistics & Shipments", "domain": "supply",
          "description": "Inbound and outbound shipments against ETA.",
          "entities": ["shipment", "sales_order"], "freshness_days": 3},
+        {"id": "alc_summary", "name": "ALC Production & Issues", "domain": "depot",
+         "description": "Weapon-system production vs goal, hours and yield, and open issues by organization.",
+         "entities": ["production_summary", "issue"], "freshness_days": 30},
         {"id": "risk_signals", "name": "External Risk Signals", "domain": "external",
          "description": "Sanctions matches, natural hazards, political stability and unrest from public feeds.",
          "entities": ["risk_signal"], "freshness_days": 2},

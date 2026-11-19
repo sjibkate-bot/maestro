@@ -1,0 +1,5 @@
+Tail_Number,Date_Logged,Fault_Code,Severity,Description,Technician_Assigned
+B52-7531,2030-09-16,F077,Major,Fuel leak - aft body tank,SSgt Ortiz
+60-7890,2030-09-16,H210,Urgent,Hydraulic line chafing,TSgt Reyes
+,2030-09-16,E311,Critical,Engine #2 EGT exceedance,MSgt Kim
+61-2847,2030-13-02,A055,Major,Antenna damaged,SrA Patel

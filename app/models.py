@@ -112,6 +112,21 @@ ENTITIES: dict[str, dict[str, tuple[str, str]]] = {
         "gate": (S, "Gate name"), "gate_number": (N, "Gate number"), "wip_plan": (N, "Planned WIP"),
         "required_days": (N, "Required calendar days"),
     },
+    "production_summary": {
+        "organization": (S, "ALC / wing / group the line belongs to, e.g. OC-ALC"),
+        "weapon_system": (S, "Weapon system / aircraft type, e.g. B-52"), "period": (S, "Fiscal period, e.g. FY30 Q3"),
+        "produced": (N, "Aircraft produced (delivered) in the period"), "goal": (N, "Aircraft planned for the period"),
+        "on_time_pct": (N, "Share delivered on or before the contract date, percent"),
+        "hours_actual": (N, "Production hours actual"), "hours_target": (N, "Production hours target"),
+        "yield_actual": (N, "Yield actual (0-1)"), "yield_target": (N, "Yield target (0-1)"),
+        "as_of": (D, "Status date"),
+    },
+    "issue": {
+        "issue_id": (S, "Issue identifier"), "organization": (S, "Organization raising or owning the issue (DLA, 448 SCMW...)"),
+        "weapon_system": (S, "Weapon system affected"), "status": (S, "Critical / Issue / Stable"),
+        "title": (S, "Short description"), "impact_days": (N, "Schedule impact in days"),
+        "owner": (S, "Person or office working it"), "date_logged": (D, "When raised"), "notes": (S, "Detail"),
+    },
     "risk_signal": {
         "signal_id": (S, "Identifier of the signal in its source feed"), "source": (S, "Feed that produced it"),
         "category": (S, "sanctions, hazard, stability or unrest"), "country": (S, "ISO 3166 alpha-3 country code"),

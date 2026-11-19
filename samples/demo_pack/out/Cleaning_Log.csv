@@ -1,0 +1,76 @@
+file,sheet,cell,before,after,kind,reason
+01_B-52_Fixer_2030-09-09.xlsx,Summary,(sheet),present,removed,fix,"Working sheet derived from the tail tabs; it contradicts them (other start dates, its own 'today'). The tail tabs are the source of truth."
+01_B-52_Fixer_2030-09-09.xlsx,G3 summary,(sheet),present,removed,fix,"Working sheet derived from the tail tabs; it contradicts them (other start dates, its own 'today'). The tail tabs are the source of truth."
+01_B-52_Fixer_2030-09-09.xlsx,Machine Info,"rows 6+, columns K+",218 cells,cleared,fix,"Notes, a copy of one tail tab and a Gate 3 table sat beside the throughput table; kept only the table (A1:J5)."
+01_B-52_Fixer_2030-09-09.xlsx,FY30 Schedule,A18,64-4003,60-4003,fix,Tail number typo (no such tail tab)
+01_B-52_Fixer_2030-09-09.xlsx,FY30 Schedule,A21,61-3547,61-3457,fix,Tail number typo (no such tail tab)
+01_B-52_Fixer_2030-09-09.xlsx,FY30 Schedule,G1:I6,Quarterly Goals table,moved to 04_OC-ALC_Weapon_System_Summary.xlsx,fix,A second table beside the schedule breaks it as a table; produced vs goal belongs to the ALC summary.
+01_B-52_Fixer_2030-09-09.xlsx,FY30 Schedule,"E1, F1",(no header),Notes / Reference Tail,question,Unlabelled columns. Column F matches the tails on the scanned status board: assumed to be an alias. CONFIRM.
+01_B-52_Fixer_2030-09-09.xlsx,60-0127,D1,60-00127,60-0127,fix,Tail number in the header differs from the tab name
+01_B-52_Fixer_2030-09-09.xlsx,61-1573,B1,,2029-11-20,derived,Arrival date blank; set to start date - 1 day (the pattern on every other tab)
+01_B-52_Fixer_2030-09-09.xlsx,60-7531,E6,Dock 5,Dock 1,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+01_B-52_Fixer_2030-09-09.xlsx,60-7531,G6,Dock 5,Dock 1,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+01_B-52_Fixer_2030-09-09.xlsx,60-7531,I6,Dock 5,Dock 1,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+01_B-52_Fixer_2030-09-09.xlsx,61-4657,B1,,2030-07-16,derived,Arrival date blank; set to start date - 1 day (the pattern on every other tab)
+01_B-52_Fixer_2030-09-09.xlsx,61-4657,E6,Dock 5,Dock 2,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+01_B-52_Fixer_2030-09-09.xlsx,61-4657,G6,Dock 5,Dock 2,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+01_B-52_Fixer_2030-09-09.xlsx,61-4657,I6,Dock 5,Dock 2,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+01_B-52_Fixer_2030-09-09.xlsx,61-2847,E6,Dock 5,Dock 3,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+01_B-52_Fixer_2030-09-09.xlsx,61-2847,G6,Dock 5,Dock 3,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+01_B-52_Fixer_2030-09-09.xlsx,61-2847,I6,Dock 5,Dock 3,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+01_B-52_Fixer_2030-09-09.xlsx,60-2861,E6,Dock 5,Dock 6,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+01_B-52_Fixer_2030-09-09.xlsx,60-2861,G6,Dock 5,Dock 6,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+01_B-52_Fixer_2030-09-09.xlsx,60-2861,I6,Dock 5,Dock 6,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+01_B-52_Fixer_2030-09-09.xlsx,61-5812,B5,2030-04-29,2031-04-29,fix,AMREP year typo: differs from the FY30 Schedule due date by one year
+01_B-52_Fixer_2030-09-09.xlsx,61-5812,E6,Dock 5,,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+01_B-52_Fixer_2030-09-09.xlsx,61-5812,G6,Dock 5,,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+01_B-52_Fixer_2030-09-09.xlsx,61-5812,I6,Dock 5,,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,Summary,(sheet),present,removed,fix,"Working sheet derived from the tail tabs; it contradicts them (other start dates, its own 'today'). The tail tabs are the source of truth."
+02_B-52_Fixer_2030-09-16.xlsx,G3 summary,(sheet),present,removed,fix,"Working sheet derived from the tail tabs; it contradicts them (other start dates, its own 'today'). The tail tabs are the source of truth."
+02_B-52_Fixer_2030-09-16.xlsx,Machine Info,"rows 6+, columns K+",218 cells,cleared,fix,"Notes, a copy of one tail tab and a Gate 3 table sat beside the throughput table; kept only the table (A1:J5)."
+02_B-52_Fixer_2030-09-16.xlsx,FY30 Schedule,A18,64-4003,60-4003,fix,Tail number typo (no such tail tab)
+02_B-52_Fixer_2030-09-16.xlsx,FY30 Schedule,A21,61-3547,61-3457,fix,Tail number typo (no such tail tab)
+02_B-52_Fixer_2030-09-16.xlsx,FY30 Schedule,G1:I6,Quarterly Goals table,moved to 04_OC-ALC_Weapon_System_Summary.xlsx,fix,A second table beside the schedule breaks it as a table; produced vs goal belongs to the ALC summary.
+02_B-52_Fixer_2030-09-16.xlsx,FY30 Schedule,"E1, F1",(no header),Notes / Reference Tail,question,Unlabelled columns. Column F matches the tails on the scanned status board: assumed to be an alias. CONFIRM.
+02_B-52_Fixer_2030-09-16.xlsx,60-0127,D1,60-00127,60-0127,fix,Tail number in the header differs from the tab name
+02_B-52_Fixer_2030-09-16.xlsx,61-1573,B1,,2029-11-20,derived,Arrival date blank; set to start date - 1 day (the pattern on every other tab)
+02_B-52_Fixer_2030-09-16.xlsx,60-7531,E6,Dock 5,Dock 1,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,60-7531,G6,Dock 5,Dock 1,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,60-7531,I6,Dock 5,Dock 1,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,61-4657,B1,,2030-07-16,derived,Arrival date blank; set to start date - 1 day (the pattern on every other tab)
+02_B-52_Fixer_2030-09-16.xlsx,61-4657,E6,Dock 5,Dock 2,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,61-4657,G6,Dock 5,Dock 2,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,61-4657,I6,Dock 5,Dock 2,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,61-2847,E6,Dock 5,Dock 3,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,61-2847,G6,Dock 5,Dock 3,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,61-2847,I6,Dock 5,Dock 3,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,60-2861,E6,Dock 5,Dock 6,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,60-2861,G6,Dock 5,Dock 6,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,60-2861,I6,Dock 5,Dock 6,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,61-5812,B5,2030-04-29,2031-04-29,fix,AMREP year typo: differs from the FY30 Schedule due date by one year
+02_B-52_Fixer_2030-09-16.xlsx,61-5812,E6,Dock 5,,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,61-5812,G6,Dock 5,,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+02_B-52_Fixer_2030-09-16.xlsx,61-5812,I6,Dock 5,,synthetic,One aircraft per dock (source shows six aircraft in 'Dock 5'). DEMO ASSUMPTION - confirm real docks.
+03_Fleet_Health_2030-09-16.xlsx,Fault Registry,61-3457 P0123,2026-05-12,2030-09-10,fix,Re-dated into the demo window (source 2026 dates vs 2030 depot data); order and gaps kept
+03_Fleet_Health_2030-09-16.xlsx,Fault Registry,60-4003 F012,2026-05-12,2030-09-10,fix,Re-dated into the demo window (source 2026 dates vs 2030 depot data); order and gaps kept
+03_Fleet_Health_2030-09-16.xlsx,Fault Registry,61-2847 P0123,2026-05-14,2030-09-12,fix,Re-dated into the demo window (source 2026 dates vs 2030 depot data); order and gaps kept
+03_Fleet_Health_2030-09-16.xlsx,Fault Registry,60-2861 F012,2026-05-14,2030-09-12,fix,Re-dated into the demo window (source 2026 dates vs 2030 depot data); order and gaps kept
+03_Fleet_Health_2030-09-16.xlsx,Fault Registry,60-4488 H456,2026-05-14,2030-09-12,fix,Re-dated into the demo window (source 2026 dates vs 2030 depot data); order and gaps kept
+03_Fleet_Health_2030-09-16.xlsx,Fault Registry,60-4003 P0123,2026-05-10,2030-09-08,fix,Re-dated into the demo window (source 2026 dates vs 2030 depot data); order and gaps kept
+03_Fleet_Health_2030-09-16.xlsx,Fault Registry,60-0127 H456,2026-05-10,2030-09-08,fix,Re-dated into the demo window (source 2026 dates vs 2030 depot data); order and gaps kept
+03_Fleet_Health_2030-09-16.xlsx,Fault Registry,60-1432 P0123,2026-05-11,2030-09-09,fix,Re-dated into the demo window (source 2026 dates vs 2030 depot data); order and gaps kept
+03_Fleet_Health_2030-09-16.xlsx,Fault Registry,61-5812 E345,2026-05-14,2030-09-12,fix,Re-dated into the demo window (source 2026 dates vs 2030 depot data); order and gaps kept
+03_Fleet_Health_2030-09-16.xlsx,Fault Registry,61-2847 P0123,2026-05-11,2030-09-09,fix,Re-dated into the demo window (source 2026 dates vs 2030 depot data); order and gaps kept
+03_Fleet_Health_2030-09-16.xlsx,Fault Registry,60-1234 PRO100,,Engine #1 vibration above limit,synthetic,Subsystem Health shows 2.0 critical fault(s) on 60-1234 Propulsion; registry had none. Added so both agree.
+03_Fleet_Health_2030-09-16.xlsx,Fault Registry,60-1234 PRO101,,Engine #2 vibration above limit,synthetic,Subsystem Health shows 2.0 critical fault(s) on 60-1234 Propulsion; registry had none. Added so both agree.
+03_Fleet_Health_2030-09-16.xlsx,Fault Registry,60-1234 HYD100,,Hydraulic pressure drop - System 1,synthetic,Subsystem Health shows 1.0 critical fault(s) on 60-1234 Hydraulics; registry had none. Added so both agree.
+03_Fleet_Health_2030-09-16.xlsx,Fleet Status,60-1234 Status,Degraded,Up,fix,Status set from the MC-rate bands in the customer's own Health Score table (>=80% flight-worthy)
+03_Fleet_Health_2030-09-16.xlsx,Fleet Status,60-4003 Status,Degraded,Up,fix,Status set from the MC-rate bands in the customer's own Health Score table (>=80% flight-worthy)
+03_Fleet_Health_2030-09-16.xlsx,Telemetry,Timestamp,2024-05-20,2030-09-16,fix,Moved from 2024 to the demo date; values unchanged
+03_Fleet_Health_2030-09-16.xlsx,Telemetry,61-3457 Hyd_Press_System_A,,"24 readings falling below 2,800 psi",synthetic,Shows the open 'Hydraulic Leak' fault in telemetry (alert demo)
+04_OC-ALC_Weapon_System_Summary.xlsx,Production Summary,OC-ALC lines except B-52,slide 'OC-ALC Aircraft Summary a/o 31 May 2030',FY30 Q1-Q4 rows,synthetic,Q1-Q3 from the slide; Q4 (shown as 'x' on the slide) filled for the demo date
+04_OC-ALC_Weapon_System_Summary.xlsx,Production Summary,B-52 rows,,"from FY30 Schedule (sold dates, due dates) + Quarterly Goals",derived,Produced and on-time computed from the customer's schedule; hours/yield from the slide
+04_OC-ALC_Weapon_System_Summary.xlsx,Production Summary,"OO-ALC, WR-ALC rows",,FY30 totals,synthetic,Weapon systems from the AFSC view slide; numbers invented for the demo
+04_OC-ALC_Weapon_System_Summary.xlsx,Issue Register,all rows,AFSC view slide (coloured cells),13 issues,synthetic,Status and text from the slide; impact days and dates invented; B-52 rows tied to the tail notes
+05-09 supply files,,,,dated relative to 2026-11-19,synthetic,"Fictional suppliers (no real companies) around the parts named in the tail notes: engines, nose cowls, BL55 splice plates, ASM fittings. Government sources (448 SCMW, DLA) as named in the AFSC slide."
+90_Governance_Demo_Bad_Fault_Entries.csv,,,,4 rows,synthetic,"Deliberate errors to show quarantine: bad tail format, invalid severity, missing tail, impossible date"
