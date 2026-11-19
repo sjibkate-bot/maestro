@@ -7,7 +7,7 @@ from typing import Any, Optional
 
 import httpx
 from fastapi import Body, FastAPI, File, Form, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel
 
 from . import analytics, governance, pdm
@@ -32,7 +32,8 @@ def _source_id(name: Optional[str]) -> str:
 
 @app.get("/")
 def index():
-    return FileResponse(WEB / "index.html")
+    # One application: Maestro. Supply analysis is its Supply module; data loads in Configuration.
+    return RedirectResponse("/maestro#supply")
 
 
 @app.get("/api/health")

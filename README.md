@@ -4,7 +4,13 @@ Pulls supply-chain data from **any source** (Excel, CSV, JSON, PDF, emails, ERP,
 
 It follows the same idea as Praxie (AI supply-chain workspace on connected data) and Kinaxis Maestro (data fabric → intelligence engine → user interface), as an MVP you can run and extend.
 
-![dashboard](docs-dashboard.png)
+Everything runs in one application, **Maestro-SC** (http://localhost:8000/maestro):
+
+* **Configuration** is the only place data enters: file upload, API/ERP pull and IoT. After each load it shows which module the data feeds.
+* **Modules** show the governed data: **Supply** (inventory, suppliers, POs, shipments, IoT), **Docks / Gates / Machine** (depot flow) and **Fleet** (health and faults).
+* **Governance** shows quality, quarantine and lineage for everything that was loaded.
+
+![gate graph](docs-maestro-gates.png)
 
 ## Data governance (after ingest)
 
@@ -29,7 +35,7 @@ Weights, grade thresholds, SLA, drift threshold and roles are editable under **0
 
 ## Maestro-SC module (depot / maintenance)
 
-Open **http://localhost:8000/maestro** and upload the files in `samples/maestro/`.
+Open **http://localhost:8000/maestro#config** (Configuration) and load the files in `samples/maestro/`.
 
 ![gate graph](docs-maestro-gates.png)
 
@@ -88,7 +94,7 @@ Or locally with an in-memory database:
 pip install -r requirements.txt
 MONGO_URI=mongomock:// uvicorn app.main:app --reload
 ```
-Open http://localhost:8000 and drop the files from `samples/` onto the page (`python samples/make_samples.py` regenerates them).
+Open http://localhost:8000. It goes to Maestro's Supply module. Load the files from `samples/` and `samples/maestro/` in **Configuration** (`python samples/make_samples.py` regenerates the supply samples).
 
 Tests: `pytest -q` (45 tests, including the Maestro reference workbooks and the governance rules)
 

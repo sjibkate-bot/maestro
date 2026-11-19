@@ -73,11 +73,11 @@ tr.click { cursor:pointer } tr.click:hover td { background:var(--soft) }
 </head>
 <body>
 <header><b>MAESTRO-SC</b><span class="t">Data Governance</span>
-  <nav><a href="/maestro">Maestro modules</a><a href="/">Supply analysis</a>
+  <nav><a href="/maestro">Maestro modules</a><a href="/maestro#supply">Supply</a><a href="/maestro#config">Configuration</a>
     <span class="user"><label class="lab" for="who">Acting as</label><input id="who" placeholder="Your name / role" style="width:180px"></span></nav></header>
 <section class="kpis" id="kpis"></section>
 <nav class="tabs" id="tabs">
-  <a href="#upload">Upload data</a><a href="#overview">Overview</a><a href="#plan">01 Plan &amp; govern</a><a href="#filter">02 Filter &amp; dedup</a>
+  <a href="/maestro#config">Load data ↗</a><a href="#overview">Overview</a><a href="#plan">01 Plan &amp; govern</a><a href="#filter">02 Filter &amp; dedup</a>
   <a href="#clean">03 Clean &amp; transform</a><a href="#enrich">04 Enrich &amp; tag</a><a href="#audit">05 Audit &amp; balance</a><a href="#monitor">06 Monitor loop</a>
 </nav>
 <main id="view"></main>
@@ -235,7 +235,7 @@ const VIEWS = {
         <div class="fact"><div class="lab">Quarantine</div><div><a class="dl" href="#drill?product=${p.id}&layer=quarantine">${num(p.quarantined)}</a>${p.excluded_c ? ` · <a class="dl" href="#drill?product=${p.id}&grade=C">${p.excluded_c} grade C excluded</a>` : ""}</div></div></div>
         ${p.records ? "" : `<p class="muted" style="font-size:12px;margin:8px 0 0">No Gold records. <a class="dl" href="#drill?product=${p.id}">See why</a></p>`}
         <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="muted" style="font-size:12px">Owner: ${esc(p.owner)}${p.certified_by ? ` · certified by ${esc(p.certified_by)}` : ""}</span>
-        <button class="ghost" data-cert="${p.id}" ${["CERTIFIED", "BLOCKED", "NO DATA"].includes(p.certification) ? "disabled" : ""}>Certify</button></div></div>`).join("") || '<p class="empty">No data yet: upload files on the Upload data tab.</p>'}</div>
+        <button class="ghost" data-cert="${p.id}" ${["CERTIFIED", "BLOCKED", "NO DATA"].includes(p.certification) ? "disabled" : ""}>Certify</button></div></div>`).join("") || '<p class="empty">No data yet: load files in Configuration.</p>'}</div>
       <div class="split"><div class="card"><div class="panel-h lab"><b>Data trust</b></div>${gauge(o.trust.score, o.trust.grade)}
         <p class="muted" style="text-align:center;font-size:12px;margin:0">Record-weighted score of the Gold products · six dimensions, weights set in 01 Plan &amp; govern</p></div>
       <div class="card"><div class="panel-h lab"><b>AI decision gate</b></div><div id="dec">${decisionPanel(o.latest_decision)}</div></div></div>`;
@@ -323,17 +323,6 @@ const VIEWS = {
     document.querySelectorAll("[data-close]").forEach(b => b.onclick = async () => { const u = who(); if (!u) return;
       const r = prompt("Resolution (e.g. 'corrected in source system, re-ingest scheduled'):"); if (!r) return;
       try { await post(`/api/governance/quarantine/${b.dataset.close}/close`, {user: u, resolution: r}); route(); } catch (e) { alert(e.message); } });
-  },
-  upload(v) {
-    v.innerHTML = `<div class="card"><div class="lab"><b>Upload data</b> · lands in Bronze, passes Gate 1, is scored into Silver, and feeds Gold products</div>
-      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><input type="file" id="files" multiple><input id="src" placeholder="Source name (optional)"><button id="up">Ingest</button></div>
-      <div class="log" id="log" style="margin-top:12px"></div></div>`;
-    const log = m => $("#log").textContent = m + "\n" + $("#log").textContent;
-    $("#up").onclick = async () => { for (const f of $("#files").files) { const fd = new FormData(); fd.append("file", f); if ($("#src").value) fd.append("source", $("#src").value);
-      log(`… ${f.name}`); const r = await fetch("/api/ingest/file", {method: "POST", body: fd}); const j = await r.json();
-      if (!r.ok) { log(`✗ ${f.name}: ${j.detail}`); continue; }
-      j.batches.forEach(b => log(b.error ? `✗ ${f.name} / ${b.sheet}: ${b.error}` : `${b.blocked ? "▲" : "✓"} ${f.name}${b.sheet ? " / " + b.sheet : ""}: ${b.records} ${b.record_type || b.document_kind || ""}${b.note ? " (" + b.note + ")" : ""}`)); }
-      kpis(); };
   },
 };
 

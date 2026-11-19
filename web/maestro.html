@@ -93,8 +93,8 @@ details summary { cursor:pointer; color:var(--ink2); margin:8px 0; font-size:12p
   <a class="logo" href="#modules"><i>M</i>MAESTRO-SC</a><span class="sep"></span>
   <input class="search" id="search" placeholder="SEARCH_SYSTEM...  [Ctrl+K]" aria-label="Search tail number">
   <nav class="mono" id="nav">
-    <a href="#modules">Modules</a><a href="#docks">Docks</a><a href="#gates">Gates</a><a href="#machine">Machine</a>
-    <a href="#fleet">Fleet</a><a href="#alerts">Alerts</a><a href="#data">Data &amp; AI</a><a href="/governance">Governance</a>
+    <a href="#modules">Modules</a><a href="#supply">Supply</a><a href="#docks">Docks</a><a href="#gates">Gates</a><a href="#machine">Machine</a>
+    <a href="#fleet">Fleet</a><a href="#alerts">Alerts</a><a href="/governance">Governance</a><a href="#config">Configuration</a>
   </nav>
   <button id="theme" class="mono themebtn" aria-label="Toggle paper or dark mode">Paper</button>
 </header>
@@ -149,15 +149,15 @@ async function loadAlerts() {
 // ---------- views ----------
 const MODULES = [
   ["M_01", "Event management", "Monitor supply chain events and logistical windows in real-time.", "#alerts"],
-  ["M_02", "Supply analysis", "Inventory, supplier on-time, late POs and shipments from any source.", "/"],
+  ["M_02", "Supply analysis", "Inventory, supplier on-time, late POs and shipments from any source.", "#supply"],
   ["M_03", "Tiered dashboards", "Gate and production-machine performance with trend and watch list.", "#machine"],
   ["M_04", "AMXG", "Aircraft Maintenance Cross-Group operational command board.", "#docks"],
   ["M_05", "Workflow engine", "Compose tasks into executable workflows; attach alert and simulation rules per node.", null],
   ["M_06", "Data curation", "Bronze → Silver → Gold governance: trust scores, quarantine, certified products.", "/governance"],
-  ["M_07", "Configuration tool", "Compose custom modules from your data - upload Excel or link an API.", "#data"],
+  ["M_07", "Configuration tool", "The one place data enters Maestro - upload files, link an ERP or API, stream IoT.", "#config"],
   ["M_08", "Reliability analysis", "Fleet health, subsystem scores and telemetry against limits.", "#fleet"],
-  ["M_09", "AI/ML engine", "Reads any file layout and answers questions over your data.", "#data"],
-  ["M_10", "Maestro connect", "Link MRO / PLM / MES APIs; data fills the right modules by relevance.", "#data"],
+  ["M_09", "AI/ML engine", "Reads any file layout and answers questions over your data.", "#config"],
+  ["M_10", "Maestro connect", "Link MRO / PLM / MES APIs; data fills the right modules by relevance.", "#config"],
   ["M_11", "Workforce development", "Skills maturity, training wishes, and where to invest to grow the team.", null],
   ["M_12", "Admin console", "Users, groups, attribute hierarchy, and module assignment.", null],
   ["M_13", "Collaboration", "Unified secure workspace - notes, email, chat, calendar.", null],
@@ -377,29 +377,95 @@ async function viewAlerts(v) {
     ${a.items.map(i => `<tr><td><span class="tag ${i.level}">${i.level === "critical" ? "▲" : "●"} ${i.level.toUpperCase()}</span></td><td><a href="#fleet/${encodeURIComponent(i.asset_id)}">${esc(i.asset_id)}</a></td><td>${esc(i.source)}</td><td>${esc(i.text)}</td><td>${i.when ? dt(i.when) : "—"}</td></tr>`).join("")}</table></div>`;
 }
 
-function viewData(v) {
-  v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Configuration tool // AI/ML engine</div><h1>DATA &amp; AI</h1></div></div>
-    <div class="panel"><h2 class="mono">Upload Excel, CSV, JSON, PDF or text</h2>
-      <div class="row"><input type="file" id="files" multiple><input id="src" placeholder="Source name (optional)"><button id="up">Ingest</button></div>
+// Where each kind of data shows up after loading.
+const DEST = {
+  inventory: ["supply", "Supply"], product: ["supply", "Supply"], purchase_order: ["supply", "Supply"],
+  supplier: ["supply", "Supply"], sales_order: ["supply", "Supply"], shipment: ["supply", "Supply"],
+  asset_flow: ["docks", "Docks & Gates"], gate_event: ["docks", "Docks & Gates"], gate_plan: ["machine", "Machine"],
+  "asset_flow+gate_event": ["docks", "Docks & Gates"], production_schedule: ["docks", "Docks & Gates"],
+  asset_status: ["fleet", "Fleet"], subsystem_health: ["fleet", "Fleet"], fault: ["fleet", "Fleet"],
+  sensor_reading: ["fleet", "Fleet / Supply IoT"],
+};
+const destLink = rt => { const d = DEST[rt]; return d ? `<a href="#${d[0]}">→ ${esc(d[1])}</a>` : '<span style="color:var(--muted)">not shown in a module</span>'; };
+
+async function viewConfig(v) {
+  v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Configuration tool // Maestro connect</div><h1>CONFIGURATION</h1>
+    <div class="mono" style="color:var(--muted)">The one place data enters Maestro. It is governed (Bronze → Silver → Gold) and then appears in the module it belongs to.</div></div></div>
+    <div class="panel"><h2 class="mono">Load files · Excel, CSV, JSON, PDF, text</h2>
+      <div class="row"><input type="file" id="files" multiple><input id="src" placeholder="Source name (optional)"><button id="up">Load</button></div>
       <p style="color:var(--ink2);font-size:13px">The AI finds the tables in each sheet (skipping titles and data dictionaries), recognises tracker templates such as the PDM tail sheets, maps columns to Maestro entities, and reads scanned status boards.</p>
-      <div class="log" id="log"></div></div>
-    <div class="panel"><h2 class="mono">Ask Maestro</h2><form id="ask" class="row"><input id="q" style="flex:1" placeholder="e.g. Which aircraft are at risk of missing AMREP and which gate is the constraint?"><button>Ask</button></form><div id="ans" style="margin-top:10px"></div></div>`;
-  const log = m => $("#log").textContent = m + "\n" + $("#log").textContent;
-  $("#up").onclick = async () => { for (const f of $("#files").files) { const fd = new FormData(); fd.append("file", f); if ($("#src").value) fd.append("source", $("#src").value);
-    log(`… ${f.name}`); const r = await fetch("/api/ingest/file", {method: "POST", body: fd}); const j = await r.json();
-    if (!r.ok) { log(`✗ ${f.name}: ${j.detail}`); continue; }
-    j.batches.forEach(b => log(b.error ? `✗ ${f.name}${b.sheet ? " / " + b.sheet : ""}: ${b.error}`
-      : `✓ ${f.name}${b.sheet ? " / " + b.sheet : ""}: ${b.records} ${b.record_type || b.document_kind || ""}${b.template ? " [" + b.template + "]" : ""}${b.note ? " (" + b.note + ")" : ""}`)); } loadAlerts(); };
+      <table id="result" style="display:none"><tr><th>File / sheet</th><th>Read as</th><th class="n">Records</th><th>Shows in</th><th>Note</th></tr></table></div>
+    <div class="panel"><h2 class="mono">Connect an API or ERP · Maestro connect</h2>
+      <form id="apiForm" class="row"><select name="kind"><option value="erp">ERP (OData / REST)</option><option value="api">REST API</option></select>
+        <input name="source" placeholder="Source name"><input name="url" required style="flex:1;min-width:320px" placeholder="https://erp.example.com/sap/opu/odata/sap/API_PURCHASEORDER_PROCESS_SRV/A_PurchaseOrderItem">
+        <input name="username" placeholder="Username"><input name="password" type="password" placeholder="Password"><input name="token" placeholder="Bearer token"><input name="records_path" placeholder="Records path, e.g. d.results">
+        <button>Pull</button></form><div id="apiOut" style="margin-top:8px;color:var(--ink2)"></div>
+      <p style="color:var(--ink2);font-size:13px;margin-bottom:0">IoT devices and gateways: <code>POST /api/ingest/iot/&lt;source&gt;</code> with JSON readings, or subscribe to an MQTT broker with <code>POST /api/ingest/mqtt/start</code>.</p></div>
+    <div class="panel"><h2 class="mono">Recent loads</h2><div id="recent"></div>
+      <p style="color:var(--ink2);font-size:13px;margin-bottom:0">Quality, quarantine and lineage for every load: <a href="/governance">Data governance</a>.</p></div>
+    <div class="panel"><h2 class="mono">Ask Maestro · AI/ML engine</h2><form id="ask" class="row"><input id="q" style="flex:1" placeholder="e.g. Which aircraft are at risk of missing AMREP and which gate is the constraint?"><button>Ask</button></form><div id="ans" style="margin-top:10px"></div></div>`;
+  const recent = async () => {
+    const bs = (await api("/api/governance/batches")).slice(0, 25);
+    $("#recent").innerHTML = bs.length ? `<table><tr><th>Loaded</th><th>Source</th><th>Sheet</th><th>Read as</th><th class="n">Records</th><th>Shows in</th></tr>${bs.map(b => `<tr><td>${dt(b.received_at)}</td><td>${esc(b.source_id)}</td><td>${esc(b.sheet)}</td>
+      <td>${b.gate1 && b.gate1.status === "blocked" ? '<span class="tag critical">▲ BLOCKED</span>' : esc(b.record_type)}</td><td class="n">${num(b.stored, 0)}</td><td>${b.gate1 && b.gate1.status === "blocked" ? `<a href="/governance#batch?id=${b.batch_id}">why?</a>` : destLink(b.record_type)}</td></tr>`).join("")}</table>`
+      : '<p class="empty">Nothing loaded yet.</p>';
+  };
+  const row = (name, b) => `<tr><td>${esc(name)}${b.sheet ? " / " + esc(b.sheet) : ""}</td><td>${b.error ? '<span class="tag critical">▲ ERROR</span>' : b.blocked ? '<span class="tag critical">▲ BLOCKED</span>' : esc(b.record_type || b.document_kind || "")}${b.template ? ` <span class="tag good">${esc(b.template)}</span>` : ""}</td>
+    <td class="n">${num(b.records, 0)}</td><td>${b.records ? destLink(b.record_type) : "—"}</td><td style="color:var(--ink2)">${esc(b.error || b.note || "")}</td></tr>`;
+  $("#up").onclick = async () => {
+    const files = [...$("#files").files]; if (!files.length) return;
+    const t = $("#result"); t.style.display = ""; $("#up").disabled = true;
+    for (const f of files) {
+      const fd = new FormData(); fd.append("file", f); if ($("#src").value) fd.append("source", $("#src").value);
+      t.insertAdjacentHTML("beforeend", `<tr id="pending"><td>${esc(f.name)}</td><td colspan=4 style="color:var(--muted)">loading…</td></tr>`);
+      const r = await fetch("/api/ingest/file", {method: "POST", body: fd}); const j = await r.json(); $("#pending").remove();
+      t.insertAdjacentHTML("beforeend", r.ok ? j.batches.map(b => row(f.name, b)).join("") : row(f.name, {error: j.detail, records: 0}));
+    }
+    $("#up").disabled = false; loadAlerts(); recent();
+  };
+  $("#apiForm").onsubmit = async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
+    const body = {url: f.url, kind: f.kind, source: f.source || null, records_path: f.records_path || null, username: f.username || null,
+      password: f.password || null, headers: f.token ? {Authorization: "Bearer " + f.token} : {}};
+    $("#apiOut").textContent = "Pulling…";
+    const r = await fetch("/api/ingest/api", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)}); const j = await r.json();
+    $("#apiOut").innerHTML = r.ok ? `✓ ${num(j.records, 0)} ${esc(j.record_type)} records from ${j.pages} page(s) ${destLink(j.record_type)}` : `✗ ${esc(j.detail)}`; recent(); loadAlerts(); };
   $("#ask").onsubmit = async e => { e.preventDefault(); $("#ans").textContent = "Thinking…";
     const r = await fetch("/api/ask", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({question: $("#q").value})}); const j = await r.json();
     if (!r.ok) { $("#ans").textContent = j.detail; return; }
-    const list = (t, xs) => xs.length ? `<p class="mono" style="margin:10px 0 4px">${t}</p><ul>${xs.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
-    $("#ans").innerHTML = `<p>${esc(j.answer)}</p>` + list("Key findings", j.key_findings) + list("Recommended actions", j.recommended_actions); };
+    const list = (t, xs) => xs && xs.length ? `<p class="mono" style="margin:10px 0 4px">${t}</p><ul>${xs.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
+    const g = (j.decision || {}).gate || {};
+    $("#ans").innerHTML = `<p class="mono" style="color:var(--accent)">${esc((g.verdict || "").replaceAll("_", " "))} · ${esc(g.reason || "")} · <a href="/governance#overview">review in governance</a></p><p>${esc(j.answer)}</p>` + list("Key findings", j.key_findings) + list("Recommended actions", j.recommended_actions); };
+  recent();
+}
+
+async function viewSupply(v) {
+  const [o, ps] = await Promise.all([api("/api/analytics/overview"), api("/api/governance/products").catch(() => [])]);
+  const k = o.kpis, trust = id => { const p = ps.find(x => x.id === id); return p && p.records ? `<a href="/governance#drill?product=${id}&gold=1" class="mono" style="font-size:11px;color:var(--ink2)">trust ${esc(p.trust_label)}</a>` : ""; };
+  const supplyCount = ["inventory", "product", "purchase_order", "supplier", "sales_order", "shipment"].reduce((a, t) => a + (o.record_counts[t] || 0), 0);
+  const head = `<div class="titlebar"><div><div class="mono eyebrow">Supply analysis</div><h1>SUPPLY CHAIN</h1>
+    <div class="mono" style="color:var(--muted)">Governed Gold data only · load data in <a href="#config">Configuration</a></div></div></div>`;
+  if (!supplyCount && !o.iot.readings) { v.innerHTML = head + await whyEmpty(["inventory", "purchase_order", "shipment", "product", "supplier"], "supply data"); return; }
+  const tbl = (rows, cols) => rows && rows.length ? `<div style="max-height:420px;overflow:auto"><table><tr>${cols.map(c => `<th class="${c[2] || ""}">${c[0]}</th>`).join("")}</tr>${rows.map(r => `<tr>${cols.map(c => `<td class="${c[2] || ""}">${c[1](r)}</td>`).join("")}</tr>`).join("")}</table></div>` : '<p class="empty">Nothing to show.</p>';
+  const pct = x => x == null ? "—" : (x * 100).toFixed(1) + "%";
+  const tile = (l, val, cls = "") => `<div class="stat"><div class="l mono">${l}</div><div class="v ${cls}">${esc(val)}</div></div>`;
+  v.innerHTML = head + `<div class="stats">
+      ${tile("Supply records", num(supplyCount, 0))}${tile("Inventory value", num(k.inventory_value, 0))}
+      ${tile("Below reorder point", num(k.skus_below_reorder_point, 0), k.skus_below_reorder_point ? "over" : "")}${tile("Stockouts", num(k.stockouts, 0), k.stockouts ? "over" : "")}
+      ${tile("Supplier on-time", pct(k.supplier_on_time_rate))}${tile("Late PO lines", num(k.late_po_lines, 0), k.late_po_lines ? "over" : "")}
+      ${tile("Delayed shipments", num(k.delayed_shipments, 0), k.delayed_shipments ? "over" : "")}${tile("Sensor anomalies", num(k.sensor_anomalies, 0), k.sensor_anomalies ? "over" : "")}</div>
+    <div class="split" style="grid-template-columns:1fr 1fr">
+    <div class="panel"><h2 class="mono">Below reorder point ${trust("inventory_position")}</h2>${tbl(o.inventory.below_reorder_point, [["SKU", r => esc(r.sku)], ["Location", r => esc(r.location)], ["On hand", r => num(r.on_hand, 0), "n"], ["Reorder pt", r => num(r.reorder_point, 0), "n"], ["Shortfall", r => num(r.shortfall, 0), "n"]])}</div>
+    <div class="panel"><h2 class="mono">Supplier performance ${trust("supplier_performance")}</h2>${tbl(o.suppliers.suppliers, [["Supplier", r => esc(r.supplier)], ["Lines", r => r.po_lines, "n"], ["Spend", r => num(r.spend, 0), "n"],
+      ["On-time", r => `<div class="row" style="flex-wrap:nowrap;gap:8px"><div class="meter" style="width:90px;margin:0"><i style="width:${(r.on_time_rate || 0) * 100}%"></i></div>${pct(r.on_time_rate)}</div>`], ["Lead time (d)", r => num(r.avg_lead_time_days), "n"]])}</div>
+    <div class="panel"><h2 class="mono">Late PO lines</h2>${tbl(o.suppliers.late_lines, [["PO", r => esc(r.order_id)], ["SKU", r => esc(r.sku)], ["Supplier", r => esc(r.supplier)], ["Days late", r => r.days_late + (r.open ? " (open)" : ""), "n"]])}</div>
+    <div class="panel"><h2 class="mono">Delayed shipments ${trust("logistics")}</h2>${tbl(o.shipments.delayed, [["Shipment", r => esc(r.shipment_id)], ["Route", r => `${esc(r.origin)} → ${esc(r.destination)}`], ["Status", r => esc(r.status)], ["Days late", r => r.days_late, "n"]])}</div>
+    <div class="panel"><h2 class="mono">Top demand</h2>${tbl(o.demand.top_skus, [["SKU", r => esc(r.sku)], ["Quantity", r => num(r.quantity, 0), "n"]])}</div>
+    <div class="panel"><h2 class="mono">IoT sensor anomalies</h2>${tbl(o.iot.anomalies, [["Device", r => esc(r.device_id)], ["Metric", r => esc(r.metric)], ["Value", r => num(r.value), "n"], ["z-score", r => r.z, "n"], ["When", r => dt(r.timestamp)]])}</div></div>`;
 }
 
 async function whyEmpty(entities, what) {
   let d; try { d = await api("/api/governance/diagnose?entities=" + entities.join(",")); } catch { d = {reasons: []}; }
-  const prods = {asset_flow: "depot_flow", gate_event: "depot_flow", asset_status: "fleet_health"};
+  const prods = {asset_flow: "depot_flow", gate_event: "depot_flow", asset_status: "fleet_health", inventory: "inventory_position"};
   const pid = prods[entities[0]] || "";
   return `<div class="panel" style="border-color:var(--warning)"><h2 class="mono">No ${esc(what)} in Gold</h2>
     <p>This module reads only governed Gold data (grade A/B, not quarantined).</p>
@@ -407,10 +473,10 @@ async function whyEmpty(entities, what) {
     ${d.layers && Object.keys(d.layers).length ? `<p class="mono" style="color:var(--ink2)">Loaded: ${Object.entries(d.layers).map(([k, n]) => `${n} ${esc(k)}`).join(" · ")}</p>` : ""}
     <div class="row"><a class="tag" style="color:var(--accent)" href="/governance#drill?product=${pid}">Drill into the records</a>
     <a class="tag" style="color:var(--accent)" href="/governance#batches">See how each sheet was read</a>
-    <a class="tag" style="color:var(--accent)" href="#data">Upload data</a></div></div>`;
+    <a class="tag" style="color:var(--accent)" href="#config">Load data in Configuration</a></div></div>`;
 }
 
-const VIEWS = {modules: viewModules, docks: viewDocks, gates: viewGates, machine: viewMachine, fleet: viewFleet, alerts: viewAlerts, data: viewData};
+const VIEWS = {modules: viewModules, supply: viewSupply, docks: viewDocks, gates: viewGates, machine: viewMachine, fleet: viewFleet, alerts: viewAlerts, config: viewConfig, data: viewConfig};
 async function route() {
   const key = (location.hash.slice(1).split("/")[0]) || "modules";
   document.querySelectorAll("nav a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + key));
