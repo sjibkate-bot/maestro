@@ -1,0 +1,10 @@
+Risk ID,Affected Node,Likelihood,Impact,Title,Evidence,Owner,Status
+R-01,HSI,4,5,Single source for gateway MCUs in Taiwan,100% of gateway MCUs from one fab in Hsinchu; 5 days of cover at Halle.,Purchasing – Electronics,Open
+R-02,JXM,4,4,Rare-earth magnet concentration in China,NdFeB magnets for in-house e-motors from one Ganzhou supplier; export licensing tightened.,Purchasing – E-drive,Open
+R-03,HBC,3,5,Battery module capacity,Cell line yield below plan; sole source for 96S modules.,Battery Programme,Mitigating
+R-04,BWH,3,4,Harness plant labour unrest,Strike vote at León; harness has 6 days of cover in Greenville.,Purchasing – Electrical,Open
+R-05,CHF,4,3,Red Sea routing for forgings,Crankshafts ship Chennai → Hamburg via Suez.,Logistics,Open
+R-06,KCR,4,3,Cobalt sourcing compliance,Cobalt hydroxide from Haut-Katanga; due-diligence audit overdue.,Sustainability,Open
+R-07,VAL,4,3,Sanctions exposure at sub-tier,Silesia Brake Systems buys nickel alloy from a Russian mill.,Compliance,Open
+R-08,KSW,2,4,Seismic risk at radar supplier,Single radar plant in Kumamoto.,Purchasing – ADAS,Open
+R-09,ESS,2,3,Just-in-time seats from one plant,Seats delivered in sequence every 4 hours from Dresden.,Plant Halle Logistics,Open

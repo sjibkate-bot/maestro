@@ -1,0 +1,9 @@
+Alert ID,Age Minutes,Source System,Severity,Node,Alert Text,Level,Status
+A-301,25,News / OSINT,critical,HSI,Live-fire drills declared around Taiwan; two carriers pause bookings.,3,escalated
+A-302,55,Supplier portal,critical,JXM,Export licence for October magnet shipment still pending.,2,new
+A-303,90,Carrier EDI,high,CHF,Container line reroutes Asia–Europe via the Cape: +12 days on 3 bookings.,2,new
+A-304,120,News / OSINT,high,BWH,Union announces strike vote at León harness plant for Friday.,1,new
+A-305,240,Supplier quality,medium,HBC,Cell line 3 yield down to 88% (plan 94%).,1,acknowledged
+A-306,30,USGS feed,medium,KSW,M5.9 earthquake 40 km from Kumamoto; plant inspection under way.,1,new
+A-307,600,Compliance screening,high,VAL,Sub-tier mill appears on an EU restricted-party watch list (name match).,2,new
+A-308,15,Weather service,low,MOC,Heavy rain warning for Monterrey; no impact expected.,1,new

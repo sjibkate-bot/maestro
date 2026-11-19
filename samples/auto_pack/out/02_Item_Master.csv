@@ -1,0 +1,20 @@
+Part Number,Description,Supplier,UoM,Lead Time Days,Commodity
+BAT-MOD-96,Battery module 96S,Hanseong Battery Cells,EA,45,Battery modules
+MCU-GW-32,Gateway MCU 32-bit,Hsinchu Microcontrollers,EA,70,Gateway & body MCUs
+SIC-INV-800,SiC power module 800 V,Penang Semicon Assembly,EA,56,SiC power modules
+RAD-77G,77 GHz radar sensor,Kyushu Sensor Works,EA,49,ADAS radar sensors
+EMOT-150,E-motor 150 kW,Győr Electric Motors,EA,21,E-motors
+MAG-NDFEB,NdFeB rotor magnet set,Jiangxi Rare Earth Magnetics,SET,63,NdFeB rotor magnets
+HARN-MAIN,Main wiring harness,Bajío Wire Harness,EA,14,Main wiring harness
+CAST-SUBF,Aluminium front subframe,Monterrey Castings,EA,18,Aluminium subframes
+AXLE-RR,Rear axle assembly,Carolina Axle Corp,EA,10,Rear axle assemblies
+GLASS-WS,Acoustic windscreen,Great Lakes Glass,EA,14,Windscreens
+GLASS-WS-EU,Acoustic windscreen (EU),Thüringen Glaswerk,EA,10,Windscreens
+SEAT-FR,Front seat set,Elbtal Sitzsysteme,SET,3,Seat sets (JIT)
+TRANS-8AT,8-speed transmission (PHEV),Rheinwerk Antriebstechnik,EA,28,8-speed transmissions
+BRAKE-CAL,Brake caliper set,Silesia Brake Systems,SET,14,Brake calipers
+TRIM-IP,Instrument panel trim,Bursa Interior Trim,EA,21,Instrument panel trim
+FORG-CRANK,Forged crankshaft,Chennai Forgings,EA,56,Forged crankshafts
+PAINT-BASE,Basecoat paint (200 L drum),Lombardia Paint & Coatings,DRUM,14,Basecoat paint
+STEEL-COIL,Galvanised steel coil,Ruhr Steel Coil,T,21,Galvanised steel coil
+TYRE-20,20-inch tyre,Iberia Tyre,EA,14,20-inch tyres

@@ -298,8 +298,9 @@ def merge_governance(cfg: dict) -> dict:
 def propose_from_object(obj: dict, name: Optional[str] = None, domain: Optional[str] = None) -> dict:
     """Draft an entity from a profiled source: one field per column, typed from the values;
     columns with no empty values are required; the first fully distinct column is the key."""
-    base = name or snake(re.sub(r"\.[a-z0-9]+$", "", (obj.get("sheet") or obj.get("file") or "entity").lower()))
-    base = re.sub(r"^\d+_", "", base) or "entity"
+    stem = re.sub(r"\.[a-z0-9]+$", "", (obj.get("sheet") or obj.get("file") or "entity").lower())
+    stem = re.sub(r"^\d+[_\- ]+", "", stem)          # "30_dealer_order_bank" -> "dealer_order_bank"
+    base = name or snake(stem) or "entity"
     if base in CORE or not NAME.match(base):
         base = ("x_" + base)[:40] if base in CORE else snake(base)
     fields, used = [], set()

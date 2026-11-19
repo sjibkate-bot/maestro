@@ -1,0 +1,7 @@
+Scenario ID,Scenario Name,Description,Duration Days,Supply Loss Fraction,Cost Uplift Pct,Annual Probability Pct,Country,Lane
+S-TW,Taiwan Strait blockade,Shipping and air cargo out of Taiwan halted for about six weeks.,45,1.0,0,6,TW,taiwan-strait
+S-RED,Red Sea / Suez closure,Attacks force Asia–Europe sailings round the Cape: +12–14 days and less capacity.,60,0.4,15,30,,suez-red-sea
+S-REE,China rare-earth export controls,Licensing on rare-earth magnets cuts volumes 70% for four months.,120,0.7,20,25,CN,
+S-JP,Kyushu earthquake,M7 earthquake near Kumamoto stops sensor production for a month.,30,0.8,0,10,JP,
+S-KR,"Battery cell plant fire, Cheongju",Fire on two cell lines halves output for six weeks.,45,0.5,0,5,KR,
+S-MX,US tariff on Mexican-origin parts,25% tariff on Mexican-origin assemblies outside USMCA rules.,0,0.0,25,25,MX,

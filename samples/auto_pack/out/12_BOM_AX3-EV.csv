@@ -1,0 +1,22 @@
+End Item,Parent,Child,Description,Quantity,Level
+AX3-EV,AX3-EV,SYS-BATT,High-voltage battery,1,1
+AX3-EV,AX3-EV,SYS-EDRIVE,Electric drive,1,1
+AX3-EV,AX3-EV,SYS-ELEC,Electrical & electronics,1,1
+AX3-EV,AX3-EV,SYS-CHASSIS,Chassis,1,1
+AX3-EV,AX3-EV,SYS-BODY,Body & interior,1,1
+AX3-EV,SYS-BATT,BAT-MOD-96,Battery module 96S,4,2
+AX3-EV,SYS-EDRIVE,EMOT-150,E-motor 150 kW,1,2
+AX3-EV,SYS-EDRIVE,SIC-INV-800,SiC power module 800 V,1,2
+AX3-EV,SYS-EDRIVE,MAG-NDFEB,NdFeB rotor magnet set,1,2
+AX3-EV,SYS-ELEC,MCU-GW-32,Gateway MCU 32-bit,3,2
+AX3-EV,SYS-ELEC,RAD-77G,77 GHz radar sensor,5,2
+AX3-EV,SYS-ELEC,HARN-MAIN,Main wiring harness,1,2
+AX3-EV,SYS-CHASSIS,CAST-SUBF,Aluminium front subframe,1,2
+AX3-EV,SYS-CHASSIS,AXLE-RR,Rear axle assembly,1,2
+AX3-EV,SYS-CHASSIS,BRAKE-CAL,Brake caliper set,1,2
+AX3-EV,SYS-CHASSIS,TYRE-20,20-inch tyre,4,2
+AX3-EV,SYS-BODY,STEEL-COIL,Galvanised steel coil (t),0.6,2
+AX3-EV,SYS-BODY,PAINT-BASE,Basecoat paint,0.02,2
+AX3-EV,SYS-BODY,GLASS-WS-EU,Acoustic windscreen,1,2
+AX3-EV,SYS-BODY,SEAT-FR,Front seat set,1,2
+AX3-EV,SYS-BODY,TRIM-IP,Instrument panel trim,1,2

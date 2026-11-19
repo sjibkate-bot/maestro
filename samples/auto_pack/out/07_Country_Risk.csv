@@ -1,0 +1,18 @@
+Country Code,Country Name,Risk Index,Hazard Index
+DE,Germany,12,10
+US,United States,22,30
+MX,Mexico,55,35
+KR,South Korea,30,28
+TW,Taiwan,74,62
+MY,Malaysia,38,30
+JP,Japan,18,72
+HU,Hungary,30,12
+CN,China,70,40
+PL,Poland,18,10
+TR,Türkiye,58,45
+IN,India,45,50
+IT,Italy,20,25
+ES,Spain,15,15
+CL,Chile,30,55
+CD,DR Congo,88,40
+RU,Russia,92,20

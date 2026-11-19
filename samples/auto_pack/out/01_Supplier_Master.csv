@@ -1,0 +1,26 @@
+Supplier ID,Supplier Name,Site City,State / Province,Country,Tier,Supplies To,Commodity,Sole Source,Annual Spend,Lead Time Days,Buffer Days,Recovery Days,Critical
+HBC,Hanseong Battery Cells,Cheongju,Chungcheongbuk-do,KR,1,,Battery modules,yes,420000000,45,10,120,yes
+HSI,Hsinchu Microcontrollers,Hsinchu,Hsinchu City,TW,1,,Gateway & body MCUs,yes,95000000,70,7,150,yes
+PSA,Penang Semicon Assembly,Bayan Lepas,Penang,MY,1,,SiC power modules,yes,140000000,56,10,90,yes
+KSW,Kyushu Sensor Works,Kumamoto,Kumamoto,JP,1,,ADAS radar sensors,no,88000000,49,14,60,no
+GEM,Győr Electric Motors,Győr,Győr-Moson-Sopron,HU,1,,E-motors,no,260000000,21,10,45,yes
+JXM,Jiangxi Rare Earth Magnetics,Ganzhou,Jiangxi,CN,1,,NdFeB rotor magnets,yes,60000000,63,20,180,yes
+BWH,Bajío Wire Harness,León,Guanajuato,MX,1,,Main wiring harness,yes,150000000,14,5,60,yes
+MOC,Monterrey Castings,Monterrey,Nuevo León,MX,1,,Aluminium subframes,no,120000000,18,10,40,no
+CAX,Carolina Axle Corp,Spartanburg,South Carolina,US,1,,Rear axle assemblies,no,175000000,10,7,30,no
+GLG,Great Lakes Glass,Toledo,Ohio,US,1,,Windscreens,no,55000000,14,10,30,no
+TGW,Thüringen Glaswerk,Jena,Thuringia,DE,1,,Windscreens,no,48000000,10,10,30,no
+ESS,Elbtal Sitzsysteme,Dresden,Saxony,DE,1,,Seat sets (JIT),yes,210000000,3,2,21,yes
+RAT,Rheinwerk Antriebstechnik,Stuttgart,Baden-Württemberg,DE,1,,8-speed transmissions,yes,310000000,28,12,60,yes
+SBS,Silesia Brake Systems,Katowice,Silesian,PL,1,,Brake calipers,no,70000000,14,14,30,no
+BIT,Bursa Interior Trim,Bursa,Bursa,TR,1,,Instrument panel trim,no,45000000,21,12,45,no
+CHF,Chennai Forgings,Chennai,Tamil Nadu,IN,1,,Forged crankshafts,yes,38000000,56,14,75,no
+LPC,Lombardia Paint & Coatings,Bergamo,Lombardy,IT,1,,Basecoat paint,no,33000000,14,20,30,no
+RSC,Ruhr Steel Coil,Duisburg,North Rhine-Westphalia,DE,1,,Galvanised steel coil,no,190000000,21,25,30,no
+ITY,Iberia Tyre,Valladolid,Castile and León,ES,1,,20-inch tyres,no,64000000,14,18,30,no
+ATL,Atacama Lithium,Antofagasta,Antofagasta Region,CL,3,Hanseong Battery Cells,Lithium carbonate,no,,90,30,120,yes
+KCR,Katanga Cobalt Refining,Lubumbashi,Haut-Katanga,CD,3,Hanseong Battery Cells,Cobalt hydroxide,yes,,100,30,180,yes
+GCF,Guangdong Copper Foil,Huizhou,Guangdong,CN,2,Hanseong Battery Cells,Battery copper foil,no,,45,20,60,no
+TJG,Tianjin Graphite,Tianjin,Tianjin,CN,2,Hanseong Battery Cells,Anode graphite,yes,,50,20,120,yes
+KWF,Kaohsiung Wafer Foundry,Kaohsiung,Kaohsiung City,TW,2,Hsinchu Microcontrollers,40 nm wafers,yes,,90,10,180,yes
+VAL,Volga Alloys,Samara,Samara Oblast,RU,2,Silesia Brake Systems,Nickel alloy,no,,60,15,90,no

@@ -1,0 +1,43 @@
+Upstream,Downstream,Material,Share Of Supply,Lane
+HBC,Plant Greenville,Battery modules,1.0,suez-red-sea
+HBC,Plant Halle,Battery modules,1.0,suez-red-sea
+HSI,Plant Greenville,Gateway & body MCUs,1.0,taiwan-strait
+HSI,Plant Halle,Gateway & body MCUs,1.0,taiwan-strait
+HSI,Plant San Luis Potosí,Gateway & body MCUs,1.0,taiwan-strait
+PSA,Plant Greenville,SiC power modules,1.0,malacca
+PSA,Plant Halle,SiC power modules,1.0,malacca
+KSW,Plant Greenville,ADAS radar sensors,0.6,pacific
+KSW,Plant Halle,ADAS radar sensors,0.6,pacific
+KSW,Plant San Luis Potosí,ADAS radar sensors,0.6,pacific
+GEM,Plant Greenville,E-motors,0.6,eu-road
+GEM,Plant Halle,E-motors,0.6,eu-road
+JXM,Plant Halle,NdFeB rotor magnets,1.0,eurasia-rail
+BWH,Plant Greenville,Main wiring harness,1.0,us-mx
+BWH,Plant San Luis Potosí,Main wiring harness,1.0,us-mx
+MOC,Plant Greenville,Aluminium subframes,0.6,us-mx
+MOC,Plant San Luis Potosí,Aluminium subframes,0.6,us-mx
+CAX,Plant Greenville,Rear axle assemblies,0.6,domestic
+GLG,Plant Greenville,Windscreens,0.6,domestic
+GLG,Plant San Luis Potosí,Windscreens,0.6,domestic
+TGW,Plant Halle,Windscreens,0.6,eu-road
+ESS,Plant Halle,Seat sets (JIT),1.0,eu-road
+RAT,Plant Halle,8-speed transmissions,1.0,eu-road
+RAT,Plant San Luis Potosí,8-speed transmissions,1.0,eu-road
+SBS,Plant Greenville,Brake calipers,0.6,eu-road
+SBS,Plant Halle,Brake calipers,0.6,eu-road
+SBS,Plant San Luis Potosí,Brake calipers,0.6,eu-road
+BIT,Plant Halle,Instrument panel trim,0.6,balkan-road
+CHF,Plant Halle,Forged crankshafts,1.0,suez-red-sea
+CHF,Plant San Luis Potosí,Forged crankshafts,1.0,suez-red-sea
+LPC,Plant Greenville,Basecoat paint,0.6,eu-road
+LPC,Plant Halle,Basecoat paint,0.6,eu-road
+RSC,Plant Halle,Galvanised steel coil,0.6,eu-road
+RSC,Plant San Luis Potosí,Galvanised steel coil,0.6,eu-road
+ITY,Plant Greenville,20-inch tyres,0.6,eu-road
+ITY,Plant Halle,20-inch tyres,0.6,eu-road
+ATL,HBC,Lithium carbonate,0.5,pacific
+KCR,HBC,Cobalt hydroxide,0.9,cape-route
+GCF,HBC,Battery copper foil,0.5,east-china-sea
+TJG,HBC,Anode graphite,0.9,east-china-sea
+KWF,HSI,40 nm wafers,0.9,taiwan-strait
+VAL,SBS,Nickel alloy,0.5,eurasia-rail

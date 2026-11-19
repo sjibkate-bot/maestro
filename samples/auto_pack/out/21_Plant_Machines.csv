@@ -1,0 +1,6 @@
+Equipment,Equipment Name,Work Centre,Status,Uptime,MTBF,Last PM,Next PM
+ROB-1101,Welding robot cell 11,BODY-L1,Up,97.2,410,2026-10-30,2026-11-29
+ROB-1102,Welding robot cell 12,BODY-L1,Maintenance,88.5,260,2026-11-16,2026-12-16
+PRS-3001,Servo press line 3,PRESS-3,Up,93.1,380,2026-10-10,2026-11-14
+PNT-0501,Paint robot booth 5,PAINT-1,Down,79.0,140,2026-09-20,2026-11-07
+AGV-2201,AGV fleet marriage line,ASSY-2,Up,98.4,900,2026-11-04,2026-12-04
