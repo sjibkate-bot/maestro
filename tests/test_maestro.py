@@ -106,3 +106,40 @@ def test_scanned_board_with_ai(monkeypatch):
     assert b["assets"] == 1
     rec = get_db().records.find_one({"record_type": "asset_status", "asset_id": "60-0052"})
     assert rec["location"] == "Dock 4" and rec["attributes"]["board"]["flow_day"] == 139
+
+
+def _snapshot(as_of):
+    """The Fixer workbook re-dated, as if it were a different weekly snapshot."""
+    import io
+    import openpyxl
+    wb = openpyxl.load_workbook(DIR / "B-52_Fixer_Chart_Data.xlsx")
+    for ws in wb.worksheets:
+        if ws["J1"].value == "Today's Date":
+            ws["K1"].value = as_of
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+def test_older_snapshot_does_not_overwrite_newer():
+    from datetime import datetime
+    r = client.post("/api/ingest/file", files={"file": ("old.xlsx", _snapshot(datetime(2030, 9, 2)))})
+    batches = r.json()["batches"]
+    tail = next(b for b in batches if b.get("asset_id") == "60-1234")
+    assert tail["records"] == 0 and "newer snapshot" in tail["note"]
+    flow = get_db().records.find_one({"record_type": "asset_flow", "asset_id": "60-1234"})
+    assert flow["as_of"].year == 2030 and flow["as_of"].month == 9 and flow["as_of"].day == 30
+
+
+def test_ai_failure_on_one_sheet_keeps_the_rest(monkeypatch):
+    from app.ai.claude import AIError
+    from app.connectors import sheets
+
+    def boom(*a, **k):
+        raise AIError("Claude API error 401: invalid x-api-key")
+    monkeypatch.setattr(sheets, "parse_machine_info", boom)
+    r = client.post("/api/ingest/file", files={"file": ("x.xlsx", (DIR / "B-52_Fixer_Chart_Data.xlsx").read_bytes())})
+    assert r.status_code == 200
+    batches = r.json()["batches"]
+    assert any(b.get("error", "").endswith("invalid x-api-key") for b in batches)
+    assert sum(b["records"] for b in batches) > 100

@@ -385,7 +385,8 @@ function viewData(v) {
   $("#up").onclick = async () => { for (const f of $("#files").files) { const fd = new FormData(); fd.append("file", f); if ($("#src").value) fd.append("source", $("#src").value);
     log(`… ${f.name}`); const r = await fetch("/api/ingest/file", {method: "POST", body: fd}); const j = await r.json();
     if (!r.ok) { log(`✗ ${f.name}: ${j.detail}`); continue; }
-    j.batches.forEach(b => log(`✓ ${f.name}${b.sheet ? " / " + b.sheet : ""}: ${b.records} ${b.record_type || b.document_kind || ""}${b.template ? " [" + b.template + "]" : ""}${b.note ? " (" + b.note + ")" : ""}`)); } loadAlerts(); };
+    j.batches.forEach(b => log(b.error ? `✗ ${f.name}${b.sheet ? " / " + b.sheet : ""}: ${b.error}`
+      : `✓ ${f.name}${b.sheet ? " / " + b.sheet : ""}: ${b.records} ${b.record_type || b.document_kind || ""}${b.template ? " [" + b.template + "]" : ""}${b.note ? " (" + b.note + ")" : ""}`)); } loadAlerts(); };
   $("#ask").onsubmit = async e => { e.preventDefault(); $("#ans").textContent = "Thinking…";
     const r = await fetch("/api/ask", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({question: $("#q").value})}); const j = await r.json();
     if (!r.ok) { $("#ans").textContent = j.detail; return; }

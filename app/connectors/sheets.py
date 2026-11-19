@@ -268,6 +268,60 @@ def _cellstr(v):
     return v
 
 
+def _newer_snapshot_exists(asset: str, as_of: Optional[datetime]) -> Optional[datetime]:
+    """Return the stored status date if the database already holds a newer
+    snapshot of this aircraft (e.g. weekly Fixer workbooks uploaded out of order)."""
+    if as_of is None:
+        return None
+    from ..db import get_db
+    cur = get_db().records.find_one({"record_type": "asset_flow", "asset_id": asset}, {"as_of": 1})
+    stored = cur.get("as_of") if cur else None
+    if stored is not None:
+        stored = stored.replace(tzinfo=None) if stored.tzinfo else stored
+        if stored > as_of.replace(tzinfo=None):
+            return stored
+    return None
+
+
+def _ingest_sheet(ws, grid, filename, source_id, record_type_hint) -> list[dict]:
+    tc = ws.sheet_properties.tabColor
+    tab_color = tc.rgb if tc is not None and isinstance(tc.rgb, str) else None
+    meta = {"file": filename, "sheet": ws.title}
+
+    if is_tail_sheet(grid):
+        has_dates = any(isinstance(v, datetime) and v.year > 1900 for r in grid for v in r[1:3])
+        if ws.title.strip().lower() == "template" or not has_dates:
+            return [{**meta, "records": 0, "note": "empty template skipped"}]
+        recs = parse_tail_sheet(grid, ws.title, tab_color, source_id)
+        asset, as_of = recs[0]["asset_id"], recs[0].get("as_of")
+        newer = _newer_snapshot_exists(asset, as_of)
+        if newer:
+            return [{**meta, "records": 0, "asset_id": asset,
+                     "note": f"skipped: newer snapshot ({newer:%d %b %Y}) already loaded"}]
+        return [store(recs, {"sheet": ws.title}, source_id, "excel",
+                      {**meta, "record_type": "asset_flow+gate_event", "template": "pdm_tail_sheet",
+                       "asset_id": asset},
+                      replace_keys=[{"asset_id": asset, "record_type": {"$in": ["asset_flow", "gate_event"]}}])]
+    if is_machine_info(grid):
+        recs = parse_machine_info(grid, source_id)
+        return [store(recs, {"sheet": ws.title}, source_id, "excel",
+                      {**meta, "record_type": "gate_plan", "template": "machine_info"},
+                      replace_keys=[{"record_type": "gate_plan"}])]
+
+    layout = _layout(grid)
+    out = []
+    if layout.kind == "table" and layout.tables:
+        for names, rows, ctx in _tables_from_layout(grid, layout):
+            out.append(ingest_rows(rows, source_id=source_id, source_type="excel",
+                                   record_type_hint=record_type_hint, context=ctx,
+                                   meta={**meta, "header_row": layout.tables[0].header_row + 1}))
+    elif layout.kind == "form":
+        text = "\n".join(" | ".join(str(_cellstr(v)) for v in r if _filled(v)) for r in grid)
+        out.append(ingest_document(source_id=source_id, source_type="excel",
+                                   text=text, filename=f"{filename}#{ws.title}"))
+    return out
+
+
 def ingest_workbook(filename: str, data: bytes, source_id: str,
                     record_type_hint: Optional[str] = None) -> list[dict]:
     wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True)
@@ -278,37 +332,10 @@ def ingest_workbook(filename: str, data: bytes, source_id: str,
         grid = load_grid(ws)
         if not grid:
             continue
-        tc = ws.sheet_properties.tabColor
-        tab_color = tc.rgb if tc is not None and isinstance(tc.rgb, str) else None
-        meta = {"file": filename, "sheet": ws.title}
-
-        if is_tail_sheet(grid):
-            has_dates = any(isinstance(v, datetime) and v.year > 1900 for r in grid for v in r[1:3])
-            if ws.title.strip().lower() == "template" or not has_dates:
-                results.append({**meta, "records": 0, "note": "empty template skipped"})
-                continue
-            recs = parse_tail_sheet(grid, ws.title, tab_color, source_id)
-            asset = recs[0]["asset_id"]
-            results.append(store(recs, {"sheet": ws.title}, source_id, "excel",
-                                 {**meta, "record_type": "asset_flow+gate_event", "template": "pdm_tail_sheet",
-                                  "asset_id": asset},
-                                 replace_keys=[{"asset_id": asset, "record_type": {"$in": ["asset_flow", "gate_event"]}}]))
-            continue
-        if is_machine_info(grid):
-            recs = parse_machine_info(grid, source_id)
-            results.append(store(recs, {"sheet": ws.title}, source_id, "excel",
-                                 {**meta, "record_type": "gate_plan", "template": "machine_info"},
-                                 replace_keys=[{"record_type": "gate_plan"}]))
-            continue
-
-        layout = _layout(grid)
-        if layout.kind == "table" and layout.tables:
-            for names, rows, ctx in _tables_from_layout(grid, layout):
-                results.append(ingest_rows(rows, source_id=source_id, source_type="excel",
-                                           record_type_hint=record_type_hint, context=ctx,
-                                           meta={**meta, "header_row": layout.tables[0].header_row + 1}))
-        elif layout.kind == "form":
-            text = "\n".join(" | ".join(str(_cellstr(v)) for v in r if _filled(v)) for r in grid)
-            results.append(ingest_document(source_id=source_id, source_type="excel",
-                                           text=text, filename=f"{filename}#{ws.title}"))
+        try:
+            results.extend(_ingest_sheet(ws, grid, filename, source_id, record_type_hint))
+        except AIError as e:
+            # One sheet needing the AI must not block the rest of the workbook.
+            log.warning("Sheet %s in %s failed: %s", ws.title, filename, e)
+            results.append({"file": filename, "sheet": ws.title, "records": 0, "error": str(e)})
     return results
