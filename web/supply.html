@@ -109,7 +109,7 @@ dialog label { display:block; font-size:12px; color:var(--ink2); margin:10px 0 4
     <div class="lab sec">Analyse</div>
     <a href="#overview">Overview</a><a href="#network">Supply network <small id="r-net"></small></a><a href="#suppliers">Supplier risk <small id="r-sup"></small></a><a href="#matrix">Risk matrix</a>
     <div class="lab sec">Protect</div>
-    <a href="#coverage">Stock coverage <small id="r-cov"></small></a><a href="#delivery">Delivery</a><a href="#mitigation">Mitigation <small id="r-mit"></small></a>
+    <a href="#coverage">Stock coverage <small id="r-cov"></small></a><a href="#delivery">Delivery</a><a href="#signals">Risk signals <small id="r-sig"></small></a><a href="#mitigation">Mitigation <small id="r-mit"></small></a>
     <p class="note">Computed from governed Gold data loaded in <a href="/maestro#config">Configuration</a>. Every rating shows how it was built.</p>
   </aside>
   <main>
@@ -148,6 +148,7 @@ const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).
 const SVG = "http://www.w3.org/2000/svg";
 const el = (t, a = {}, p) => { const e = document.createElementNS(SVG, t); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
 const STATUS_ICON = {critical: "▲", serious: "◆", warning: "●", good: "✓", neutral: "○"};
+const sevStatus = v => v == null ? "neutral" : v >= 80 ? "critical" : v >= 60 ? "serious" : v >= 30 ? "warning" : "good";
 const statusPill = (st, text) => `<span class="pill st-${st || "neutral"}"><i></i>${esc(text)}</span>`;
 const ratingPill = s => statusPill(s.rating_class.status, `${s.rating} · ${s.rating_class.label}`);
 const tip = $("#tip");
@@ -171,7 +172,7 @@ async function header() {
     <a href="#coverage"><div class="lab">Items under 14 days</div><div class="v">${k.low_cover}</div><div class="s">of ${k.items} items with stock</div></a>
     <a href="/governance#drill?gold=1"><div class="lab">Data confidence</div><div class="v">${k.data_confidence == null ? "—" : num(k.data_confidence, 1)}</div><div class="s">governed trust score</div></a>`;
   $("#trust").innerHTML = k.trust.map(t => `<a class="chip" href="/governance#drill?product=${t.id}&gold=1" title="Governed data product">${esc(t.name)} · ${esc(t.label)}</a>`).join("");
-  $("#r-sup").textContent = k.suppliers || ""; $("#r-net").textContent = k.spofs ? k.spofs + " SPOF" : ""; $("#r-cov").textContent = k.low_cover || "";
+  $("#r-sup").textContent = k.suppliers || ""; $("#r-sig").textContent = (OV.attention || []).filter(a => a.kind === "signal" || /sanctions/.test(a.text)).length || ""; $("#r-net").textContent = k.spofs ? k.spofs + " SPOF" : ""; $("#r-cov").textContent = k.low_cover || "";
 }
 
 function emptyState() {
@@ -281,8 +282,10 @@ async function scorecard(host, name) {
       <div class="res"><div class="lab">Rating</div><b>${s.rating}<span style="font-size:15px;color:var(--muted)"> / 25</span></b>${ratingPill(s)}<span style="color:var(--ink2)">= likelihood L${s.likelihood} × impact I${s.impact}</span>${s.uncertainty ? `<span style="color:var(--muted);font-size:12.5px">±${s.uncertainty} · ${pct(s.confidence)} of rating inputs have data</span>` : ""}</div></div>
     <div id="whyOut"></div></div>
     <div class="grid2"><div class="card"><h3>Likelihood · ${num(s.likelihood_score)}</h3><div class="sub">How likely a disruption is</div>
-        ${bar("Delivery", f.delivery, "50%", s.on_time_rate == null ? "no received lines yet" : `on-time ${pct(s.on_time_rate)} · ${s.open_late} overdue open`)}
-        ${bar("Lead time", f.lead_time, "20%", s.lead_time_days == null ? "" : `${num(s.lead_time_days)} days`)}${bar("Country concentration", f.concentration, "30%", s.country ? "" : "country unknown")}</div>
+        ${bar("Delivery", f.delivery, "40%", s.on_time_rate == null ? "no received lines yet" : `on-time ${pct(s.on_time_rate)} · ${s.open_late} overdue open`)}
+        ${bar("Lead time", f.lead_time, "15%", s.lead_time_days == null ? "" : `${num(s.lead_time_days)} days`)}${bar("Country concentration", f.concentration, "20%", s.country ? "" : "country unknown")}
+        ${bar("Geopolitical & hazard", f.geopolitical, "25%", s.sanctions_match ? "possible sanctions-list match" : s.country_risk ? `stability ${num(s.country_risk.stability)} · unrest ${num(s.country_risk.unrest)} · hazard ${num(s.country_risk.hazard)}` : (s.country ? "no feed data for this country yet" : "country unknown"))}
+        ${(s.signals || []).length ? `<div style="margin-top:8px">${s.signals.map(x => `<div style="font-size:12.5px;padding:4px 0;border-top:1px solid var(--line)">${statusPill(sevStatus(x.severity), num(x.severity))} ${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title)}</a>` : esc(x.title)}</div>`).join("")}</div>` : ""}</div>
       <div class="card"><h3>Impact · ${num(s.impact_score)}</h3><div class="sub">What losing it does to continuity</div>
         ${bar("Spend share", f.spend_share, "40%", `${(s.spend_share * 100).toFixed(1)}% of spend · ${esc(s.spend_basis)}`)}${bar("Continuity", f.continuity, "60%", `${s.sole_items.length} sole-sourced · lowest cover ${s.min_days_cover == null ? "unknown" : num(s.min_days_cover) + " d"}`)}
         ${s.inherits_from ? `<p style="color:var(--ink2);font-size:12.5px">Sub-tier: inherits impact from <a href="#suppliers/${encodeURIComponent(s.inherits_from)}">${esc(s.inherits_from)}</a>.</p>` : ""}</div></div>
@@ -361,6 +364,26 @@ function lineChart(host, pts) {
   host.appendChild(svg);
 }
 
+V.signals = async v => {
+  if (!OV.has_data) { v.innerHTML = emptyState(); return; }
+  const [d, f] = await Promise.all([api("/api/supply/signals"), api("/api/feeds")]);
+  const last = f.feeds.map(x => x.last_success).filter(Boolean).sort().pop();
+  const cell = val => val == null ? '<span style="color:var(--muted)">no data</span>' : `<div style="display:flex;gap:8px;align-items:center"><div class="fbar" style="width:80px;background:color-mix(in srgb, var(--${sevStatus(val) === "good" ? "good" : sevStatus(val)}) 20%, white)"><i style="width:${val}%;background:var(--${sevStatus(val)})"></i></div>${num(val)}</div>`;
+  v.innerHTML = `<div class="card"><div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap"><div><h3>External risk signals</h3>
+      <div class="sub">Free public feeds, refreshed daily: sanctions lists (matched locally — no supplier name leaves the system), GDACS and USGS hazards, World Bank political stability, GDELT unrest news. Hazards are matched by country; only serious events (score ≥ 60) change ratings.</div></div>
+      <div style="text-align:right"><div class="lab">Last refresh</div><b>${last ? dt(last) : "never"}</b><div><a href="/maestro#config">Manage feeds in Configuration</a></div></div></div>
+      ${d.sanctions.length ? `<div class="card" style="border-color:var(--critical);margin:10px 0 0"><h3 style="color:var(--critical-ink)">▲ Possible sanctions-list matches</h3><div class="sub">Name match only — confirm identity (address, registration number) before acting.</div>
+        ${d.sanctions.map(x => `<div class="attn" style="grid-template-columns:1fr"><div><b><a href="#suppliers/${encodeURIComponent(x.supplier)}">${esc(x.supplier)}</a></b>${x.signals.map(sg => `<span style="display:block;color:var(--ink2)">${esc(sg.title)}</span>`).join("")}</div></div>`).join("")}</div>` : ""}
+      ${d.unmapped.length ? `<p style="color:var(--warning-ink)">Country names not recognised in the supplier master: ${d.unmapped.map(esc).join(", ")}</p>` : ""}</div>
+    <div class="card"><h3>Supplier countries</h3><div class="sub">Score 0–100, higher is worse. Geopolitical &amp; hazard = max(serious hazard, 60% stability + 40% unrest).</div>
+      <table><tr><th>Country</th><th>Suppliers</th><th class="n">Spend</th><th>Stability</th><th>Unrest</th><th>Hazard</th><th>Combined</th></tr>
+      ${d.countries.map(c => `<tr><td><b>${esc(c.country)}</b> <span style="color:var(--muted);font-size:12px">${esc(c.iso3)}</span></td><td style="font-size:12.5px">${c.suppliers.map(x => `<a href="#suppliers/${encodeURIComponent(x)}">${esc(x)}</a>`).join(", ")}</td><td class="n">${money(c.spend)}</td>
+        <td>${cell(c.stability)}</td><td>${cell(c.unrest)}</td><td>${cell(c.hazard)}</td><td>${c.geopolitical == null ? "—" : statusPill(sevStatus(c.geopolitical), num(c.geopolitical))}</td></tr>`).join("") || '<tr><td colspan=7 class="empty">Add countries to the supplier master.</td></tr>'}</table></div>
+    <div class="card"><h3>Recent signals in supplier countries</h3><table><tr><th>Score</th><th>Signal</th><th>Country</th><th>Source</th><th>Date</th></tr>
+      ${d.countries.flatMap(c => c.signals).filter(x => x.category !== "stability").sort((a, b) => (b.severity || 0) - (a.severity || 0)).slice(0, 40).map(x => `<tr><td>${statusPill(sevStatus(x.severity), num(x.severity))}</td>
+        <td>${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title)}</a>` : esc(x.title)}</td><td>${esc(x.country_name)}</td><td>${esc(x.source)}</td><td>${dt(x.event_date)}</td></tr>`).join("") || '<tr><td colspan=5 class="empty">No hazard or unrest signals in your supplier countries.</td></tr>'}</table></div>`;
+};
+
 V.mitigation = async v => {
   if (!OV.has_data) { v.innerHTML = emptyState(); return; }
   const [sups, plans] = await Promise.all([api("/api/supply/suppliers"), api("/api/supply/plans")]);
@@ -431,7 +454,7 @@ async function ask(q, out) {
 $("#askTop").onclick = e => { e.preventDefault(); $("#askOut").innerHTML = ""; $("#askDlg").showModal(); $("#askQ").focus(); };
 $("#askForm").onsubmit = e => { e.preventDefault(); if ($("#askQ").value.trim()) ask($("#askQ").value, $("#askOut")); };
 
-const NAMES = {overview: "Overview", network: "Supply network", suppliers: "Supplier risk", matrix: "Risk matrix", coverage: "Stock coverage", delivery: "Delivery", mitigation: "Mitigation"};
+const NAMES = {overview: "Overview", network: "Supply network", suppliers: "Supplier risk", matrix: "Risk matrix", coverage: "Stock coverage", delivery: "Delivery", signals: "Risk signals", mitigation: "Mitigation"};
 async function route() {
   const [key0, arg] = location.hash.slice(1).split("/"), key = NAMES[key0] ? key0 : "overview";
   document.querySelectorAll(".rail a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + key));

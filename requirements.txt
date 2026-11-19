@@ -10,3 +10,4 @@ pdfplumber>=0.11
 httpx>=0.27
 paho-mqtt>=2.0        # optional: IoT via MQTT
 pytest>=8
+pycountry>=24.6

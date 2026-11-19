@@ -1,5 +1,7 @@
 """FastAPI application: ingestion endpoints, analytics, AI Q&A and the web dashboard."""
 import logging
+from contextlib import asynccontextmanager
+import os
 import re
 import uuid
 from pathlib import Path
@@ -10,7 +12,7 @@ from fastapi import Body, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel
 
-from . import analytics, governance, pdm, supply_risk
+from . import analytics, governance, pdm, risk_feeds, supply_risk
 from .ai.claude import AIError
 from .ai.provider import get_provider
 from .connectors.files import ingest_file
@@ -19,7 +21,13 @@ from .db import get_db
 from .models import RecordType
 
 logging.basicConfig(level=logging.INFO)
-app = FastAPI(title="Supply Chain AI Data Hub", version="0.1.0")
+@asynccontextmanager
+async def lifespan(_app):
+    risk_feeds.start_scheduler()   # daily public risk feeds (RISK_FEEDS_ENABLED / RISK_FEEDS_HOUR)
+    yield
+
+
+app = FastAPI(title="Maestro-SC", version="0.2.0", lifespan=lifespan)
 WEB = Path(__file__).resolve().parent.parent / "web"
 _mqtt: dict[str, MqttSubscriber] = {}
 
@@ -328,6 +336,55 @@ def supply_plan_status(pid: str, body: PlanStatus):
         raise HTTPException(404, "Unknown plan")
     except ValueError as e:
         raise HTTPException(400, str(e))
+
+
+# ---------------- External risk feeds ----------------
+
+@app.get("/api/feeds")
+def feeds_list():
+    return {"running": risk_feeds.is_running(), "feeds": risk_feeds.feeds(),
+            "schedule": {"enabled": os.getenv("RISK_FEEDS_ENABLED", "true").lower() == "true",
+                         "hour_utc": int(os.getenv("RISK_FEEDS_HOUR", "2"))}}
+
+
+class FeedRun(BaseModel):
+    user: str = "manual"
+    wait: bool = False   # True: run now and return the results (used by tests and scripts)
+
+
+@app.post("/api/feeds/run-all")
+def feeds_run_all(body: FeedRun):
+    if body.wait:
+        return risk_feeds.run_all(body.user or "manual")
+    return risk_feeds.run_in_background(body.user or "manual")
+
+
+@app.post("/api/feeds/{feed_id}/run")
+def feeds_run(feed_id: str, body: FeedRun):
+    try:
+        if body.wait:
+            return risk_feeds.run_feed(feed_id, body.user or "manual")
+        return risk_feeds.run_in_background(body.user or "manual", feed_id)
+    except KeyError:
+        raise HTTPException(404, "Unknown feed")
+
+
+class FeedSetting(BaseModel):
+    enabled: bool
+    user: str
+
+
+@app.put("/api/feeds/{feed_id}")
+def feeds_set(feed_id: str, body: FeedSetting):
+    try:
+        return risk_feeds.set_enabled(feed_id, body.enabled, body.user)
+    except KeyError:
+        raise HTTPException(404, "Unknown feed")
+
+
+@app.get("/api/supply/signals")
+def supply_signals():
+    return supply_risk.signals_view()
 
 
 # ---------------- Data governance ----------------

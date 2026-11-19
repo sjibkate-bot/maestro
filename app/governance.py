@@ -48,6 +48,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "supply": {"entities": ["inventory", "product", "purchase_order", "supplier", "sales_order", "shipment"],
                    "owner": "Supply Chain Manager", "steward": "Supply Data Steward",
                    "sensitivity": "Internal"},
+        "external": {"entities": ["risk_signal"], "owner": "Risk Intelligence Lead", "steward": "Risk Data Steward",
+                     "sensitivity": "Public"},
     },
     # required fields; a tuple means "any one of"
     "required": {
@@ -65,6 +67,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "gate_event": ["asset_id", "gate", "goal_days"],
         "asset_flow": ["asset_id", "start_date", "amrep_date", "as_of"],
         "gate_plan": ["gate", "wip_plan", "required_days"],
+        "risk_signal": ["signal_id", "source", "category", "risk_score", "title"],
     },
     # natural keys; "snapshot" keeps the newest version, "event" removes duplicate copies
     "keys": {
@@ -82,6 +85,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "gate_event": ("event", ["asset_id", "gate"]),
         "fault": ("event", ["asset_id", "fault_code", "date_logged"]),
         "sensor_reading": ("event", ["asset_id", "device_id", "metric", "timestamp"]),
+        "risk_signal": ("snapshot", ["source", "signal_id"]),
     },
     # identity fields whose absence is a hard rule (record cannot be placed or matched)
     "hard_keys": {
@@ -90,6 +94,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "asset_flow": ["asset_id"], "subsystem_health": ["asset_id", "subsystem"], "fault": ["asset_id"],
         "production_schedule": ["asset_id"], "gate_event": ["asset_id", "gate"], "gate_plan": ["gate"],
         "sensor_reading": [["asset_id", "device_id"]],
+        "risk_signal": ["signal_id", "source"],
     },
     # field used for timeliness and how old it may be relative to the newest record of that type
     "freshness": {
@@ -121,6 +126,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
         {"id": "logistics", "name": "Logistics & Shipments", "domain": "supply",
          "description": "Inbound and outbound shipments against ETA.",
          "entities": ["shipment", "sales_order"], "freshness_days": 3},
+        {"id": "risk_signals", "name": "External Risk Signals", "domain": "external",
+         "description": "Sanctions matches, natural hazards, political stability and unrest from public feeds.",
+         "entities": ["risk_signal"], "freshness_days": 2},
     ],
 }
 

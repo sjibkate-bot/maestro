@@ -9,6 +9,8 @@ services:
     environment:
       MONGO_URI: mongodb://mongo:27017
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      RISK_FEEDS_ENABLED: ${RISK_FEEDS_ENABLED:-true}   # daily public risk feeds; set false in offline networks
+      RISK_FEEDS_HOUR: ${RISK_FEEDS_HOUR:-2}            # hour of day (UTC) for the daily run
     depends_on: [mongo]
 volumes:
   mongo-data:

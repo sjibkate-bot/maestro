@@ -414,6 +414,10 @@ async function viewConfig(v) {
         <input name="username" placeholder="Username"><input name="password" type="password" placeholder="Password"><input name="token" placeholder="Bearer token"><input name="records_path" placeholder="Records path, e.g. d.results">
         <button>Pull</button></form><div id="apiOut" style="margin-top:8px;color:var(--ink2)"></div>
       <p style="color:var(--ink2);font-size:13px;margin-bottom:0">IoT devices and gateways: <code>POST /api/ingest/iot/&lt;source&gt;</code> with JSON readings, or subscribe to an MQTT broker with <code>POST /api/ingest/mqtt/start</code>.</p></div>
+    <div class="panel"><div class="row" style="justify-content:space-between"><h2 class="mono" style="margin:0">Risk feeds · public internet sources</h2>
+      <button id="feedsAll">Refresh now</button></div>
+      <p style="color:var(--ink2);font-size:13px">Pulled automatically once a day and governed like any other source. Sanctions lists are downloaded and matched here; no supplier name is sent out. GDELT receives only country names from your supplier master.</p>
+      <div id="feeds"></div></div>
     <div class="panel"><div class="row" style="justify-content:space-between"><h2 class="mono" style="margin:0">Loaded data</h2>
       <button class="danger" id="delAll">Delete all data…</button></div>
       <p style="color:var(--ink2);font-size:13px">Deleting a source removes it from every layer (the original file, Silver records, Gold products and its quarantine items). It cannot be undone; the deletion itself is kept in the audit log.</p>
@@ -488,6 +492,23 @@ async function viewConfig(v) {
     dlg.showModal(); $("#delConfirm").focus();
   };
   $("#delAll").onclick = () => confirmDelete(null);
+  let feedTimer;
+  const feeds = async () => {
+    const f = await api("/api/feeds"); clearTimeout(feedTimer);
+    $("#feedsAll").disabled = f.running; $("#feedsAll").textContent = f.running ? "Refreshing…" : "Refresh now";
+    $("#feeds").innerHTML = `<p class="mono" style="color:var(--muted);font-size:11px">${f.schedule.enabled ? `Daily at ${String(f.schedule.hour_utc).padStart(2, "0")}:00 UTC` : "Daily schedule off (RISK_FEEDS_ENABLED=false)"}</p>
+      <table><tr><th>Feed</th><th>Publisher</th><th>Sends out</th><th>Last run</th><th>Status</th><th class="n">Signals</th><th>On</th><th></th></tr>${f.feeds.map(x => `<tr>
+      <td>${esc(x.name)}<div style="color:var(--muted);font-size:12px">${esc(x.category)} · ${esc(x.cadence)}</div></td><td style="font-size:12.5px">${esc(x.publisher)}</td><td style="font-size:12.5px;color:var(--ink2)">${esc(x.sends)}</td>
+      <td>${x.last_run ? dt(x.last_run) : "—"}</td><td>${x.status === "ok" ? '<span class="tag good">✓ OK</span>' : x.status === "partial" ? `<span class="tag warning">● PARTIAL</span><div style="font-size:11px;color:var(--ink2);max-width:260px">${esc(x.error)}</div>` : x.status === "error" ? `<span class="tag critical" title="${esc(x.error)}">▲ ERROR</span><div style="font-size:11px;color:var(--ink2);max-width:260px">${esc(x.error)}</div>` : esc(x.status)}</td>
+      <td class="n">${num(x.signals, 0)}</td><td><input type="checkbox" data-feed="${x.id}" ${x.enabled ? "checked" : ""} aria-label="Enable ${esc(x.name)}"></td>
+      <td><button class="plain" data-run="${x.id}" ${f.running || !x.enabled ? "disabled" : ""}>Run</button></td></tr>`).join("")}</table>`;
+    document.querySelectorAll("[data-feed]").forEach(c => c.onchange = async () => { const u = localStorage.govUser || prompt("Your name or role (recorded):"); if (!u) { c.checked = !c.checked; return; }
+      localStorage.govUser = u; await api(`/api/feeds/${c.dataset.feed}`, {method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify({enabled: c.checked, user: u})}); feeds(); });
+    document.querySelectorAll("[data-run]").forEach(b => b.onclick = async () => { await api(`/api/feeds/${b.dataset.run}/run`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({user: localStorage.govUser || "manual"})}); feeds(); });
+    if (f.running) feedTimer = setTimeout(() => { if (location.hash.startsWith("#config")) feeds(); }, 4000);
+  };
+  $("#feedsAll").onclick = async () => { await api("/api/feeds/run-all", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({user: localStorage.govUser || "manual"})}); feeds(); };
+  feeds();
   sources();
   recent();
   const reload = $("#up").onclick; $("#up").onclick = async () => { await reload(); sources(); };

@@ -112,6 +112,13 @@ ENTITIES: dict[str, dict[str, tuple[str, str]]] = {
         "gate": (S, "Gate name"), "gate_number": (N, "Gate number"), "wip_plan": (N, "Planned WIP"),
         "required_days": (N, "Required calendar days"),
     },
+    "risk_signal": {
+        "signal_id": (S, "Identifier of the signal in its source feed"), "source": (S, "Feed that produced it"),
+        "category": (S, "sanctions, hazard, stability or unrest"), "country": (S, "ISO 3166 alpha-3 country code"),
+        "country_name": (S, "Country name"), "supplier": (S, "Supplier the signal concerns, if any"),
+        "risk_score": (N, "0-100, higher is worse"), "title": (S, "Short description"), "url": (S, "Link to the source"),
+        "event_date": (D, "When the event happened or the value was published"),
+    },
     "other": {},
 }
 

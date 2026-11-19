@@ -5,7 +5,8 @@ purchase orders, inventory, item master and customer orders. Each number states
 what it is built from, so a rating can be explained and challenged.
 
 Supplier rating = likelihood (1-5) x impact (1-5), as in common SCRM practice:
-  likelihood <- delivery performance, lead time, country concentration of spend
+  likelihood <- delivery performance, lead time, country concentration of spend,
+                geopolitical & hazard signals from public feeds (see risk_feeds.py)
   impact     <- share of spend, sole-sourced items, days of cover of its items
 A sub-tier supplier inherits the impact of the supplier it feeds.
 """
@@ -80,6 +81,7 @@ def build() -> dict:
     for s in _gold("supplier"):
         master[_key(s["supplier"])] = s
     pos = _gold("purchase_order")
+    geo = country_signals()
     inv = _gold("inventory")
     products = _gold("product")
     sos = _gold("sales_order")
@@ -208,7 +210,15 @@ def build() -> dict:
         f_delivery = None if on_time is None else min(100.0, (1 - on_time) * 70 + min(avg_late, 30) + 10 * len(open_late))
         f_lead = None if lead is None else min(100.0, lead / 60 * 100)
         f_conc = None if not country else min(100.0, by_country[country] / known_country_spend * 100 * 1.5)
-        lik_parts = [(f_delivery, .5), (f_lead, .2), (f_conc, .3)]
+        from .risk_feeds import norm_name, resolve_country
+        iso = resolve_country(country) if country else None
+        cs = geo["countries"].get(iso, {}) if iso else {}
+        sanc = geo["sanctions"].get(norm_name(names.get(k, k)), [])
+        base_parts = [(v, w) for v, w in ((cs.get("stability"), .6), (cs.get("unrest"), .4)) if v is not None]
+        base = sum(v * w for v, w in base_parts) / sum(w for _, w in base_parts) if base_parts else None
+        hz = cs.get("hazard")
+        f_geo = 100.0 if sanc else (max(x for x in (base, hz) if x is not None) if (base is not None or hz is not None) else None)
+        lik_parts = [(f_delivery, .4), (f_lead, .15), (f_conc, .2), (f_geo, .25)]
         have = [(v, w) for v, w in lik_parts if v is not None]
         lik = sum(v * w for v, w in have) / sum(w for _, w in have) if have else 50.0
         # impact factors
@@ -221,6 +231,7 @@ def build() -> dict:
                      cover_risk(mc) * 0.6)
         imp = .4 * f_spend + .6 * f_cont
         conf_parts = [f_delivery is not None, f_lead is not None, f_conc is not None, mc is not None, bool(m)]
+        signals = sorted(sanc + cs.get("signals", []), key=lambda x: -(x.get("severity") or 0))[:6]
         sups[k] = {
             "key": k, "supplier": names.get(k, k), "tier": tier, "country": country, "supplies_to": m.get("supplies_to"),
             "commodity": m.get("commodity"), "spend": round(spend[k], 2), "spend_basis": spend_basis[k],
@@ -228,8 +239,10 @@ def build() -> dict:
             "on_time_rate": round(on_time, 3) if on_time is not None else None, "avg_days_late": round(avg_late, 1),
             "open_late": len(open_late), "lead_time_days": round(lead, 1) if lead is not None else None,
             "items": skus, "sole_items": sole_items, "min_days_cover": mc, "in_master": bool(m),
-            "factors": {"delivery": f_delivery, "lead_time": f_lead, "concentration": f_conc,
+            "factors": {"delivery": f_delivery, "lead_time": f_lead, "concentration": f_conc, "geopolitical": f_geo,
                         "spend_share": f_spend, "continuity": f_cont},
+            "iso3": iso, "country_risk": {k: cs.get(k) for k in ("stability", "unrest", "hazard")} if cs else None,
+            "signals": signals, "sanctions_match": bool(sanc),
             "likelihood_score": round(lik, 1), "impact_score": round(imp, 1),
             "confidence": round(sum(conf_parts) / len(conf_parts), 2),
         }
@@ -258,8 +271,45 @@ def build() -> dict:
             "has": {"master": bool(master), "po": bool(pos), "inventory": bool(inv), "demand": bool(sos), "products": bool(products)}}
 
 
+def country_signals() -> dict:
+    """Gold risk signals grouped by country (stability, unrest, active hazards) and sanctions matches by supplier."""
+    from .risk_feeds import HAZARD_MIN_SCORE, HAZARD_WINDOW_DAYS, norm_name
+    cut = _today() - timedelta(days=HAZARD_WINDOW_DAYS)
+    countries, sanctions = {}, defaultdict(list)
+    for r in _gold("risk_signal"):
+        brief = {k: r.get(k) for k in ("category", "title", "url", "event_date", "source", "country_name")}
+        brief["severity"] = r.get("risk_score")
+        if r.get("category") == "sanctions" and r.get("supplier"):
+            sanctions[norm_name(r["supplier"])].append(brief)
+            continue
+        iso = r.get("country")
+        if not iso:
+            continue
+        c = countries.setdefault(iso, {"stability": None, "unrest": None, "hazard": None, "signals": []})
+        cat, sev = r.get("category"), r.get("risk_score") or 0
+        if cat == "hazard":
+            if _naive(r.get("event_date")) and _naive(r["event_date"]) < cut:
+                continue
+            # Hazards are matched by country (site coordinates are not known), so only serious
+            # events (GDACS orange/red, quakes M6+) move the rating; smaller ones are shown only.
+            if sev >= HAZARD_MIN_SCORE:
+                c["hazard"] = max(c["hazard"] or 0, sev)
+        elif cat in ("stability", "unrest"):
+            c[cat] = sev
+        c["signals"].append(brief)
+    for c in countries.values():
+        c["signals"].sort(key=lambda x: -(x["severity"] or 0))
+    return {"countries": countries, "sanctions": dict(sanctions)}
+
+
 def _actions(s: dict, items: dict) -> list[str]:
     out = []
+    if s.get("sanctions_match"):
+        out.append("Verify possible sanctions-list match before the next order (name match only)")
+    hz = (s.get("country_risk") or {}).get("hazard")
+    if hz and hz >= 60:
+        top = next((x for x in s.get("signals", []) if x["category"] == "hazard"), None)
+        out.append(f"Check supplier sites in {s['country']}: {top['title'] if top else 'active hazard alert'}")
     if s["sole_items"] and s["rating"] >= 10:
         out.append(f"Qualify a second source for {', '.join(map(str, s['sole_items'][:3]))}")
     if s["min_days_cover"] is not None and s["min_days_cover"] < 14:
@@ -285,7 +335,8 @@ def _explain(s: dict) -> list[dict]:
          "detail": f"Tier {s['tier'] or '?'}; {len(s['sole_items'])} sole-sourced item(s)"
                    + (f"; feeds {s['supplies_to']}" if s.get("supplies_to") else "")},
         {"step": "Where it is", "value": s.get("country") or "unknown",
-         "detail": f"Concentration risk {fmt(f['concentration'])}"},
+         "detail": f"Concentration {fmt(f['concentration'])}; geopolitical & hazard {fmt(f.get('geopolitical'))}"
+                   + ("; possible sanctions match" if s.get("sanctions_match") else "")},
         {"step": "Performance", "value": f"L{s['likelihood']}",
          "detail": (f"On-time {s['on_time_rate'] * 100:.0f}% of {s['delivered_lines']} lines; "
                     if s["on_time_rate"] is not None else "No received lines; ")
@@ -314,6 +365,15 @@ def overview() -> dict:
             attention.append({"kind": "supplier", "level": s["rating_class"]["status"], "title": s["supplier"],
                               "text": f"{s['rating_class']['label']} risk {s['rating']}/25 · " + (s["actions"][0] if s["actions"] else ""),
                               "ref": s["supplier"]})
+    for s in sups:
+        if s.get("sanctions_match"):
+            attention.insert(0, {"kind": "supplier", "level": "critical", "title": s["supplier"],
+                                 "text": "Possible sanctions-list match: verify before the next order", "ref": s["supplier"]})
+        hz = (s.get("country_risk") or {}).get("hazard")
+        if hz and hz >= 60:
+            top = next((x for x in s["signals"] if x["category"] == "hazard"), {})
+            attention.append({"kind": "signal", "level": "critical" if hz >= 90 else "serious", "title": f"{s['supplier']} · {s['country']}",
+                              "text": top.get("title") or "Active hazard alert", "ref": s["supplier"]})
     for it in sorted([i for i in items if i["days_cover"] is not None and i["days_cover"] < 14], key=lambda i: i["days_cover"])[:5]:
         attention.append({"kind": "item", "level": "critical" if it["days_cover"] < 7 else "serious", "title": it["sku"],
                           "text": f"{it['days_cover']:.0f} days of cover" + (" · sole-sourced" if it["sole_sourced"] else "")
@@ -504,3 +564,25 @@ def update_plan(pid: str, status: str, user: str, note: str = "") -> dict:
                                                        "$push": {"history": {"at": now(), "user": user.strip(), "status": status, "note": note}}})
     governance.audit("mitigation_plan_update", user.strip(), {"plan": pid, "status": status, "note": note})
     return {"id": pid, "status": status}
+
+
+def signals_view() -> dict:
+    """Countries where suppliers sit, with their external signals, plus sanctions matches."""
+    m = build()
+    geo = country_signals()
+    by_iso = defaultdict(list)
+    for sp in m["suppliers"].values():
+        if sp.get("iso3"):
+            by_iso[sp["iso3"]].append(sp)
+    rows = []
+    for iso, sps in by_iso.items():
+        c = geo["countries"].get(iso, {})
+        rows.append({"iso3": iso, "country": sps[0]["country"], "suppliers": [x["supplier"] for x in sps],
+                     "spend": sum(x["spend"] for x in sps), "stability": c.get("stability"), "unrest": c.get("unrest"),
+                     "hazard": c.get("hazard"), "geopolitical": sps[0]["factors"].get("geopolitical"),
+                     "signals": c.get("signals", [])[:8]})
+    rows.sort(key=lambda r: -(r["geopolitical"] or 0))
+    sanctions = [{"supplier": x["supplier"], "signals": x["signals"]} for x in m["suppliers"].values() if x.get("sanctions_match")]
+    hazards = sorted([s for r in rows for s in r["signals"] if s["category"] == "hazard"], key=lambda s: -(s["severity"] or 0))
+    return {"countries": rows, "sanctions": sanctions, "hazards": hazards[:30],
+            "unmapped": sorted({x["country"] for x in m["suppliers"].values() if x.get("country") and not x.get("iso3")})}

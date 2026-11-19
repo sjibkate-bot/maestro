@@ -51,6 +51,27 @@ Open **http://localhost:8000/supply**. It's a light-theme screen computed only f
 
 The weights and thresholds are starting proposals. They are documented in `app/supply_risk.py` so they can be agreed and tuned.
 
+### External risk feeds (free, daily)
+
+The app pulls these public sources once a day, at `RISK_FEEDS_HOUR` UTC (default 02:00), and at start-up if the last run is over a day old. **Configuration → Risk feeds** shows each feed's status (OK, PARTIAL or ERROR), lets you switch feeds on and off, and has **Refresh now**. Feeds are governed like any other source (Bronze copy with hash → `risk_signal` records → Gold) and appear under **Supply analysis → Risk signals**.
+
+| Feed | Source | Used for | What leaves your network |
+|---|---|---|---|
+| OFAC SDN list | US Treasury | possible sanctions matches (entities only, matched locally) | nothing |
+| UK Sanctions List | UK FCDO | possible sanctions matches (entities only, matched locally) | nothing |
+| GDACS alerts | UN OCHA / EU JRC | orange and red disaster alerts (droughts and wildfires weighted down) | nothing |
+| USGS earthquakes | US Geological Survey | magnitude 5+ in the last 7 days | nothing |
+| Political stability | World Bank WGI (`GOV_WGI_PV.EST`) | country stability (no data for Taiwan) | nothing |
+| Unrest news | GDELT | 3-day news volume vs the usual level, per supplier country | country names only |
+
+They feed a 4th likelihood factor, **geopolitical & hazard** = max(serious hazard, 60% stability + 40% unrest). The likelihood weights become 40% delivery, 15% lead time, 20% concentration and 25% geopolitical & hazard. A possible sanctions match sets the factor to 100 and adds "verify" as the first action. Matches are name-only, so confirm identity before acting.
+
+Limits:
+* Hazards are matched by **country**, because supplier site coordinates are not loaded. Only serious events (score ≥ 60) change ratings; smaller ones are only shown.
+* GDELT rate-limits heavily. Countries it refuses are reported, and the feed shows PARTIAL.
+* Hosts to allow in a restricted network: `www.treasury.gov`, `sanctionslistservice.ofac.treas.gov`, OFAC's download redirect to `*.s3.us-gov-west-1.amazonaws.com`, `sanctionslist.fcdo.gov.uk`, `www.gdacs.org`, `earthquake.usgs.gov`, `api.worldbank.org`, `api.gdeltproject.org`.
+* Set `RISK_FEEDS_ENABLED=false` where the app has no internet access.
+
 ## Maestro-SC module (depot / maintenance)
 
 Open **http://localhost:8000/maestro#config** (Configuration) and load the files in `samples/maestro/`.
@@ -114,7 +135,7 @@ MONGO_URI=mongomock:// uvicorn app.main:app --reload
 ```
 Open http://localhost:8000. It goes to Maestro's Supply module. Load the files from `samples/` and `samples/maestro/` in **Configuration** (`python samples/make_samples.py` regenerates the supply samples).
 
-Tests: `pytest -q` (60 tests, including the Maestro reference workbooks and the governance rules)
+Tests: `pytest -q` (75 tests, including the Maestro reference workbooks and the governance rules)
 
 ## API
 
