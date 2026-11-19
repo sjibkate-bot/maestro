@@ -200,3 +200,5 @@ class AnalystAnswer(BaseModel):
     answer: str
     key_findings: list[str]
     recommended_actions: list[str]
+    evidence: list[str] = Field(default_factory=list, description="Specific data points the answer rests on")
+    confidence: Optional[float] = Field(default=None, description="0-1: how well the data supports the recommendation")

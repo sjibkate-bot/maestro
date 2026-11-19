@@ -10,7 +10,7 @@ from fastapi import Body, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from . import analytics, pdm
+from . import analytics, governance, pdm
 from .ai.claude import AIError
 from .ai.provider import get_provider
 from .connectors.files import ingest_file
@@ -221,6 +221,114 @@ def maestro_alerts():
     return pdm.alerts()
 
 
+# ---------------- Data governance ----------------
+
+@app.get("/governance")
+def governance_page():
+    return FileResponse(WEB / "governance.html")
+
+
+@app.get("/api/governance/overview")
+def gov_overview():
+    return governance.overview()
+
+
+@app.post("/api/governance/run")
+def gov_run():
+    return governance.run()
+
+
+@app.get("/api/governance/stage/{name}")
+def gov_stage(name: str):
+    try:
+        return governance.stage(name)
+    except KeyError:
+        raise HTTPException(404, "Stages: plan, filter, clean, enrich, audit, monitor")
+
+
+@app.put("/api/governance/config")
+def gov_config(changes: dict = Body(...), user: str = Query("governance-council")):
+    try:
+        return governance.update_config(changes, user)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/api/governance/products")
+def gov_products():
+    return governance.products()
+
+
+class Certify(BaseModel):
+    user: str
+    note: str = ""
+
+
+@app.post("/api/governance/products/{pid}/certify")
+def gov_certify(pid: str, body: Certify):
+    try:
+        return governance.certify(pid, body.user, body.note)
+    except KeyError:
+        raise HTTPException(404, "Unknown product")
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+
+
+@app.get("/api/governance/quarantine")
+def gov_quarantine(status: str = "open"):
+    return governance.quarantine(status)
+
+
+class Resolution(BaseModel):
+    user: str
+    resolution: str
+
+
+@app.post("/api/governance/quarantine/{qid}/close")
+def gov_close(qid: str, body: Resolution):
+    try:
+        return governance.close_quarantine(qid, body.user, body.resolution)
+    except KeyError:
+        raise HTTPException(404, "Unknown quarantine item")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/api/governance/records")
+def gov_records(grade: Optional[str] = None, layer: Optional[str] = None, record_type: Optional[str] = None,
+                limit: int = Query(100, le=1000)):
+    q: dict[str, Any] = {}
+    if grade:
+        q["trust.grade"] = grade
+    if layer:
+        q["layer"] = layer
+    if record_type:
+        q["record_type"] = record_type
+    return list(get_db().records.find(q, {"_id": 0, "cleaning": 0}).limit(limit))
+
+
+@app.get("/api/governance/decisions")
+def gov_decisions():
+    return governance.decisions()
+
+
+class DecisionAction(BaseModel):
+    user: str
+    text: str = ""
+
+
+@app.post("/api/governance/decisions/{did}/{action}")
+def gov_decide(did: str, action: str, body: DecisionAction):
+    if action not in ("accept", "modify", "override"):
+        raise HTTPException(404, "Actions: accept, modify, override")
+    try:
+        return governance.act_on_decision(did, action, body.user, body.text)
+    except KeyError:
+        raise HTTPException(404, "Unknown decision")
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+
+
 class Question(BaseModel):
     question: str
 
@@ -230,9 +338,10 @@ def ask(q: Question):
     """Ask a supply-chain question in plain language; answered from your data."""
     ov = analytics.overview()
     samples = {}
+    proj = {"_id": 0, "batch_id": 0, "row_hash": 0, "cleaning": 0, "trust.issues": 0, "trust.dims": 0}
     for rt in ov["record_counts"]:
-        samples[rt] = list(get_db().records.find({"record_type": rt},
-                                                 {"_id": 0, "batch_id": 0}).limit(15))
+        flt = governance.gold_query({"record_type": rt}) if governance.governed() else {"record_type": rt}
+        samples[rt] = list(get_db().records.find(flt, proj).limit(15))
     context = {"kpis": ov["kpis"], "record_counts": ov["record_counts"],
                "below_reorder_point": ov["inventory"]["below_reorder_point"][:30],
                "suppliers": ov["suppliers"]["suppliers"][:30],
@@ -252,7 +361,17 @@ def ask(q: Question):
         }
         for k in ("gate_event", "asset_flow", "subsystem_health", "sensor_reading"):
             samples.pop(k, None)
+    products = governance.products() if governance.governed() else []
+    context["data_trust"] = [{k: p[k] for k in ("name", "grade", "score", "certification", "trust_label")}
+                             for p in products]
+    provider = get_provider()
     try:
-        return get_provider().answer(q.question, context).model_dump()
+        result = provider.answer(q.question, context).model_dump()
     except AIError as e:
         raise HTTPException(502, str(e))
+    trust = governance.overall_trust() if products else {"score": None, "grade": None}
+    data = {**trust, "products": context["data_trust"]}
+    if provider.name == "rules":
+        result["confidence"] = None
+    decision = governance.record_decision(q.question, result, data, getattr(provider, "model", provider.name))
+    return {**result, "decision": {k: decision[k] for k in ("id", "gate", "status", "data_trust", "model")}}

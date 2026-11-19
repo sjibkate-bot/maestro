@@ -16,7 +16,10 @@ def _aware(d: Optional[datetime]) -> Optional[datetime]:
 
 
 def _records(record_type: str, query: Optional[dict] = None):
+    from . import governance
     q = {"record_type": record_type, **(query or {})}
+    if governance.governed():
+        q = governance.gold_query(q)
     return list(get_db().records.find(q, {"_id": 0, "attributes": 0}).limit(DOC_LIMIT))
 
 
@@ -132,7 +135,9 @@ def sensor_anomalies(z: float = 3.0, query=None) -> dict:
 def overview() -> dict:
     db = get_db()
     counts = {}
-    for row in db.records.aggregate([{"$group": {"_id": "$record_type", "n": {"$sum": 1}}}]):
+    from . import governance
+    match = governance.gold_query() if governance.governed() else {}
+    for row in db.records.aggregate([{"$match": match}, {"$group": {"_id": "$record_type", "n": {"$sum": 1}}}]):
         counts[row["_id"]] = row["n"]
     inv, sup, shp = inventory_summary(), supplier_performance(), shipment_summary()
     dem, iot = demand_summary(), sensor_anomalies()

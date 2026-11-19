@@ -298,13 +298,13 @@ def _ingest_sheet(ws, grid, filename, source_id, record_type_hint) -> list[dict]
         if newer:
             return [{**meta, "records": 0, "asset_id": asset,
                      "note": f"skipped: newer snapshot ({newer:%d %b %Y}) already loaded"}]
-        return [store(recs, {"sheet": ws.title}, source_id, "excel",
+        return [store(recs, {"sheet": ws.title, "cells": [[_cellstr(v) for v in r] for r in grid]}, source_id, "excel",
                       {**meta, "record_type": "asset_flow+gate_event", "template": "pdm_tail_sheet",
                        "asset_id": asset},
                       replace_keys=[{"asset_id": asset, "record_type": {"$in": ["asset_flow", "gate_event"]}}])]
     if is_machine_info(grid):
         recs = parse_machine_info(grid, source_id)
-        return [store(recs, {"sheet": ws.title}, source_id, "excel",
+        return [store(recs, {"sheet": ws.title, "cells": [[_cellstr(v) for v in r] for r in grid]}, source_id, "excel",
                       {**meta, "record_type": "gate_plan", "template": "machine_info"},
                       replace_keys=[{"record_type": "gate_plan"}])]
 

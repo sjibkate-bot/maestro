@@ -83,8 +83,17 @@ def build_record(record_type: str, source_id: str, source_type: str,
                  fields: dict, attributes: Optional[dict] = None) -> dict:
     rec = {"record_type": record_type, "source_id": source_id, "source_type": source_type,
            "attributes": attributes or {}, "ingested_at": now()}
+    cleaning = []
     for f, v in fields.items():
         rec[f] = coerce(f, v)
+        raw = _clean(v)
+        if rec[f] is None and raw is not None:
+            cleaning.append({"field": f, "raw": str(raw)[:80],
+                             "issue": "not a number" if f in NUMERIC_FIELDS else "not a date"})
+        elif f in DATE_FIELDS and raw is not None and not isinstance(raw, datetime):
+            cleaning.append({"field": f, "raw": str(raw)[:80], "issue": "date standardised"})
+    if cleaning:
+        rec["cleaning"] = cleaning
     return rec
 
 
@@ -142,18 +151,33 @@ def store(records: list[dict], raw: Any, source_id: str, source_type: str, meta:
     """Persist a batch. `replace_keys` deletes older versions first (for snapshot-style sources)."""
     db = get_db()
     batch_id = uuid.uuid4().hex
+    payload_hash = hashlib.sha256(repr(raw).encode()).hexdigest()
+    rows_received = len(raw) if isinstance(raw, list) else len(records)
+    gate1 = meta.pop("gate1", None) or {"status": "pass", "checks": ["parsed", "schema recognised"]}
+    blocked = gate1["status"] == "blocked"
     db.raw.insert_one({"batch_id": batch_id, "source_id": source_id, "source_type": source_type,
-                       "meta": meta, "payload": raw, "received_at": now()})
+                       "meta": meta, "payload": raw, "payload_sha256": payload_hash,
+                       "rows_received": rows_received, "records_stored": 0 if blocked else len(records),
+                       "gate1": gate1, "received_at": now()})
+    if blocked:
+        records = []
     for q in replace_keys or []:
         db.records.delete_many(q)
-    for r in records:
+    for i, r in enumerate(records):
         r["batch_id"] = batch_id
+        r["row_hash"] = hashlib.sha256(f"{payload_hash}:{i}".encode()).hexdigest()[:16]
     if records:
         db.records.insert_many(records)
     db.sources.update_one({"_id": source_id},
                           {"$set": {"last_ingested_at": now(), "source_type": source_type},
                            "$inc": {"record_count": len(records)}}, upsert=True)
-    return {"batch_id": batch_id, "records": len(records), **meta}
+    if records:
+        from . import governance
+        governance.run({r["record_type"] for r in records})
+    out = {"batch_id": batch_id, "records": len(records), **meta}
+    if blocked:
+        out.update({"blocked": rows_received, "note": f"blocked at Gate 1: {gate1['reason']}"})
+    return out
 
 
 def ingest_rows(rows: list[dict], *, source_id: str, source_type: str,
@@ -168,6 +192,10 @@ def ingest_rows(rows: list[dict], *, source_id: str, source_type: str,
     records = [_row_to_record(r, mapping, source_id, source_type) for r in rows]
     info = {**(meta or {}), "record_type": mapping.record_type,
             "mapping": {m.source_column: m.canonical_field for m in mapping.mappings}}
+    if mapping.record_type == "other" or not any(m.canonical_field for m in mapping.mappings):
+        # Gate 1: a layout that maps to no known entity stays in Bronze only.
+        info["gate1"] = {"status": "blocked", "reason": "schema not recognised",
+                         "checks": ["parsed", "schema not recognised"]}
     return store(records, rows, source_id, source_type, info)
 
 

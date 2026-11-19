@@ -12,7 +12,25 @@ from .sheets import ingest_workbook
 log = logging.getLogger(__name__)
 
 
+BRONZE_MAX_BYTES = 15 * 1024 * 1024
+
+
+def _bronze_file(filename: str, data: bytes, source_id: str) -> dict:
+    """Keep the file exactly as received (evidence of record) with its hash."""
+    import hashlib
+    from ..db import get_db
+    from ..models import now
+    digest = hashlib.sha256(data).hexdigest()
+    doc = {"sha256": digest, "filename": filename, "source_id": source_id, "size": len(data),
+           "received_at": now(), "content": data if len(data) <= BRONZE_MAX_BYTES else None}
+    get_db().bronze_files.insert_one(doc)
+    return {"sha256": digest, "size": len(data)}
+
+
 def ingest_file(filename: str, data: bytes, source_id: str, record_type_hint: str | None = None) -> list[dict]:
+    if not data:
+        raise ValueError("empty file")
+    _bronze_file(filename, data, source_id)
     name = filename.lower()
     results: list[dict] = []
 

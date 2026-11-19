@@ -148,7 +148,11 @@ class ClaudeProvider:
             "the data provided (KPIs, risk lists, gate performance, aircraft status, alerts "
             "and record samples from the organisation's own systems). Quote concrete numbers, "
             "tail numbers, SKUs and supplier names. If the data cannot answer "
-            "the question, say what data is missing. Keep the answer under 250 words."
+            "the question, say what data is missing. Keep the answer under 250 words. List the specific data points you relied on as evidence. "
+            "Set confidence (0-1) to how strongly the data supports your recommended actions: below 0.6 "
+            "when the data is thin, contradictory or the question goes beyond it; 0.8 or more only "
+            "when several independent data points agree. Each data block carries a trust grade (A-D); "
+            "state any caveat it implies."
         )
         prompt = (
             f"<data>\n{json.dumps(context, ensure_ascii=False, default=str, indent=1)}\n</data>\n\n"

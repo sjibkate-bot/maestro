@@ -39,7 +39,12 @@ def _naive(d: Optional[datetime]) -> Optional[datetime]:
 
 
 def _find(record_type: str, q: Optional[dict] = None) -> list[dict]:
-    return list(get_db().records.find({"record_type": record_type, **(q or {})}, {"_id": 0}))
+    """Modules read Gold: grade A/B, current version, not quarantined (once governance has run)."""
+    from . import governance
+    query = {"record_type": record_type, **(q or {})}
+    if governance.governed():
+        query = governance.gold_query(query)
+    return list(get_db().records.find(query, {"_id": 0}))
 
 
 def as_of() -> datetime:
@@ -86,6 +91,11 @@ def _events(q: Optional[dict] = None) -> list[dict]:
     return out
 
 
+def _trust(entities):
+    from . import governance
+    return governance.trust_label_for(entities) if governance.governed() else None
+
+
 def _wip_plan() -> dict:
     return {p["gate"]: p.get("wip_plan") for p in _find("gate_plan")}
 
@@ -128,6 +138,7 @@ def gate_graph(gate: str, last_n: int = LAST_N) -> dict:
         "requirement": requirement,
         "bars": bars,
         "wip": {"plan": plan, "actual": len(current), "over_plan": plan is not None and len(current) > plan},
+        "trust": _trust(["gate_event", "asset_flow"]),
     }
 
 
@@ -189,7 +200,7 @@ def dock_overview() -> dict:
             "data_quality": (f.get("attributes") or {}).get("data_quality"),
         })
     cards.sort(key=lambda c: (GATE_ORDER.index(c["gate"]) if c["gate"] in GATE_ORDER else -1), reverse=True)
-    return {"as_of": today, "aircraft": cards}
+    return {"as_of": today, "aircraft": cards, "trust": _trust(["asset_flow"])}
 
 
 def health_band(mc_rate: Optional[float]) -> dict:

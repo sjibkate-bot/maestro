@@ -6,6 +6,25 @@ It follows the same idea as Praxie (AI supply-chain workspace on connected data)
 
 ![dashboard](docs-dashboard.png)
 
+## Data governance (after ingest)
+
+Open **http://localhost:8000/governance**. It follows the DFSP IP Data Governance design: Bronze → Silver → Gold, a Data Trust Score, quarantine, certified Gold products and an AI decision gate.
+
+![governance](docs-governance.png)
+
+| Layer / step | What happens |
+|---|---|
+| **Bronze** (raw evidence) | Every uploaded file is kept byte-for-byte with its SHA-256. Every sheet or table is kept as received, with a payload hash and a row hash on each record. Measure, never fix. |
+| **Gate 1** (technical checks) | Parsed by a known reader and the schema maps to a Maestro entity. Otherwise the rows stay in Bronze only and count as *blocked at ingest*. A malware scan is **not** configured. |
+| **Silver** (trusted and scored) | Cleaned and conformed. Duplicate copies are removed; for snapshots, the newest version is kept and older ones go to history. Records are matched to the fleet master and tagged with domain and sensitivity (CUI). Every record gets a **Data Trust Score** from six dimensions: completeness 20, validity 20, timeliness 20, consistency 20, uniqueness 10, provenance 10. That gives grade **A ≥ 95 · B ≥ 85 · C ≥ 70 · D**. |
+| **Quarantine** | Grade D or a hard rule (missing identity key, code not in the approved list, bad tail number, negative quantity, rate outside 0–100) sends the record to quarantine. It gets a reason code, the domain's steward and an SLA. Records are never edited in place: when the source sends a corrected version, the item resolves itself. |
+| **Gold** (certified products) | Six products: Depot Flow, Production Schedule, Fleet Health, Inventory, Supplier Performance and Logistics. Each is built only from A/B records. **Gate 2:** product grade ≥ B *and* the data owner certifies. New data after certification shows **RECERTIFY**. The trust label travels with the data; for example, gate graphs carry it. **Maestro modules and supply analytics read Gold only.** |
+| **AI decision gate** | Data grade × model confidence gives *recommend*, *recommend with caveat*, *advisory* or *withhold*. Accept, Modify and Override are recorded; an override requires a reason. Without an API key, recommendations are withheld. |
+| **Monitor loop** | Records graded A/B (target ≥ 95%), quarantine aging (target < 5 days), acceptance and override rates, and drift alerts (newest load of a sheet vs earlier loads). |
+| **Audit & balance** | Control totals per batch (received = blocked + silver + quarantine + duplicate + history + replaced) and an audit log of every governance action. |
+
+Weights, grade thresholds, SLA, drift threshold and roles are editable under **01 Plan & govern**. They stay proposals until a governance council ratifies them, and changing them re-scores everything and is audited. Actions are recorded against the name in **Acting as**. There is no login yet, so this is not access control.
+
 ## Maestro-SC module (depot / maintenance)
 
 Open **http://localhost:8000/maestro** and upload the files in `samples/maestro/`.
@@ -69,7 +88,7 @@ MONGO_URI=mongomock:// uvicorn app.main:app --reload
 ```
 Open http://localhost:8000 and drop the files from `samples/` onto the page (`python samples/make_samples.py` regenerates them).
 
-Tests: `pytest -q` (16 tests, including the Maestro reference workbooks)
+Tests: `pytest -q` (41 tests, including the Maestro reference workbooks and the governance rules)
 
 ## API
 

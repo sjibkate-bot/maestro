@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAESTRO-SC · Data Governance</title>
+<style>
+:root {
+  --bg:#f3f5f5; --card:#ffffff; --ink:#14171c; --ink2:#4b5563; --muted:#8a9099; --line:#e3e7e8; --soft:#f6f8f8;
+  --accent:#1d6b78; --bronze:#b5651d; --silver:#7b8794; --gold:#b38f00;
+  --surface:#fcfcfb; --good:#0ca30c; --good-ink:#006300; --warning:#fab219; --warning-ink:#8a5a00;
+  --serious:#ec835a; --critical:#d03b3b; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+* { box-sizing:border-box } body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif }
+header { background:var(--card); display:flex; align-items:center; gap:14px; padding:14px 24px; border-bottom:1px solid var(--line) }
+header b { font-family:var(--mono); font-size:18px } header span.t { font-size:18px }
+header nav { margin-left:auto; display:flex; gap:14px; font-size:12px } header nav a { color:var(--ink2) }
+.lab { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink2) }
+.kpis { display:grid; grid-template-columns:repeat(6,1fr); gap:0; margin:16px 24px; background:var(--card); border:1px solid var(--line) }
+.kpi { padding:14px 16px; border-right:1px solid var(--line) } .kpi:last-child { border:0 }
+.kpi .v { font-size:26px; font-weight:700; margin:4px 0 } .kpi .s { color:var(--ink2); font-size:12px }
+.v.good { color:var(--good-ink) } .v.bad { color:var(--critical) } .v.warn { color:var(--warning-ink) }
+.tabs { display:flex; gap:26px; padding:0 24px; border-bottom:1px solid var(--line); overflow-x:auto }
+.tabs a { padding:12px 2px; text-decoration:none; color:var(--ink2); font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; border-bottom:2px solid transparent; white-space:nowrap }
+.tabs a.on { color:var(--ink); border-color:var(--accent); font-weight:700 }
+main { padding:20px 24px 60px }
+.card { background:var(--card); border:1px solid var(--line); padding:18px; margin-bottom:16px }
+.layers { display:grid; grid-template-columns:1fr auto 1fr auto 1fr auto 1fr; align-items:stretch; gap:10px; margin-bottom:16px }
+.layer { background:var(--card); border:1px solid var(--line); border-top:3px solid var(--c); padding:16px }
+.layer .k { color:var(--c); font-weight:700 } .layer h2 { margin:6px 0; font-size:20px; letter-spacing:.02em }
+.layer p { color:var(--ink2); margin:0 0 12px; font-size:13px } .arrow { align-self:center; color:var(--muted); font-size:20px }
+.nums { display:flex; gap:22px } .nums b { display:block; font-size:16px } .nums span { color:var(--ink2); font-size:12px }
+.grid3 { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:16px }
+.prod h3 { margin:2px 0 6px; font-size:17px } .prod p { color:var(--ink2); margin:0 0 12px; font-size:13px }
+.prod .top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px }
+.facts { display:grid; grid-template-columns:1fr 1fr; gap:6px } .fact { background:var(--soft); padding:8px 10px }
+.fact .lab { font-size:10px } .fact div:last-child { font-weight:600 }
+.badge { font-weight:700; padding:3px 10px; border-radius:12px; color:#fff; white-space:nowrap; font-size:13px }
+.gA { background:var(--good) } .gB { background:var(--warning); color:#0b0b0b } .gC { background:var(--serious); color:#0b0b0b } .gD { background:var(--critical) }
+.pill { font-family:var(--mono); font-size:10px; letter-spacing:.08em; padding:2px 7px; border:1px solid currentColor; border-radius:2px; text-transform:uppercase }
+.p-good { color:var(--good-ink) } .p-warn { color:var(--warning-ink) } .p-bad { color:var(--critical) } .p-muted { color:var(--muted) }
+.split { display:grid; grid-template-columns:1fr 1fr; gap:16px } @media (max-width:1000px) { .split, .layers { grid-template-columns:1fr } .arrow { display:none } .kpis { grid-template-columns:repeat(3,1fr) } }
+.panel-h { margin:-18px -18px 16px; padding:12px 18px; border-bottom:1px solid var(--line) }
+.verdict { font-size:22px; font-weight:800; letter-spacing:.02em; margin:6px 0 10px }
+button { font:inherit; padding:7px 14px; border:0; border-radius:3px; color:#fff; background:var(--accent); cursor:pointer; font-weight:600 }
+button.ok { background:#1f8a4c } button.mod { background:#1d6b78 } button.ovr { background:var(--critical) } button.ghost { background:transparent; color:var(--accent); border:1px solid var(--accent) }
+button:disabled { opacity:.45; cursor:default }
+input, textarea, select { font:inherit; padding:7px 9px; border:1px solid var(--line); background:#fff; color:var(--ink) }
+table { width:100%; border-collapse:collapse; font-size:12.5px } th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top }
+th { color:var(--muted); font-weight:500 } td.n, th.n { text-align:right; font-variant-numeric:tabular-nums }
+.gauge { display:flex; flex-direction:column; align-items:center; padding:10px 0 }
+.gauge .num { font-size:44px; font-weight:700; margin-top:-70px } .gauge .sub { color:var(--ink2) }
+.seg { display:flex; height:28px; gap:2px; margin:10px 0 } .seg div { border-radius:4px; color:#fff; font-size:12px; font-weight:600; display:flex; align-items:center; padding-left:8px; min-width:0; overflow:hidden; white-space:nowrap }
+.legend { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--ink2) } .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px }
+.mono { font-family:var(--mono); font-size:12px } .muted { color:var(--muted) } .empty { color:var(--muted); padding:16px 0 }
+.dims { display:grid; grid-template-columns:repeat(6,1fr); gap:8px } .dims div { background:var(--soft); padding:10px } .dims b { font-size:20px; display:block }
+.matrix td { text-align:center; font-weight:600 } .matrix td:first-child { text-align:left }
+.user { display:flex; gap:6px; align-items:center }
+.log { font:12px var(--mono); white-space:pre-wrap; color:var(--ink2); max-height:220px; overflow:auto }
+.tip { position:fixed; pointer-events:none; background:#fff; border:1px solid var(--line); padding:6px 9px; font-size:12px; display:none; box-shadow:0 4px 12px rgba(0,0,0,.12) }
+</style>
+</head>
+<body>
+<header><b>MAESTRO-SC</b><span class="t">Data Governance</span>
+  <nav><a href="/maestro">Maestro modules</a><a href="/">Supply analysis</a>
+    <span class="user"><label class="lab" for="who">Acting as</label><input id="who" placeholder="Your name / role" style="width:180px"></span></nav></header>
+<section class="kpis" id="kpis"></section>
+<nav class="tabs" id="tabs">
+  <a href="#upload">Upload data</a><a href="#overview">Overview</a><a href="#plan">01 Plan &amp; govern</a><a href="#filter">02 Filter &amp; dedup</a>
+  <a href="#clean">03 Clean &amp; transform</a><a href="#enrich">04 Enrich &amp; tag</a><a href="#audit">05 Audit &amp; balance</a><a href="#monitor">06 Monitor loop</a>
+</nav>
+<main id="view"></main>
+<div class="tip" id="tip"></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = v => v == null ? "—" : String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num = (v, d = 0) => v == null ? "—" : Number(v).toLocaleString(undefined, {maximumFractionDigits: d, minimumFractionDigits: d});
+const dt = v => v ? new Date(v).toLocaleString(undefined, {day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit"}) : "—";
+const api = (p, o) => fetch(p, o).then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.detail || r.status); return j; });
+const post = (p, body) => api(p, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+const badge = (g, s) => g ? `<span class="badge g${g}">${g}${s != null ? " " + num(s, 2) : ""}</span>` : `<span class="pill p-muted">no data</span>`;
+const certPill = c => `<span class="pill ${c === "CERTIFIED" ? "p-good" : c === "BLOCKED" ? "p-bad" : "p-warn"}">${c === "CERTIFIED" ? "✓ " : c === "BLOCKED" ? "▲ " : "● "}${esc(c)}</span>`;
+const GRADE_COLOR = {A: "var(--good)", B: "var(--warning)", C: "var(--serious)", D: "var(--critical)"};
+$("#who").value = localStorage.govUser || ""; $("#who").onchange = e => localStorage.govUser = e.target.value.trim();
+const who = () => { const u = $("#who").value.trim(); if (!u) { $("#who").focus(); alert("Enter your name or role (top right) first: every governance action is recorded against it."); } return u; };
+
+async function kpis() {
+  const o = await api("/api/governance/overview"), k = o.kpis;
+  const t = [["Datasets governed", k.datasets_governed, `${k.bronze_datasets} sources · ${k.silver_datasets} silver entities`, ""],
+    ["Gold confidence", k.gold_confidence == null ? "—" : num(k.gold_confidence, 1), `avg across ${k.gold_products} products`, k.gold_confidence >= 95 ? "good" : k.gold_confidence >= 85 ? "warn" : "bad"],
+    ["Blocked at ingest", num(k.blocked_at_ingest), `of ${num(k.bronze_records)} records`, k.blocked_at_ingest ? "bad" : "good"],
+    ["Open alerts", k.open_alerts, "quarantine & drift", k.open_alerts ? "bad" : ""],
+    ["Review queue", k.review_queue, "quarantine + decision", k.review_queue ? "warn" : ""],
+    ["Drift alerts", k.drift_alerts, "features above threshold", k.drift_alerts ? "bad" : ""]];
+  $("#kpis").innerHTML = t.map(([l, v, s, c]) => `<div class="kpi"><div class="lab">${l}</div><div class="v ${c}">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join("");
+  return o;
+}
+
+function gauge(score, grade) {
+  const W = 220, R = 90, cx = W / 2, cy = 110, a = Math.PI * (1 - Math.max(0, Math.min(100, score || 0)) / 100);
+  const arc = (end, color, w) => `<path d="M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R * Math.cos(end)} ${cy - R * Math.sin(end)}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="round"/>`;
+  const color = GRADE_COLOR[grade] || "var(--line)";
+  return `<div class="gauge" role="img" aria-label="Data trust ${num(score, 2)} of 100, grade ${grade}"><svg width="${W}" height="130">${arc(0, `color-mix(in srgb, ${color} 20%, white)`, 18)}${score != null ? arc(a, color, 18) : ""}</svg>
+    <div class="num">${score == null ? "—" : num(score, 2)}</div><div class="sub">/ 100 · Grade ${esc(grade)}</div></div>`;
+}
+
+function decisionPanel(d) {
+  const ask = `<form id="askf" style="display:flex;gap:8px;margin-top:14px"><input id="q" style="flex:1" placeholder="Ask about your data, e.g. Which aircraft are at risk of missing AMREP?"><button>Ask</button></form>`;
+  if (!d) return `<p class="empty">No AI recommendations yet.</p>${ask}`;
+  const g = d.gate || {}, a = d.answer || {}, tr = d.data_trust || {};
+  const V = {RECOMMEND: "Recommend", RECOMMEND_WITH_CAVEAT: "Recommend with caveat", ADVISORY: "Advisory only", WITHHOLD: "Withheld"}[g.verdict] || g.verdict;
+  const actions = (a.recommended_actions || []).map(x => `<li>${esc(x)}</li>`).join("");
+  const pending = d.status === "PENDING";
+  return `<div class="lab">${esc(d.question)}</div><div class="verdict">${esc(V).toUpperCase()}</div>
+    <p style="margin:0 0 6px">${esc(a.answer)}</p>${actions ? `<ul style="margin:4px 0 10px;padding-left:18px">${actions}</ul>` : ""}
+    <p class="muted" style="font-size:12px;margin:0 0 10px">${esc(g.reason)}</p>
+    <div class="facts"><div class="fact"><div class="lab">Model</div><div>${esc(d.model)}</div></div>
+      <div class="fact"><div class="lab">Confidence</div><div>${a.confidence == null ? "—" : Math.round(a.confidence * 100) + "% " + esc((g.confidence_band || "").toUpperCase())}</div></div>
+      <div class="fact"><div class="lab">Data trust</div><div>${tr.grade ? esc(tr.grade) + " (" + num(tr.score, 1) + ")" : "—"}</div></div>
+      <div class="fact"><div class="lab">Status</div><div>${esc(d.status)}</div></div></div>
+    ${(a.evidence || []).length ? `<details style="margin-top:8px"><summary class="muted">Evidence</summary><ul>${a.evidence.map(x => `<li>${esc(x)}</li>`).join("")}</ul></details>` : ""}
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="ok" data-act="accept" ${pending ? "" : "disabled"}>Accept</button>
+      <button class="mod" data-act="modify" ${pending ? "" : "disabled"}>Modify</button><button class="ovr" data-act="override" ${pending ? "" : "disabled"}>Override</button></div>${ask}`;
+}
+function wireDecision(d, rerender) {
+  document.querySelectorAll("[data-act]").forEach(b => b.onclick = async () => {
+    const u = who(); if (!u) return; const act = b.dataset.act; let text = "";
+    if (act === "modify") { text = prompt("Modified action:"); if (!text) return; }
+    if (act === "override") { text = prompt("Reason for override (required, recorded):"); if (!text) return; }
+    try { await post(`/api/governance/decisions/${d.id}/${act}`, {user: u, text}); rerender(); } catch (e) { alert(e.message); } });
+  const f = $("#askf"); if (f) f.onsubmit = async e => { e.preventDefault(); if (!$("#q").value.trim()) return;
+    f.querySelector("button").disabled = true; f.querySelector("button").textContent = "Thinking…";
+    try { await post("/api/ask", {question: $("#q").value}); } catch (err) { alert(err.message); } rerender(); };
+}
+
+const VIEWS = {
+  async overview(v, o) {
+    const L = o.layers, ps = o.products;
+    const layer = (c, k, t, p, nums) => `<div class="layer" style="--c:${c}"><div class="lab k">${k}</div><h2>${t}</h2><p>${p}</p><div class="nums">${nums.map(([a, b]) => `<div><b>${esc(a)}</b><span>${b}</span></div>`).join("")}</div></div>`;
+    v.innerHTML = `<div class="layers">
+      ${layer("var(--bronze)", "Bronze", "SOURCE DATA", "Raw as received from files, ERP, APIs and IoT. Original evidence and full lineage.", [[L.bronze.datasets, "batches"], [num(L.bronze.records), "records"], [L.bronze.files, "files kept"]])}<div class="arrow">→</div>
+      ${layer("var(--silver)", "Silver", "CURATED DATA", "Filtered, de-duplicated, cleaned, matched to master data and scored A–D.", [[L.silver.datasets, "entities"], [num(L.silver.records), "records"], [num(L.silver.avg_trust, 2), "avg trust"]])}<div class="arrow">→</div>
+      ${layer("var(--gold)", "Gold", "DERIVED DATA", "Certified products built only from grade A/B Silver records.", [[L.gold.datasets, "products"], [num(L.gold.records), "records"], [num(L.gold.avg_trust, 2), "avg trust"]])}<div class="arrow">→</div>
+      ${layer("var(--accent)", "Decisions", "MAESTRO MODULES", "Docks, gates, fleet, supply analysis and AI read Gold products only.", [[L.decisions.total, "AI decisions"], [L.decisions.pending, "pending"], [L.gold.certified, "certified"]])}</div>
+      <div class="grid3">${ps.map(p => `<div class="card prod"><div class="top"><div><div class="lab">Gold data product</div><h3>${esc(p.name)}</h3></div>${badge(p.grade, p.score)}</div>
+        <p>${esc(p.description)}</p><div class="facts">
+        <div class="fact"><div class="lab">Certification</div><div>${certPill(p.certification)}</div></div>
+        <div class="fact"><div class="lab">Freshness</div><div>${p.freshness === "CURRENT" ? '<span class="pill p-good">✓ Current</span>' : '<span class="pill p-bad">▲ Stale</span>'}</div></div>
+        <div class="fact"><div class="lab">Records</div><div>${num(p.records)}</div></div>
+        <div class="fact"><div class="lab">Quarantine</div><div>${num(p.quarantined)}${p.excluded_c ? ` · ${p.excluded_c} grade C excluded` : ""}</div></div></div>
+        <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="muted" style="font-size:12px">Owner: ${esc(p.owner)}${p.certified_by ? ` · certified by ${esc(p.certified_by)}` : ""}</span>
+        <button class="ghost" data-cert="${p.id}" ${p.certification === "CERTIFIED" || p.certification === "BLOCKED" ? "disabled" : ""}>Certify</button></div></div>`).join("") || '<p class="empty">No data yet: upload files on the Upload data tab.</p>'}</div>
+      <div class="split"><div class="card"><div class="panel-h lab"><b>Data trust</b></div>${gauge(o.trust.score, o.trust.grade)}
+        <p class="muted" style="text-align:center;font-size:12px;margin:0">Record-weighted score of the Gold products · six dimensions, weights set in 01 Plan &amp; govern</p></div>
+      <div class="card"><div class="panel-h lab"><b>AI decision gate</b></div><div id="dec">${decisionPanel(o.latest_decision)}</div></div></div>`;
+    document.querySelectorAll("[data-cert]").forEach(b => b.onclick = async () => { const u = who(); if (!u) return;
+      const note = prompt(`Certify "${b.closest(".prod").querySelector("h3").textContent}" as data owner. Optional note:`, ""); if (note === null) return;
+      try { await post(`/api/governance/products/${b.dataset.cert}/certify`, {user: u, note}); route(); } catch (e) { alert(e.message); } });
+    wireDecision(o.latest_decision || {}, route);
+  },
+  async plan(v) {
+    const s = await api("/api/governance/stage/plan"), c = s.config;
+    v.innerHTML = `<div class="card"><div class="lab"><b>Data Trust Score</b> · six measured dimensions → one score → a grade (config v${c.version})</div>
+      <form id="wf"><div class="dims" style="margin-top:12px">${Object.entries(c.weights).map(([d, w]) => `<div><div class="lab">${d}</div><b><input type="number" min="0" max="100" name="${d}" value="${w}" style="width:64px;font-size:18px;padding:2px 4px">%</b></div>`).join("")}</div>
+      <div style="display:flex;gap:16px;align-items:center;margin-top:12px;flex-wrap:wrap">${["A", "B", "C"].map(g => `<label>Grade ${g} ≥ <input type="number" name="g${g}" value="${c.grades[g]}" style="width:64px"></label>`).join("")}
+      <label>Quarantine SLA <input type="number" name="sla" value="${c.quarantine_sla_days}" style="width:56px"> days</label>
+      <label>Drift threshold <input type="number" name="drift" value="${c.drift_threshold_pct}" style="width:56px"> %</label>
+      <button>Save &amp; re-score</button><span class="muted" style="font-size:12px">Proposed until the governance council ratifies them. Saving re-scores every record and is audited.</span></div></form></div>
+      <div class="split"><div class="card"><div class="lab"><b>Grade → what the platform does</b></div><table>${Object.entries(s.grade_actions).map(([g, a]) => `<tr><td style="width:40px">${badge(g)}</td><td>${esc(a)}</td></tr>`).join("")}</table></div>
+      <div class="card"><div class="lab"><b>AI decision gate</b> · data grade × model confidence (high ≥ ${c.confidence.high}, medium ≥ ${c.confidence.medium})</div>
+      <table class="matrix"><tr><th></th><th>High</th><th>Medium</th><th>Low</th></tr>${Object.entries(s.decision_matrix).map(([g, r]) => `<tr><td>${badge(g)}</td>${["high", "medium", "low"].map(b => `<td>${esc(r[b].replaceAll("_", " ").toLowerCase())}</td>`).join("")}</tr>`).join("")}</table></div></div>
+      <div class="card"><div class="lab"><b>Roles &amp; domains</b></div><table><tr><th>Domain</th><th>Entities</th><th>Data owner (certifies Gold)</th><th>Data steward (works quarantine)</th><th>Sensitivity</th></tr>
+      ${Object.entries(c.domains).map(([n, d]) => `<tr><td>${esc(n)}</td><td>${esc(d.entities.join(", "))}</td><td>${esc(d.owner)}</td><td>${esc(d.steward)}</td><td>${esc(d.sensitivity)}</td></tr>`).join("")}</table></div>
+      <div class="card"><div class="lab"><b>Rules per entity</b></div><table><tr><th>Entity</th><th>Required fields (completeness)</th><th>Freshness limit</th></tr>
+      ${Object.entries(c.required).map(([e, f]) => `<tr><td>${esc(e)}</td><td>${esc(f.map(x => Array.isArray(x) ? x.join(" or ") : x).join(", "))}</td><td>${c.freshness[e] ? esc(c.freshness[e][0] + " ≤ " + c.freshness[e][1] + " days") : "—"}</td></tr>`).join("")}</table>
+      <p class="muted" style="font-size:12px">Hard rules (grade D, quarantine): missing identity key, code not in the approved list (${esc(Object.keys(c.enums).join(", "))}), tail number not matching <span class="mono">${esc(c.asset_id_pattern)}</span>, negative quantity, health or MC rate outside 0–100.</p></div>`;
+    $("#wf").onsubmit = async e => { e.preventDefault(); const u = who(); if (!u) return; const f = new FormData(e.target);
+      const weights = Object.fromEntries(Object.keys(c.weights).map(d => [d, Number(f.get(d))]));
+      try { await api(`/api/governance/config?user=${encodeURIComponent(u)}`, {method: "PUT", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({weights, grades: {A: +f.get("gA"), B: +f.get("gB"), C: +f.get("gC")}, quarantine_sla_days: +f.get("sla"), drift_threshold_pct: +f.get("drift")})}); route(); }
+      catch (err) { alert(err.message); } };
+  },
+  async filter(v) {
+    const s = await api("/api/governance/stage/filter");
+    v.innerHTML = `<div class="card"><div class="lab"><b>Gate 1 · technical checks</b></div><ul>${s.gate1_checks.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div class="card"><div class="lab"><b>Bronze files</b> · kept exactly as received</div><table><tr><th>File</th><th>SHA-256</th><th class="n">Bytes</th><th>Received</th></tr>
+      ${s.files.map(f => `<tr><td>${esc(f.filename)}</td><td class="mono">${esc(f.sha256.slice(0, 16))}…</td><td class="n">${num(f.size)}</td><td>${dt(f.received_at)}</td></tr>`).join("") || '<tr><td colspan=4 class="empty">No files yet</td></tr>'}</table></div>
+      <div class="card"><div class="lab"><b>Batches through Gate 1</b></div><table><tr><th>Source</th><th>Sheet</th><th>Entity</th><th class="n">Rows</th><th class="n">To Silver</th><th>Gate 1</th><th>Payload hash</th></tr>
+      ${s.batches.map(b => `<tr><td>${esc(b.source)}</td><td>${esc(b.sheet)}</td><td>${esc(b.record_type)}</td><td class="n">${num(b.rows)}</td><td class="n">${num(b.stored)}</td>
+        <td>${b.gate1 && b.gate1.status === "blocked" ? `<span class="pill p-bad">▲ blocked</span> ${esc(b.gate1.reason)}` : '<span class="pill p-good">✓ pass</span>'}</td><td class="mono">${esc(b.sha256)}</td></tr>`).join("")}</table></div>
+      <div class="split"><div class="card"><div class="lab"><b>Duplicates removed</b> · same record sent twice</div><table><tr><th>Entity</th><th>Key</th><th>Source</th></tr>
+      ${s.duplicates.map(d => `<tr><td>${esc(d.record_type)}</td><td>${esc(d.order_id || d.asset_id || d.sku)}</td><td>${esc(d.source_id)}</td></tr>`).join("") || '<tr><td colspan=3 class="empty">None found</td></tr>'}</table></div>
+      <div class="card"><div class="lab"><b>Superseded snapshots</b> · one current version per asset</div><table><tr><th>Entity</th><th class="n">Older versions kept in history</th></tr>
+      ${Object.entries(s.superseded).map(([k, n]) => `<tr><td>${esc(k)}</td><td class="n">${num(n)}</td></tr>`).join("") || '<tr><td colspan=2 class="empty">None</td></tr>'}</table></div></div>`;
+  },
+  async clean(v) {
+    const s = await api("/api/governance/stage/clean");
+    v.innerHTML = `<div class="card"><div class="lab"><b>Standard transforms</b></div><ul>${s.transforms.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div class="card"><div class="lab"><b>Transform results</b></div><table><tr><th>Entity</th><th>Field</th><th>Result</th><th class="n">Records</th></tr>
+      ${s.summary.map(r => `<tr><td>${esc(r.record_type)}</td><td>${esc(r.field)}</td><td>${r.issue === "date standardised" ? '<span class="pill p-good">✓ standardised</span>' : `<span class="pill p-bad">▲ ${esc(r.issue)}</span>`}</td><td class="n">${num(r.count)}</td></tr>`).join("") || '<tr><td colspan=4 class="empty">Nothing needed transforming</td></tr>'}</table></div>
+      ${s.examples.length ? `<div class="card"><div class="lab"><b>Values that could not be parsed</b> · scored down under validity, fixed at source</div><table><tr><th>Entity</th><th>Field</th><th>Value received</th><th>Problem</th></tr>${s.examples.map(x => `<tr><td>${esc(x.record_type)}</td><td>${esc(x.field)}</td><td class="mono">${esc(x.raw)}</td><td>${esc(x.issue)}</td></tr>`).join("")}</table></div>` : ""}`;
+  },
+  async enrich(v) {
+    const s = await api("/api/governance/stage/enrich");
+    v.innerHTML = `<div class="card"><div class="lab"><b>Master data match &amp; tags</b> · fleet master: ${num(s.master_assets)} tail numbers</div>
+      <table><tr><th>Entity</th><th>Domain</th><th>Sensitivity tag</th><th>Data owner</th><th class="n">Records</th><th class="n">Matched to master</th></tr>
+      ${s.entities.map(e => `<tr><td>${esc(e.record_type)}</td><td>${esc(e.domain)}</td><td>${e.sensitivity === "CUI" ? '<span class="pill p-warn">CUI</span>' : esc(e.sensitivity)}</td><td>${esc(e.owner)}</td><td class="n">${num(e.records)}</td><td class="n">${e.master_match_pct == null ? "n/a" : num(e.master_match_pct, 1) + "%"}</td></tr>`).join("")}</table></div>`;
+  },
+  async audit(v) {
+    const s = await api("/api/governance/stage/audit");
+    v.innerHTML = `<div class="card"><div class="lab"><b>Control totals</b> · every row received is accounted for</div><table><tr><th>Batch</th><th>Source</th><th>Sheet</th><th class="n">Received</th><th class="n">Blocked</th><th class="n">Silver</th><th class="n">Quarantine</th><th class="n">Duplicate</th><th class="n">History</th><th class="n">Replaced</th><th>Balanced</th></tr>
+      ${s.balance.map(b => `<tr><td class="mono">${esc(b.batch_id)}</td><td>${esc(b.source)}</td><td>${esc(b.sheet)}</td><td class="n">${num(b.received)}</td><td class="n">${num(b.blocked)}</td><td class="n">${num(b.silver)}</td><td class="n">${num(b.quarantine)}</td><td class="n">${num(b.duplicate)}</td><td class="n">${num(b.history)}</td><td class="n">${num(b.replaced)}</td>
+        <td>${b.balanced ? '<span class="pill p-good">✓ yes</span>' : '<span class="pill p-bad">▲ no</span>'}</td></tr>`).join("")}</table>
+      <p class="muted" style="font-size:12px">Replaced = rows superseded when a newer upload of the same tail sheet arrived; the earlier file stays in Bronze.</p></div>
+      <div class="card"><div class="lab"><b>Audit log</b></div><table><tr><th>When</th><th>Action</th><th>By</th><th>Detail</th></tr>
+      ${s.audit_log.map(a => `<tr><td>${dt(a.at)}</td><td>${esc(a.action)}</td><td>${esc(a.user)}</td><td class="mono" style="font-size:11px">${esc(JSON.stringify(a.detail))}</td></tr>`).join("")}</table></div>`;
+  },
+  async monitor(v, o) {
+    const s = await api("/api/governance/stage/monitor"), m = s.monitor, mix = o.layers.silver.grade_mix || {}, total = Object.values(mix).reduce((a, b) => a + b, 0) || 1;
+    const seg = ["A", "B", "C", "D"].filter(g => mix[g]).map(g => { const pct = 100 * mix[g] / total;
+      return `<div style="flex:${mix[g]};background:${GRADE_COLOR[g]};${g === "B" || g === "C" ? "color:#0b0b0b" : ""}" title="Grade ${g}: ${mix[g]} records (${pct.toFixed(1)}%)">${pct >= 8 ? g + " " + pct.toFixed(0) + "%" : ""}</div>`; }).join("");
+    const tile = (l, v, target, ok) => `<div class="kpi" style="border:1px solid var(--line);background:#fff"><div class="lab">${l}</div><div class="v ${ok == null ? "" : ok ? "good" : "bad"}">${esc(v)}</div><div class="s">${esc(target)}</div></div>`;
+    v.innerHTML = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+      ${tile("Records grade A/B", m.gold_ab_pct == null ? "—" : num(m.gold_ab_pct, 1) + "%", `target ≥ ${m.gold_target_pct}%`, m.gold_ab_pct == null ? null : m.gold_ab_pct >= m.gold_target_pct)}
+      ${tile("Quarantine aging", num(m.quarantine_avg_age_days, 1) + " days", `target < 5 days · ${m.quarantine_overdue} overdue`, m.quarantine_overdue === 0)}
+      ${tile("Acceptance rate", m.acceptance_rate == null ? "—" : num(m.acceptance_rate, 1) + "%", "AI recommendations accepted", null)}
+      ${tile("Override rate", m.override_rate == null ? "—" : num(m.override_rate, 1) + "%", "every override carries a reason", null)}</div>
+      <div class="card"><div class="lab"><b>Grade mix</b> · current records in Silver and quarantine</div><div class="seg" role="img" aria-label="Grade mix">${seg}</div>
+      <div class="legend">${["A", "B", "C", "D"].map(g => `<span><i style="background:${GRADE_COLOR[g]}"></i>${g} · ${num(mix[g] || 0)}</span>`).join("")}</div></div>
+      <div class="card"><div class="lab"><b>Quarantine</b> · fixed at the source, never edited in place</div><table><tr><th>Entity</th><th>Key</th><th>Reason</th><th>Steward</th><th class="n">Age</th><th>Due</th><th></th></tr>
+      ${s.quarantine.map(q => `<tr><td>${esc(q.record_type)}</td><td>${esc(q.key)}</td><td><span class="pill p-bad">${esc(q.reason_code)}</span> ${esc(q.reason)}</td><td>${esc(q.steward)}</td><td class="n">${q.age_days} d</td>
+        <td>${q.overdue ? '<span class="pill p-bad">▲ overdue</span>' : dt(q.due_at)}</td><td><button class="ghost" data-close="${q.id}">Close</button></td></tr>`).join("") || '<tr><td colspan=7 class="empty">Quarantine is empty</td></tr>'}</table></div>
+      <div class="card"><div class="lab"><b>Drift alerts</b> · newest batch vs earlier batches</div><table><tr><th>Entity</th><th>Field</th><th class="n">Previous mean</th><th class="n">Current mean</th><th class="n">Change</th></tr>
+      ${s.drift.map(d => `<tr><td>${esc(d.record_type)}</td><td>${esc(d.field)}</td><td class="n">${num(d.previous_mean, 2)}</td><td class="n">${num(d.current_mean, 2)}</td><td class="n">${d.change_pct > 0 ? "+" : ""}${num(d.change_pct, 1)}%</td></tr>`).join("") || '<tr><td colspan=5 class="empty">No drift above threshold</td></tr>'}</table></div>
+      <div class="card"><div class="lab"><b>AI decisions</b></div><table><tr><th>When</th><th>Question</th><th>Gate</th><th>Data</th><th>Status</th><th>By</th><th>Note</th></tr>
+      ${s.decisions.map(d => `<tr><td>${dt(d.created_at)}</td><td>${esc(d.question)}</td><td>${esc((d.gate.verdict || "").replaceAll("_", " ").toLowerCase())}</td><td>${esc(d.data_trust.grade)}</td><td>${esc(d.status)}</td><td>${esc(d.decided_by)}</td><td>${esc(d.decision_note)}</td></tr>`).join("") || '<tr><td colspan=7 class="empty">No decisions yet</td></tr>'}</table></div>`;
+    document.querySelectorAll("[data-close]").forEach(b => b.onclick = async () => { const u = who(); if (!u) return;
+      const r = prompt("Resolution (e.g. 'corrected in source system, re-ingest scheduled'):"); if (!r) return;
+      try { await post(`/api/governance/quarantine/${b.dataset.close}/close`, {user: u, resolution: r}); route(); } catch (e) { alert(e.message); } });
+  },
+  upload(v) {
+    v.innerHTML = `<div class="card"><div class="lab"><b>Upload data</b> · lands in Bronze, passes Gate 1, is scored into Silver, and feeds Gold products</div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><input type="file" id="files" multiple><input id="src" placeholder="Source name (optional)"><button id="up">Ingest</button></div>
+      <div class="log" id="log" style="margin-top:12px"></div></div>`;
+    const log = m => $("#log").textContent = m + "\n" + $("#log").textContent;
+    $("#up").onclick = async () => { for (const f of $("#files").files) { const fd = new FormData(); fd.append("file", f); if ($("#src").value) fd.append("source", $("#src").value);
+      log(`… ${f.name}`); const r = await fetch("/api/ingest/file", {method: "POST", body: fd}); const j = await r.json();
+      if (!r.ok) { log(`✗ ${f.name}: ${j.detail}`); continue; }
+      j.batches.forEach(b => log(b.error ? `✗ ${f.name} / ${b.sheet}: ${b.error}` : `${b.blocked ? "▲" : "✓"} ${f.name}${b.sheet ? " / " + b.sheet : ""}: ${b.records} ${b.record_type || b.document_kind || ""}${b.note ? " (" + b.note + ")" : ""}`)); }
+      kpis(); };
+  },
+};
+
+async function route() {
+  const key = location.hash.slice(1) || "overview";
+  document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + key));
+  try { const o = await kpis(); await (VIEWS[key] || VIEWS.overview)($("#view"), o); }
+  catch (e) { $("#view").innerHTML = `<p class="empty">Could not load (${esc(e.message)}).</p>`; }
+}
+addEventListener("hashchange", route); route();
+</script>
+</body>
+</html>
