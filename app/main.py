@@ -90,16 +90,34 @@ async def create_batch(files: list[UploadFile] = File(...), name: Optional[str] 
                        record_type: Optional[str] = Form(None)):
     """Upload several files as one ingestion batch. Tables are staged for Mapping Studio
     (mode=review) or published straight away (mode=auto). Layouts with an active mapping
-    profile publish automatically; template sheets and documents publish directly."""
+    profile publish automatically; template sheets and documents publish directly.
+    To show progress, a client can send the first file here and the rest one at a time
+    to POST /api/batches/{id}/files."""
     if not files:
         raise HTTPException(400, "Select at least one file")
     if mode not in ("review", "auto"):
         raise HTTPException(400, "mode must be review or auto")
     b = studio.begin_batch(name or f"Batch {len(files)} file(s)", user or "unknown", mode)
+    out = await _ingest_into_batch(b, files, record_type)
+    return studio.batch_view(b["_id"]) | {"load": out}
+
+
+@app.post("/api/batches/{batch_id}/files")
+async def add_batch_files(batch_id: str, files: list[UploadFile] = File(...), record_type: Optional[str] = Form(None)):
+    """Add files to an existing batch (same mode and user). Used to load file by file with progress."""
+    b = get_db().ingest_batches.find_one({"_id": batch_id})
+    if not b:
+        raise HTTPException(404, "Batch not found")
+    out = await _ingest_into_batch(b, files, record_type)
+    v = studio.batch_view(batch_id)
+    return {"_id": batch_id, "load": out, "counts": v["counts"], "objects": len(v["objects"]), "rows": v["rows"]}
+
+
+async def _ingest_into_batch(b: dict, files: list[UploadFile], record_type: Optional[str]) -> list[dict]:
     out = []
     for f in files:
         data = await f.read()
-        token = studio.STAGING.set({"batch_id": b["_id"], "mode": mode, "user": user})
+        token = studio.STAGING.set({"batch_id": b["_id"], "mode": b.get("mode", "review"), "user": b.get("created_by")})
         try:
             res = ingest_file(f.filename, data, _source_id(f.filename), _rt(record_type))
             studio.register_direct(b["_id"], f.filename, _source_id(f.filename), res)
@@ -110,7 +128,7 @@ async def create_batch(files: list[UploadFile] = File(...), name: Optional[str] 
         finally:
             studio.STAGING.reset(token)
     studio.finish_batch(b["_id"], [{"file": f.filename} for f in files], out)
-    return studio.batch_view(b["_id"]) | {"load": out}
+    return out
 
 
 @app.get("/api/batches")

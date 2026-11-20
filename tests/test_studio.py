@@ -167,3 +167,14 @@ def test_template_sheets_carry_no_mapping_reasons_and_fleet_status_keeps_as_of()
     fs = next(o for o in b["objects"] if o.get("sheet") == "Fleet Status")
     f = {x["name"]: x for x in c.get(f"/api/objects/{fs['_id']}").json()["fields"]}
     assert f["As_Of"]["canonical_field"] == "as_of" and f["As_Of"]["status"] == "AUTO"
+
+
+def test_files_can_be_added_one_by_one_to_a_batch():
+    paths = sorted(RC.glob("*.csv"))
+    b = upload(paths[:1])
+    for p in paths[1:4]:
+        r = c.post(f"/api/batches/{b['_id']}/files", files=[("files", (p.name, p.read_bytes()))])
+        assert r.status_code == 200 and r.json()["load"][0]["file"] == p.name
+    v = c.get(f"/api/batches/{b['_id']}").json()
+    assert len(v["objects"]) == 4 and [f["file"] for f in v["files"]] == [p.name for p in paths[:4]]
+    assert c.post("/api/batches/nope/files", files=[("files", ("x.csv", b"a\n1\n"))]).status_code == 404

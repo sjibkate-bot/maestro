@@ -62,6 +62,7 @@ Packs are JSON files in `app/packs/`. To add a new industry, add a file there. N
 | Call | |
 |---|---|
 | `POST /api/batches` (multipart) | `files` (repeat for several), `user`, `mode=review` (default) or `auto`, optional `name`, optional `record_type` to force an entity. Returns the batch (below). |
+| `POST /api/batches/{id}/files` (multipart) | Add files to an existing batch (same mode and user). Use it to show progress: create the batch with the first file, then send the rest one at a time, and use `XMLHttpRequest.upload.onprogress` for bytes. This is what the reference UI does. |
 | `GET /api/batches` | Recent batches with object counts by status |
 | `GET /api/batches/{id}` | Batch, its source objects and its publish runs |
 | `POST /api/batches/{id}/publish` | Validate, govern and publish everything that is ready. Body `{user}`. Returns the run. |

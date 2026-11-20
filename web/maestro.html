@@ -439,16 +439,48 @@ async function viewConfig(v) {
   const row = (name, b) => `<tr><td>${esc(name)}${b.sheet ? " / " + esc(b.sheet) : ""}</td><td>${b.error ? '<span class="tag critical">▲ ERROR</span>' : b.blocked ? '<span class="tag critical">▲ BLOCKED</span>' : esc(b.record_type || b.document_kind || "")}${b.template ? ` <span class="tag good">${esc(b.template)}</span>` : ""}</td>
     <td class="n">${num(b.records, 0)}</td><td>${b.records ? destLink(b.record_type) : "—"}</td><td style="color:var(--ink2)">${esc(b.error || b.note || "")}</td></tr>`;
   $("#uname").value = localStorage.amxUser || "";
+  // Files go up one at a time into one batch, so the bar shows real progress: each file is
+  // half upload (bytes sent) and half reading on the server (profiling, classifying, mapping).
+  const send = (url, fd, onUp) => new Promise((res, rej) => {
+    const x = new XMLHttpRequest(); x.open("POST", url);
+    x.upload.onprogress = e => { if (e.lengthComputable) onUp(e.loaded / e.total); };
+    x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch {}
+      x.status < 300 ? res(j) : rej(new Error(j.detail || `HTTP ${x.status}`)); };
+    x.onerror = () => rej(new Error("network error")); x.send(fd); });
   $("#up").onclick = async () => {
     const files = [...$("#files").files]; if (!files.length) { $("#loadMsg").innerHTML = '<p style="color:var(--critical)">Choose one or more files first.</p>'; return; }
     const user = $("#uname").value.trim(); if (!user) { $("#loadMsg").innerHTML = '<p style="color:var(--critical)">Enter your name or role (it is recorded with every decision).</p>'; $("#uname").focus(); return; }
     localStorage.amxUser = user;
-    const fd = new FormData(); files.forEach(f => fd.append("files", f)); fd.append("user", user); fd.append("mode", $("#review").checked ? "review" : "auto");
-    fd.append("name", files.length === 1 ? files[0].name : `${files.length} files · ${new Date().toLocaleString()}`);
-    $("#up").disabled = true; $("#loadMsg").innerHTML = `<p style="color:var(--muted)">Discovering ${files.length} file(s)…</p>`;
-    const r = await fetch("/api/batches", {method: "POST", body: fd}); const j = await r.json(); $("#up").disabled = false;
-    if (!r.ok) { $("#loadMsg").innerHTML = `<p style="color:var(--critical)">${esc(j.detail || "Load failed")}</p>`; return; }
-    loadAlerts(); location.hash = "#batch/" + j._id;
+    const n = files.length, mode = $("#review").checked ? "review" : "auto";
+    $("#up").disabled = true; $("#files").disabled = true;
+    $("#loadMsg").innerHTML = `<div style="margin:10px 0"><div style="display:flex;justify-content:space-between;font-size:13px"><span id="pgText">Starting…</span><b id="pgPct">0%</b></div>
+      <div role="progressbar" aria-label="Loading files" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="pgBar"
+        style="height:10px;background:color-mix(in srgb, var(--s1) 18%, transparent);border-radius:5px;overflow:hidden;margin-top:6px">
+        <i id="pgFill" style="display:block;height:100%;width:0;background:var(--s1);border-radius:5px;transition:width .2s"></i></div>
+      <ul id="pgList" style="margin:8px 0 0;padding-left:18px;font-size:12px;color:var(--ink2)"></ul></div>`;
+    const set = (done, part, text) => { const pct = Math.min(100, Math.round(100 * (done + part) / n));
+      $("#pgFill").style.width = pct + "%"; $("#pgPct").textContent = pct + "%"; $("#pgBar").setAttribute("aria-valuenow", pct); if (text) $("#pgText").textContent = text; };
+    let batchId = null, failed = 0;
+    for (let i = 0; i < n; i++) {
+      const f = files[i], fd = new FormData(); fd.append("files", f);
+      const label = `File ${i + 1} of ${n}: ${f.name}`;
+      if (!batchId) { fd.append("user", user); fd.append("mode", mode); fd.append("name", n === 1 ? f.name : `${n} files · ${new Date().toLocaleString()}`); }
+      set(i, 0, label + " · uploading");
+      try {
+        const j = await send(batchId ? `/api/batches/${batchId}/files` : "/api/batches", fd,
+                             frac => set(i, frac * 0.5, label + (frac < 1 ? ` · uploading ${Math.round(frac * 100)}%` : " · reading")));
+        batchId = batchId || j._id;
+        const r = (j.load || [])[0] || {}, sheets = (r.results || []).length;
+        if (r.error) { failed++; $("#pgList").insertAdjacentHTML("beforeend", `<li style="color:var(--critical)">✗ ${esc(f.name)}: ${esc(r.error)}</li>`); }
+        else $("#pgList").insertAdjacentHTML("beforeend", `<li>✓ ${esc(f.name)}${sheets > 1 ? ` · ${sheets} tables` : ""}</li>`);
+      } catch (e) { failed++; $("#pgList").insertAdjacentHTML("beforeend", `<li style="color:var(--critical)">✗ ${esc(f.name)}: ${esc(e.message)}</li>`); }
+      set(i + 1, 0);
+    }
+    $("#up").disabled = false; $("#files").disabled = false;
+    $("#pgText").textContent = `Done: ${n - failed} of ${n} file(s) read${failed ? `, ${failed} failed` : ""}`;
+    loadAlerts();
+    if (batchId) { $("#pgList").insertAdjacentHTML("afterend", `<p style="margin:8px 0 0"><a href="#batch/${batchId}">Open the batch →</a></p>`);
+      if (!failed) setTimeout(() => { location.hash = "#batch/" + batchId; }, 900); }
   };
   (async () => { const bs = (await api("/api/batches")).slice(0, 8);
     $("#batchList").innerHTML = bs.length ? `<table><tr><th>Batch</th><th>Loaded</th><th>By</th><th class="n">Sources</th><th class="n">Rows</th><th>Status</th></tr>${bs.map(b => `<tr>

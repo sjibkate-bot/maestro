@@ -688,9 +688,9 @@ def register_direct(batch_id: str, filename: str, source_id: str, results: list[
 
 
 def finish_batch(batch_id: str, files: list[dict], load: list[dict]) -> None:
-    errors = [x for x in load if x.get("error")]
-    get_db().ingest_batches.update_one({"_id": batch_id}, {"$set": {"files": files, "status": "DISCOVERED",
-                                                                    "errors": errors, "discovered_at": now()}})
+    errors = [{"file": x["file"], "error": x["error"]} for x in load if x.get("error")]
+    get_db().ingest_batches.update_one({"_id": batch_id}, {"$set": {"status": "DISCOVERED", "discovered_at": now()},
+                                                           "$push": {"files": {"$each": files}, "errors": {"$each": errors}}})
 
 
 def awaiting_summary() -> dict:
