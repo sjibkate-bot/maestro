@@ -9,6 +9,21 @@ The backend reads data from any industry, governs it, and serves it through the 
 
 ---
 
+## 0. Sign-in and access
+
+Every page and API needs a signed-in operator, and the `maestro_session` cookie carries the session. `fetch` from the same site sends it automatically.
+
+| Call | |
+|---|---|
+| `POST /api/auth/login` | `{username, passcode}`. Sets the cookie and returns the operator. `401` with a readable reason on failure, lockout or pending approval. |
+| `POST /api/auth/logout` | Ends the session |
+| `GET /api/auth/me` | `{username, display_name, role, groups, modules[], module_labels, must_change}`. `401` when not signed in. Build menus from `modules`: `supply`, `amxg`, `depot`, `fleet`, `governance`, `configuration`, `ai`, and `admin` for administrators. |
+| `POST /api/auth/request-access` | `{username, email, department, passcode}`. Creates a pending account. |
+| `POST /api/auth/reset-request` · `POST /api/auth/reset` · `POST /api/auth/change-passcode` | The passcode reset flow (`{username, code, passcode}`) and changing your own passcode (`{current, passcode}`) |
+| `/api/admin/users` (GET, PATCH `{role, groups, status}`, POST `…/approve` `{groups, role}`, `…/reject`, `…/reset-code`) · `/api/admin/groups` (GET, PUT `{description, modules}`, DELETE) · `GET /api/admin/reset-requests` · `GET /api/admin/sign-in-log` | Admin console. Administrators only. |
+
+An API outside the user's modules answers `403 {"detail": "Your account has no access to …"}`. Show that message as it is.
+
 ## 1. The data model is data: entities
 
 The UI should never hard-code an industry. Ask the backend which entities exist and build menus, tables, forms and filters from the answer.

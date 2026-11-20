@@ -101,6 +101,7 @@ button:disabled { opacity:.4; cursor:not-allowed }
     <a href="#modules">Modules</a><a href="#amxg">AMXG</a><a href="/supply">Supply</a><a href="#docks">Docks</a><a href="#gates">Gates</a><a href="#machine">Machine</a>
     <a href="#fleet">Fleet</a><a href="#alerts">Alerts</a><a href="/governance">Governance</a><a href="#config">Configuration</a>
   </nav>
+  <span class="mono" id="whoami" style="color:var(--ink2);white-space:nowrap"></span>
   <button id="theme" class="mono themebtn" aria-label="Toggle paper or dark mode">Paper</button>
 </header>
 <div class="alertbar mono" id="alertbar"><span class="dot"></span><a href="#alerts" id="alerttext">Loading alerts…</a></div>
@@ -118,6 +119,7 @@ button:disabled { opacity:.4; cursor:not-allowed }
 
 <script src="/static/amxg.js"></script>
 <script src="/static/studio.js"></script>
+<script src="/static/admin.js"></script>
 <script>
 const $ = s => document.querySelector(s);
 const esc = v => v == null ? "—" : String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -174,16 +176,19 @@ const MODULES = [
   ["M_09", "AI/ML engine", "Reads any file layout and answers questions over your data.", null],
   ["M_10", "Maestro connect", "Link MRO / PLM / MES APIs; data fills the right modules by relevance.", null],
   ["M_11", "Workforce development", "Skills maturity, training wishes, and where to invest to grow the team.", null],
-  ["M_12", "Admin console", "Users, groups, attribute hierarchy, and module assignment.", null],
+  ["M_12", "Admin console", "Users, groups, access requests, passcode resets, which modules each group sees, and the sign-in log.", "#admin"],
   ["M_13", "Collaboration", "Unified secure workspace - notes, email, chat, calendar.", null],
   ["M_14", "Capacity planning", "Machine, labor, material, and tool load over time.", null],
 ];
 function viewModules(v) {
   v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Operational framework</div><h1>MAESTRO COMPONENTS</h1></div>
     <div class="ready mono">System_readiness<b>NOMINAL</b></div></div><div class="grid4" id="mods"></div>`;
-  $("#mods").innerHTML = MODULES.map(([id, t, d, href]) => `<a class="mod" ${href ? `href="${href}"` : ""}>
+  const denied = new URLSearchParams(location.hash.split("?")[1] || "").get("denied");
+  if (denied) $("#mods").insertAdjacentHTML("beforebegin", `<p style="color:var(--critical)">Your account has no access to ${esc((ME.module_labels || {})[denied] || denied)}. Ask an administrator to add you to a group that has it.</p>`);
+  $("#mods").innerHTML = MODULES.map(([id, t, d, href]) => { const ok = href && allowed(href);
+    return `<a class="mod" ${ok ? `href="${href}"` : ""} style="${href && !ok ? "opacity:.55" : ""}">
     <div class="ic">${id.slice(2)}</div><span class="id mono">${id}</span><h3>${esc(t)}</h3><p>${esc(d)}</p>
-    <span class="badge ${href ? "live" : ""}">${href ? "LIVE" : "DESIGN"}</span></a>`).join("");
+    <span class="badge ${ok ? "live" : ""}">${!href ? "DESIGN" : ok ? "LIVE" : "NO ACCESS"}</span></a>`; }).join("");
 }
 
 async function viewDocks(v) {
@@ -578,7 +583,7 @@ async function whyEmpty(entities, what) {
     <a class="tag" style="color:var(--accent)" href="#config">Load data in Configuration</a></div></div>`;
 }
 
-const VIEWS = {...(window.AMXG_VIEWS || {}), ...(window.STUDIO_VIEWS || {}), modules: viewModules, supply: () => { location.href = "/supply"; }, docks: viewDocks, gates: viewGates, machine: viewMachine, fleet: viewFleet, alerts: viewAlerts, config: viewConfig, data: viewConfig};
+const VIEWS = {...(window.AMXG_VIEWS || {}), ...(window.STUDIO_VIEWS || {}), ...(window.ADMIN_VIEWS || {}), modules: viewModules, supply: () => { location.href = "/supply"; }, docks: viewDocks, gates: viewGates, machine: viewMachine, fleet: viewFleet, alerts: viewAlerts, config: viewConfig, data: viewConfig};
 async function route() {
   const key = (location.hash.slice(1).split(/[/?]/)[0]) || "modules";
   document.querySelectorAll("nav a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + key || (a.getAttribute("href") === "#amxg" && key.startsWith("amxg-")) || (a.getAttribute("href") === "#config" && (key === "batch" || key === "studio"))));
@@ -589,7 +594,25 @@ $("#search").addEventListener("keydown", e => { if (e.key === "Enter" && e.targe
 addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); $("#search").focus(); } });
 addEventListener("hashchange", route);
 let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(route, 200); });
-loadAlerts(); route();
+// ---------- signed-in operator and module access ----------
+let ME = {modules: []};
+const HREF_MOD = {"/supply": "supply", "#amxg": "amxg", "#docks": "depot", "#gates": "depot", "#machine": "depot", "#fleet": "fleet",
+                  "/governance": "governance", "#config": "configuration", "#admin": "admin"};
+const allowed = href => !HREF_MOD[href] || (ME.modules || []).includes(HREF_MOD[href]);
+async function loadMe() {
+  const r = await fetch("/api/auth/me");
+  if (r.status === 401) { location.href = "/login?next=" + encodeURIComponent(location.pathname + location.hash); return false; }
+  ME = await r.json();
+  document.querySelectorAll("#nav a").forEach(a => { if (!allowed(a.getAttribute("href"))) a.remove(); });
+  if ((ME.modules || []).includes("admin")) $("#nav").insertAdjacentHTML("beforeend", '<a href="#admin">Admin</a>');
+  if (ME.username) {
+    localStorage.amxUser = localStorage.amxUser || ME.username; localStorage.govUser = localStorage.govUser || ME.username;
+    $("#whoami").innerHTML = `<a href="#account" title="Your account">${esc(ME.display_name || ME.username)}</a> · <a href="#" id="signout">Sign out</a>`;
+    $("#signout").onclick = async e => { e.preventDefault(); await fetch("/api/auth/logout", {method: "POST"}); location.href = "/login"; };
+  }
+  return true;
+}
+loadMe().then(ok => { if (ok) { loadAlerts(); route(); } });
 </script>
 </body>
 </html>

@@ -201,20 +201,52 @@ Without an API key the app still works. A rule-based header matcher (with SAP sy
 
 ## Run it
 
-With Docker (MongoDB + app):
+With Docker (MongoDB + app). Put these in a `.env` file next to `docker-compose.yml`; it is git-ignored, so never commit it:
+```
+ANTHROPIC_API_KEY=sk-ant-...
+MAESTRO_ADMIN_USER=admin
+MAESTRO_ADMIN_PASSWORD=choose-a-long-passcode-1
+```
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
 docker compose up --build
 ```
 
 Or locally with an in-memory database:
 ```bash
 pip install -r requirements.txt
-MONGO_URI=mongomock:// uvicorn app.main:app --reload
+MONGO_URI=mongomock:// MAESTRO_ADMIN_PASSWORD=choose-a-long-passcode-1 uvicorn app.main:app --reload
 ```
-Open http://localhost:8000. It goes to Maestro's Supply module. Load the files from `samples/` and `samples/maestro/` in **Configuration** (`python samples/make_samples.py` regenerates the supply samples).
+Open http://localhost:8000 and sign in as the administrator. Load the demo packs in **Configuration**.
 
-Tests: `pytest -q` (75 tests, including the Maestro reference workbooks and the governance rules)
+Tests: `pytest -q`
+
+## Sign-in and admin console (M_12)
+
+Every page and API needs a signed-in operator.
+
+* **Sign-in** (`/login`): operator ID and passcode, with "Remember username".
+  * Every attempt, success or failure, and every sign-out goes into the sign-in log.
+  * Five failed attempts lock the account for 15 minutes.
+  * Sessions last 12 hours (`SESSION_HOURS`). They are kept in an HttpOnly cookie, and only a hash of the token is stored.
+* **First administrator.** It's created when there are no users, from `MAESTRO_ADMIN_USER` / `MAESTRO_ADMIN_PASSWORD`. Without a passcode, a random one is printed once in the app log, and the admin is asked to change it at first sign-in.
+* **Request access** (`/request-access`): username, email, department and passcode (at least 10 characters, with letters and digits). The account stays *pending* until an administrator approves it and chooses its groups, or rejects it.
+* **Reset passcode** (`/reset-passcode`):
+  1. The user asks for a reset. The answer is the same whether or not the account exists.
+  2. An administrator checks the request and issues a one-time code (valid 24 hours, used once), then gives it to the user.
+  3. The user sets a new passcode with it. Their other sessions are signed out.
+
+  The app sends no email.
+* **Admin console** (`/maestro#admin`, administrators only) has five tabs:
+  * access requests;
+  * users: role, groups, disable/enable, reset code;
+  * groups and the modules each group sees;
+  * passcode resets;
+  * the sign-in log.
+
+  Built-in groups: Administrators, Supply analysts, Depot / AMXG, Data stewards, Viewers.
+* **Module access is enforced on the server.** A page or API outside the user's modules returns 403, or redirects back to Modules. Menus and module cards hide or mark what the user can't open.
+* **Audit log.** Every entry records the signed-in account (`account`) next to any name typed into a form.
+* **Over HTTPS**, set `COOKIE_SECURE=true`. `AUTH_ENABLED=false` switches sign-in off; use it only for local experiments and tests.
 
 ## API
 

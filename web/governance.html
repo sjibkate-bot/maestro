@@ -344,5 +344,17 @@ async function route() {
 }
 addEventListener("hashchange", route); route();
 </script>
+<script>
+// Signed-in operator: name, sign out, and links to modules this account can't open are removed.
+(async () => {
+  const r = await fetch("/api/auth/me"); if (!r.ok) return; const me = await r.json();
+  const mod = {"/supply": "supply", "/governance": "governance", "/maestro#config": "configuration", "#": "ai"};
+  document.querySelectorAll("nav a").forEach(a => { const m = mod[a.getAttribute("href")]; if (m && !(me.modules || []).includes(m)) a.remove(); });
+  if (!me.username) return;
+  const nav = document.querySelector("nav");
+  nav.insertAdjacentHTML("beforeend", `<a href="/maestro#account" title="Your account">${me.display_name || me.username}</a><a href="#" id="signout">Sign out</a>`);
+  document.getElementById("signout").onclick = async e => { e.preventDefault(); await fetch("/api/auth/logout", {method: "POST"}); location.href = "/login"; };
+})();
+</script>
 </body>
 </html>

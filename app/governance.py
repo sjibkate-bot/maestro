@@ -229,7 +229,10 @@ def domain_of(record_type: str, cfg: dict) -> str:
 
 
 def audit(action: str, user: str, detail: dict) -> None:
-    get_db().audit.insert_one({"at": now(), "action": action, "user": user, "detail": detail})
+    from .auth import CURRENT_USER
+    acct = CURRENT_USER.get()
+    get_db().audit.insert_one({"at": now(), "action": action, "user": user, "detail": detail,
+                               "account": acct["username"] if acct else None})
 
 
 def _naive(d):

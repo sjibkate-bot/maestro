@@ -9,10 +9,11 @@ from typing import Any, Optional
 
 import httpx
 from fastapi import Body, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
-from . import amxg, analytics, dataapi, governance, packs, pdm, registry, risk_feeds, studio, supply_risk
+from . import amxg, analytics, auth, dataapi, governance, packs, pdm, registry, risk_feeds, studio, supply_risk
 from .ai.claude import AIError
 from .ai.provider import get_provider
 from .connectors.files import ingest_file
@@ -25,6 +26,7 @@ logging.basicConfig(level=logging.INFO)
 async def lifespan(_app):
     from . import registry
     registry.load()                # registered entities and enabled industry packs
+    auth.ensure_bootstrap()        # default groups and the first administrator
     risk_feeds.start_scheduler()   # daily public risk feeds (RISK_FEEDS_ENABLED / RISK_FEEDS_HOUR)
     yield
 
@@ -32,6 +34,169 @@ async def lifespan(_app):
 app = FastAPI(title="Maestro-SC", version="0.2.0", lifespan=lifespan)
 WEB = Path(__file__).resolve().parent.parent / "web"
 _mqtt: dict[str, MqttSubscriber] = {}
+
+
+@app.middleware("http")
+async def require_sign_in(request: Request, call_next):
+    """Every page and API needs a signed-in operator, and the module the path belongs to.
+    Pages redirect to the sign-in page; APIs answer 401 / 403."""
+    if not auth.enabled() or request.url.path.startswith(auth.OPEN_PATHS):
+        return await call_next(request)
+    path, is_api = request.url.path, request.url.path.startswith("/api/")
+    user = auth.user_for_token(request.cookies.get(auth.COOKIE))
+    if not user:
+        if is_api:
+            return JSONResponse({"detail": "Sign in required"}, status_code=401)
+        nxt = path + (("?" + request.url.query) if request.url.query else "")
+        return RedirectResponse("/login?next=" + __import__("urllib.parse").parse.quote(nxt))
+    mod = auth.required_module(path, request.method)
+    if mod and mod not in user["modules"]:
+        label = "the admin console" if mod == "admin" else auth.MODULES.get(mod, mod)
+        if is_api:
+            return JSONResponse({"detail": f"Your account has no access to {label}"}, status_code=403)
+        return RedirectResponse("/maestro#modules?denied=" + mod)
+    token = auth.CURRENT_USER.set(user)
+    try:
+        return await call_next(request)
+    finally:
+        auth.CURRENT_USER.reset(token)
+
+
+# ---------------------------------------------------------------- sign-in, access requests, administration
+@app.get("/login", include_in_schema=False)
+def login_page():
+    return FileResponse(WEB / "auth.html")
+
+
+@app.get("/request-access", include_in_schema=False)
+def request_access_page():
+    return FileResponse(WEB / "auth.html")
+
+
+@app.get("/reset-passcode", include_in_schema=False)
+def reset_page():
+    return FileResponse(WEB / "auth.html")
+
+
+def _auth_call(fn, *a, **kw):
+    try:
+        return fn(*a, **kw)
+    except PermissionError as e:
+        raise HTTPException(401, str(e))
+    except KeyError as e:
+        raise HTTPException(404, f"Not found: {e}")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
+@app.post("/api/auth/login")
+def auth_login(request: Request, body: dict = Body(...)):
+    token, user = _auth_call(auth.login, body.get("username"), body.get("passcode"), request)
+    resp = JSONResponse(jsonable_encoder(user))
+    resp.set_cookie(auth.COOKIE, token, httponly=True, samesite="lax", max_age=auth.SESSION_HOURS * 3600,
+                    secure=os.getenv("COOKIE_SECURE", "false").lower() == "true")
+    return resp
+
+
+@app.post("/api/auth/logout")
+def auth_logout(request: Request):
+    auth.logout(request.cookies.get(auth.COOKIE), request)
+    resp = JSONResponse({"signed_out": True})
+    resp.delete_cookie(auth.COOKIE)
+    return resp
+
+
+@app.get("/api/auth/me")
+def auth_me(request: Request):
+    """The signed-in operator, the modules they may use, and whether sign-in is switched on."""
+    if not auth.enabled():
+        return {"auth_enabled": False, "username": None, "modules": list(auth.MODULES) + ["admin"], "role": "ADMIN"}
+    user = auth.user_for_token(request.cookies.get(auth.COOKIE))
+    if not user:
+        raise HTTPException(401, "Sign in required")
+    return {"auth_enabled": True, **user, "module_labels": auth.MODULES}
+
+
+@app.post("/api/auth/request-access")
+def auth_request_access(request: Request, body: dict = Body(...)):
+    return _auth_call(auth.request_access, body.get("username"), body.get("email"), body.get("department"),
+                      body.get("passcode"), request)
+
+
+@app.post("/api/auth/reset-request")
+def auth_reset_request(request: Request, body: dict = Body(...)):
+    return auth.request_reset(body.get("username"), body.get("email"), request)
+
+
+@app.post("/api/auth/reset")
+def auth_reset(request: Request, body: dict = Body(...)):
+    _auth_call(auth.reset_passcode, body.get("username"), body.get("code"), body.get("passcode"), request)
+    return {"reset": True}
+
+
+@app.post("/api/auth/change-passcode")
+def auth_change(request: Request, body: dict = Body(...)):
+    user = auth.user_for_token(request.cookies.get(auth.COOKIE))
+    if not user:
+        raise HTTPException(401, "Sign in required")
+    _auth_call(auth.change_passcode, user["username"], body.get("current"), body.get("passcode"))
+    return {"changed": True}
+
+
+def _admin() -> str:
+    u = auth.CURRENT_USER.get()
+    return u["username"] if u else "admin (sign-in off)"
+
+
+@app.get("/api/admin/users")
+def admin_users():
+    return auth.users()
+
+
+@app.post("/api/admin/users/{username}/approve")
+def admin_approve(username: str, body: dict = Body(default={})):
+    return _auth_call(auth.approve, username, body.get("groups") or [], body.get("role") or "USER", _admin())
+
+
+@app.post("/api/admin/users/{username}/reject")
+def admin_reject(username: str, body: dict = Body(default={})):
+    return _auth_call(auth.reject, username, _admin(), body.get("reason") or "")
+
+
+@app.patch("/api/admin/users/{username}")
+def admin_update_user(username: str, body: dict = Body(...)):
+    return _auth_call(auth.update_user, username, body, _admin())
+
+
+@app.post("/api/admin/users/{username}/reset-code")
+def admin_reset_code(username: str):
+    return _auth_call(auth.issue_reset_code, username, _admin())
+
+
+@app.get("/api/admin/groups")
+def admin_groups():
+    return {"groups": auth.groups(), "modules": auth.MODULES}
+
+
+@app.put("/api/admin/groups/{name}")
+def admin_save_group(name: str, body: dict = Body(...)):
+    return _auth_call(auth.save_group, name, body.get("description") or "", body.get("modules") or [], _admin())
+
+
+@app.delete("/api/admin/groups/{name}")
+def admin_delete_group(name: str):
+    _auth_call(auth.delete_group, name, _admin())
+    return {"deleted": name}
+
+
+@app.get("/api/admin/reset-requests")
+def admin_reset_requests():
+    return auth.reset_requests()
+
+
+@app.get("/api/admin/sign-in-log")
+def admin_log(limit: int = 200):
+    return auth.sign_in_log(min(limit, 1000))
 
 
 def _rt(record_type: Optional[str]) -> Optional[str]:
@@ -517,6 +682,11 @@ def analytic(name: str):
 @app.get("/maestro")
 def maestro_page():
     return FileResponse(WEB / "maestro.html")
+
+
+@app.get("/static/admin.js", include_in_schema=False)
+def admin_js():
+    return FileResponse(WEB / "admin.js", media_type="text/javascript")
 
 
 @app.get("/static/studio.js", include_in_schema=False)

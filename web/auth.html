@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign In - Maestro-SC</title>
+<style>
+:root { --paper:#edebe7; --panel:#f6f5f2; --ink:#14171c; --ink2:#4b4f57; --muted:#80838a; --line:#c9c5bd; --accent:#1d6b78;
+  --good:#0ca30c; --critical:#d03b3b; --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; --sans: system-ui, -apple-system, "Segoe UI", sans-serif; }
+* { box-sizing:border-box }
+body { margin:0; min-height:100vh; display:grid; place-items:center; background:var(--paper); color:var(--ink); font:14px/1.45 var(--sans) }
+.card { width:min(440px, 92vw); background:var(--panel); border:1px solid var(--line); padding:30px 32px 22px }
+.top { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px }
+.logo { display:flex; gap:10px; align-items:center; font:700 17px var(--mono); text-decoration:none; color:inherit }
+.logo i { width:22px; height:22px; background:var(--accent); color:#fff; display:grid; place-items:center; font-style:normal; font-size:11px }
+.mono { font-family:var(--mono); letter-spacing:.12em; text-transform:uppercase; font-size:11px }
+.online { color:var(--good) } .online::before { content:"● " }
+h1 { font:800 22px var(--sans); letter-spacing:.02em; margin:0 0 4px; text-transform:uppercase }
+.sub { color:var(--ink2); margin:0 0 20px; font-size:13px }
+label { display:block; margin:14px 0 6px } input[type=text], input[type=password], input[type=email] { width:100%; padding:10px 12px; font:15px var(--sans);
+  border:1px solid var(--line); background:#fff; color:var(--ink) }
+input:focus { outline:2px solid var(--accent); outline-offset:-1px }
+.row { display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-size:13px }
+.row label { margin:0; display:flex; gap:6px; align-items:center }
+button { width:100%; margin-top:20px; padding:11px; background:var(--accent); color:#fff; border:0; font:600 13px var(--mono); letter-spacing:.12em; text-transform:uppercase; cursor:pointer }
+button:disabled { opacity:.5; cursor:wait }
+a { color:var(--accent) } .msg { margin-top:14px; font-size:13px } .bad { color:var(--critical) } .ok { color:var(--good) }
+.foot { display:flex; justify-content:space-between; margin-top:24px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted) }
+.alt { margin-top:16px; text-align:center }
+.hidden { display:none }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="top"><a class="logo" href="/login"><i>M</i>MAESTRO-SC</a><span class="mono online" id="mode">Secure access</span></div>
+
+  <!-- sign in -->
+  <form id="signin" class="hidden" autocomplete="on">
+    <h1>Operator sign-in</h1><p class="sub">Authorized personnel only. All sessions are logged.</p>
+    <label class="mono" for="u">Operator ID</label><input id="u" type="text" autocomplete="username" required>
+    <label class="mono" for="p">Passcode</label><input id="p" type="password" autocomplete="current-password" required>
+    <div class="row"><label><input type="checkbox" id="remember"> Remember username</label><a href="/reset-passcode">Reset passcode</a></div>
+    <button id="go">Authenticate →</button><div class="msg" id="msg1" role="alert"></div>
+    <p class="alt mono">Need access? <a href="/request-access">Request access</a></p>
+  </form>
+
+  <!-- request access -->
+  <form id="request" class="hidden">
+    <h1>Request access</h1><p class="sub">Choose a username and passcode. An administrator must approve your request before you can sign in.</p>
+    <label class="mono" for="ru">Username</label><input id="ru" type="text" autocomplete="username" required>
+    <label class="mono" for="re">Email</label><input id="re" type="email" autocomplete="email" required>
+    <label class="mono" for="rd">Department</label><input id="rd" type="text" autocomplete="organization" required>
+    <label class="mono" for="rp">Passcode</label><input id="rp" type="password" autocomplete="new-password" required>
+    <label class="mono" for="rp2">Confirm passcode</label><input id="rp2" type="password" autocomplete="new-password" required>
+    <p class="sub" style="margin:8px 0 0">At least 10 characters, with letters and digits.</p>
+    <button>Submit request →</button><div class="msg" id="msg2" role="alert"></div>
+    <p class="alt mono">Already approved? <a href="/login">Back to sign-in</a></p>
+  </form>
+
+  <!-- reset passcode -->
+  <div id="reset" class="hidden">
+    <h1>Reset passcode</h1>
+    <form id="reset1"><p class="sub"><b>Step 1.</b> Ask for a reset. An administrator checks the request and gives you a one-time reset code.</p>
+      <label class="mono" for="xu">Operator ID</label><input id="xu" type="text" autocomplete="username" required>
+      <label class="mono" for="xe">Email on the account</label><input id="xe" type="email" autocomplete="email" required>
+      <button>Request reset code →</button><div class="msg" id="msg3" role="status"></div></form>
+    <form id="reset2" style="margin-top:22px;padding-top:6px;border-top:1px solid var(--line)"><p class="sub"><b>Step 2.</b> Have a code? Set your new passcode.</p>
+      <label class="mono" for="yu">Operator ID</label><input id="yu" type="text" autocomplete="username" required>
+      <label class="mono" for="yc">Reset code</label><input id="yc" type="text" autocomplete="one-time-code" placeholder="XXXX-XXXX-XXXX" required>
+      <label class="mono" for="yp">New passcode</label><input id="yp" type="password" autocomplete="new-password" required>
+      <label class="mono" for="yp2">Confirm new passcode</label><input id="yp2" type="password" autocomplete="new-password" required>
+      <button>Set new passcode →</button><div class="msg" id="msg4" role="alert"></div></form>
+    <p class="alt mono"><a href="/login">Back to sign-in</a></p>
+  </div>
+
+  <div class="foot mono"><span>Maestro-SC</span><span id="clock"></span></div>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const post = (url, body) => fetch(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)})
+  .then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.detail || "Request failed"); return j; });
+const say = (el, text, ok) => { el.textContent = text; el.className = "msg " + (ok ? "ok" : "bad"); };
+const tick = () => $("#clock").textContent = new Date().toISOString().slice(11, 19) + " UTC"; tick(); setInterval(tick, 1000);
+const page = location.pathname.replace("/", "") || "login";
+const next = new URLSearchParams(location.search).get("next") || "/maestro";
+const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/maestro";
+
+if (page === "request-access") { $("#request").classList.remove("hidden"); $("#mode").textContent = "Access request"; document.title = "Request Access - Maestro-SC"; }
+else if (page === "reset-passcode") { $("#reset").classList.remove("hidden"); $("#mode").textContent = "Recovery"; document.title = "Reset Passcode - Maestro-SC"; }
+else {
+  $("#signin").classList.remove("hidden");
+  const saved = localStorage.maestroOperator; if (saved) { $("#u").value = saved; $("#remember").checked = true; $("#p").focus(); } else $("#u").focus();
+  fetch("/api/auth/me").then(r => r.ok && r.json()).then(j => { if (j && (j.username || j.auth_enabled === false)) location.href = safeNext; }).catch(() => {});
+}
+
+$("#signin").onsubmit = async e => {
+  e.preventDefault(); $("#go").disabled = true;
+  try {
+    const u = await post("/api/auth/login", {username: $("#u").value.trim(), passcode: $("#p").value});
+    if ($("#remember").checked) localStorage.maestroOperator = u.username; else localStorage.removeItem("maestroOperator");
+    // name fields elsewhere in the app default to the signed-in operator
+    localStorage.amxUser = u.username; localStorage.govUser = u.username;
+    location.href = u.must_change ? "/maestro#account" : safeNext + (safeNext.includes("#") ? "" : location.hash);
+  } catch (err) { say($("#msg1"), err.message); $("#go").disabled = false; $("#p").value = ""; $("#p").focus(); }
+};
+$("#request").onsubmit = async e => {
+  e.preventDefault();
+  if ($("#rp").value !== $("#rp2").value) return say($("#msg2"), "Passcodes do not match");
+  try { await post("/api/auth/request-access", {username: $("#ru").value.trim(), email: $("#re").value.trim(), department: $("#rd").value.trim(), passcode: $("#rp").value});
+    e.target.querySelectorAll("input,button").forEach(x => x.disabled = true);
+    say($("#msg2"), "Request sent. You can sign in once an administrator approves it.", true); }
+  catch (err) { say($("#msg2"), err.message); }
+};
+$("#reset1").onsubmit = async e => {
+  e.preventDefault();
+  const j = await post("/api/auth/reset-request", {username: $("#xu").value.trim(), email: $("#xe").value.trim()}).catch(err => ({message: err.message}));
+  say($("#msg3"), j.message, true); $("#yu").value = $("#xu").value.trim();
+};
+$("#reset2").onsubmit = async e => {
+  e.preventDefault();
+  if ($("#yp").value !== $("#yp2").value) return say($("#msg4"), "Passcodes do not match");
+  try { await post("/api/auth/reset", {username: $("#yu").value.trim(), code: $("#yc").value.trim(), passcode: $("#yp").value});
+    say($("#msg4"), "Passcode changed. Redirecting to sign-in…", true); setTimeout(() => location.href = "/login", 1500); }
+  catch (err) { say($("#msg4"), err.message); }
+};
+</script>
+</body>
+</html>

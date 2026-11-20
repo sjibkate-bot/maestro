@@ -11,6 +11,10 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       RISK_FEEDS_ENABLED: ${RISK_FEEDS_ENABLED:-true}   # daily public risk feeds; set false in offline networks
       RISK_FEEDS_HOUR: ${RISK_FEEDS_HOUR:-2}            # hour of day (UTC) for the daily run
+      AUTH_ENABLED: ${AUTH_ENABLED:-true}               # operator sign-in; false only for local experiments
+      MAESTRO_ADMIN_USER: ${MAESTRO_ADMIN_USER:-admin}  # first administrator, created when there are no users
+      MAESTRO_ADMIN_PASSWORD: ${MAESTRO_ADMIN_PASSWORD:-}  # if empty, a random passcode is printed once in the app log
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}            # true when served over HTTPS
     depends_on: [mongo]
 volumes:
   mongo-data:
