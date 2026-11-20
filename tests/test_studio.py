@@ -178,3 +178,45 @@ def test_files_can_be_added_one_by_one_to_a_batch():
     v = c.get(f"/api/batches/{b['_id']}").json()
     assert len(v["objects"]) == 4 and [f["file"] for f in v["files"]] == [p.name for p in paths[:4]]
     assert c.post("/api/batches/nope/files", files=[("files", ("x.csv", b"a\n1\n"))]).status_code == 404
+
+
+def test_publish_one_table_then_delete_it_and_the_batch():
+    b = upload(sorted(RC.glob("*.csv")))
+    o = objs(b)
+    run = c.post(f"/api/objects/{o['03']['_id']}/publish", json={"user": "tester"}).json()
+    assert run["status"] == "COMPLETED" and run["scope"] == "selected tables" and run["records"] == 21
+    assert get_db().records.count_documents({"record_type": "country_risk"}) == 21
+    assert get_db().records.count_documents({"record_type": "supplier"}) == 0          # others untouched
+    pv = c.get(f"/api/objects/{o['03']['_id']}/delete-preview").json()
+    assert pv["records"] == 21 and pv["confirm_with"] == "DELETE"
+    assert c.post(f"/api/objects/{o['03']['_id']}/delete", json={"confirm": "nope", "user": "t"}).status_code == 422
+    assert c.post(f"/api/objects/{o['03']['_id']}/delete", json={"confirm": "DELETE", "user": ""}).status_code == 422
+    assert c.post(f"/api/objects/{o['03']['_id']}/delete", json={"confirm": "DELETE", "user": "tester"}).status_code == 200
+    assert get_db().records.count_documents({"record_type": "country_risk"}) == 0
+    v = c.get(f"/api/batches/{b['_id']}").json()
+    assert len(v["objects"]) == 10 and "03_country_risk.csv" not in {x["file"] for x in v["objects"]}
+    # an unpublished table (no records) can be removed too
+    assert c.post(f"/api/objects/{o['10']['_id']}/delete", json={"confirm": "DELETE", "user": "tester"}).status_code == 200
+    # the whole batch
+    resolve = objs(c.get(f"/api/batches/{b['_id']}").json())
+    c.post(f"/api/batches/{b['_id']}/publish", json={"user": "tester"})
+    assert get_db().records.count_documents({}) > 0
+    pv = c.get(f"/api/batches/{b['_id']}/delete-preview").json()
+    assert pv["tables"] == 9 and pv["records"] > 0
+    assert c.post(f"/api/batches/{b['_id']}/delete", json={"confirm": "DELETE", "user": "tester"}).status_code == 200
+    db = get_db()
+    assert db.records.count_documents({}) == 0 and db.source_objects.count_documents({}) == 0 and db.staged_rows.count_documents({}) == 0
+    assert db.ingest_batches.count_documents({}) == 0 and db.bronze_files.count_documents({}) == 0
+    assert db.audit.count_documents({"action": {"$in": ["batch_delete", "table_delete"]}}) == 3
+    assert c.get(f"/api/batches/{b['_id']}").status_code == 404
+
+
+def test_deleting_one_batch_keeps_another_batch_of_the_same_source():
+    f = RC / "03_country_risk.csv"
+    b1 = upload([f], mode="auto")
+    b2 = upload([f], mode="auto")
+    assert get_db().records.count_documents({"record_type": "country_risk", "layer": "silver"}) == 21
+    c.post(f"/api/batches/{b2['_id']}/delete", json={"confirm": "DELETE", "user": "tester"})
+    db = get_db()
+    assert db.records.count_documents({"record_type": "country_risk", "layer": "silver"}) == 21   # b1's copy is current again
+    assert db.bronze_files.count_documents({}) >= 1

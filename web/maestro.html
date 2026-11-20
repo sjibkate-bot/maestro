@@ -483,9 +483,18 @@ async function viewConfig(v) {
       if (!failed) setTimeout(() => { location.hash = "#batch/" + batchId; }, 900); }
   };
   (async () => { const bs = (await api("/api/batches")).slice(0, 8);
-    $("#batchList").innerHTML = bs.length ? `<table><tr><th>Batch</th><th>Loaded</th><th>By</th><th class="n">Sources</th><th class="n">Rows</th><th>Status</th></tr>${bs.map(b => `<tr>
+    $("#batchList").innerHTML = bs.length ? `<table><tr><th>Batch</th><th>Loaded</th><th>By</th><th class="n">Sources</th><th class="n">Rows</th><th>Status</th><th></th></tr>${bs.map(b => `<tr>
       <td><a href="#batch/${b._id}">${esc(b.name)}</a></td><td>${dt(b.created_at)}</td><td>${esc(b.created_by)}</td><td class="n">${b.objects}</td><td class="n">${num(b.rows, 0)}</td>
-      <td>${Object.entries(b.counts).map(([k, n]) => `<span class="tag ${k === "PUBLISHED" ? "good" : k === "READY" ? "" : "warning"}">${n} ${esc(k.replace("_", " ").toLowerCase())}</span>`).join(" ")}</td></tr>`).join("")}</table>` : ""; })();
+      <td>${Object.entries(b.counts).map(([k, n]) => `<span class="tag ${k === "PUBLISHED" ? "good" : k === "READY" ? "" : "warning"}">${n} ${esc(k.replace("_", " ").toLowerCase())}</span>`).join(" ")}</td>
+      <td style="white-space:nowrap"><a class="tag" style="color:var(--accent);text-decoration:none" href="#batch/${b._id}">Open</a>
+        ${b.counts.READY ? `<button class="plain" data-bpub="${b._id}" title="Validate, govern and publish the ready tables" style="padding:3px 8px;font-size:10px">Publish ${b.counts.READY} ready</button>` : ""}
+        <button class="plain" data-bdel="${b._id}" style="padding:3px 8px;font-size:10px;color:var(--critical)">Delete…</button></td></tr>`).join("")}</table><div id="batchMsg"></div>` : "";
+    document.querySelectorAll("[data-bdel]").forEach(x => x.onclick = () => window.confirmLoadedDelete("batch", x.dataset.bdel, () => route()));
+    document.querySelectorAll("[data-bpub]").forEach(x => x.onclick = async () => {
+      x.disabled = true; x.textContent = "Publishing…";
+      try { const r = await window.publishTables(x.dataset.bpub, null); if (!r) { x.disabled = false; return; }
+        $("#batchMsg").innerHTML = `<p style="color:${r.status === "FAILED" ? "var(--critical)" : "var(--good)"}">Run ${esc(r.status.toLowerCase())}: ${num(r.records || 0, 0)} records. <a href="#batch/${x.dataset.bpub}">See the stages</a></p>`; x.remove(); }
+      catch (e) { $("#batchMsg").innerHTML = `<p style="color:var(--critical)">${esc(e.message)}</p>`; x.disabled = false; } }); })();
   $("#apiForm").onsubmit = async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
     const body = {url: f.url, kind: f.kind, source: f.source || null, records_path: f.records_path || null, username: f.username || null,
       password: f.password || null, headers: f.token ? {Authorization: "Bearer " + f.token} : {}};

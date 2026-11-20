@@ -67,6 +67,9 @@ Packs are JSON files in `app/packs/`. To add a new industry, add a file there. N
 | `GET /api/batches/{id}` | Batch, its source objects and its publish runs |
 | `POST /api/batches/{id}/publish` | Validate, govern and publish everything that is ready. Body `{user}`. Returns the run. |
 | `GET /api/batches/{id}/runs` | Every run, kept whatever the outcome |
+| `POST /api/objects/{id}/publish` | Validate, govern and publish one table (`{user}`). Recorded as a run of its batch, with `scope: "selected tables"`. |
+| `GET /api/batches/{id}/delete-preview` · `POST /api/batches/{id}/delete` | Delete everything a batch loaded. Body `{confirm: "DELETE", user, reason?}`. It removes:<br>• staged rows<br>• published records, their Bronze loads and quarantine items<br>• original files that no other load uses<br>It also withdraws certification of the affected products. Earlier loads of the same records become current again. Audited. |
+| `GET /api/objects/{id}/delete-preview` · `POST /api/objects/{id}/delete` | The same for one table of a batch, whether staged or published. |
 
 A batch from two files (the retail pack is enabled; the hospital file matches nothing):
 ```json

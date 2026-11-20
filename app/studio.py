@@ -585,7 +585,7 @@ def batches(limit: int = 30) -> list[dict]:
     return out
 
 
-def publish_batch(batch_id: str, user: str) -> dict:
+def publish_batch(batch_id: str, user: str, only: Optional[list[str]] = None) -> dict:
     """Validate, govern and publish every object of a batch that is ready. Each stage
     reports what actually happened; the run is kept whether it succeeds or not."""
     from . import governance
@@ -596,7 +596,7 @@ def publish_batch(batch_id: str, user: str) -> dict:
     if not b:
         raise KeyError(batch_id)
     run = {"_id": uuid.uuid4().hex, "batch_id": batch_id, "requested_by": user, "started_at": now(),
-           "status": "RUNNING", "stages": [], "objects": []}
+           "status": "RUNNING", "stages": [], "objects": [], "scope": "selected tables" if only else "batch"}
     db.publish_runs.insert_one(run)
 
     def stage(name, status, detail, **extra):
@@ -604,7 +604,7 @@ def publish_batch(batch_id: str, user: str) -> dict:
         db.publish_runs.replace_one({"_id": run["_id"]}, run)
 
     try:
-        objs = list(db.source_objects.find({"batch_id": batch_id}))
+        objs = list(db.source_objects.find({"batch_id": batch_id, **({"_id": {"$in": only}} if only else {})}))
         todo = [o for o in objs if not o.get("published")]
         blocked = [(o, _gate(o)) for o in todo if _gate(o)]
         ready = [o for o in todo if not _gate(o)]
@@ -719,3 +719,77 @@ def awaiting_summary() -> dict:
             "ready": sum(b["status"].get("READY", 0) for b in batches_),
             "needs_mapping": sum(b["status"].get("MAPPING_REQUIRED", 0) + b["status"].get("DRIFT", 0) for b in batches_),
             "batches": batches_, "rows_by_entity": dict(by_entity)}
+
+
+
+# ------------------------------------------------------------------ delete a batch or one table of it
+
+DELETE_PHRASE = "DELETE"
+
+
+def _scope(batch_id: Optional[str], object_id: Optional[str]) -> tuple[list[dict], Optional[dict]]:
+    db = get_db()
+    if object_id:
+        o = db.source_objects.find_one({"_id": object_id})
+        if not o:
+            raise KeyError(object_id)
+        return [o], None
+    b = db.ingest_batches.find_one({"_id": batch_id})
+    if not b:
+        raise KeyError(batch_id)
+    return list(db.source_objects.find({"batch_id": batch_id})), b
+
+
+def delete_loaded_preview(batch_id: Optional[str] = None, object_id: Optional[str] = None) -> dict:
+    """What deleting a batch (or one table of it) removes: its staged rows, the records it
+    published, their Bronze loads and quarantine items, and the original files no other load uses."""
+    db = get_db()
+    objs, b = _scope(batch_id, object_id)
+    stores = [o["published"]["store_batch"] for o in objs if (o.get("published") or {}).get("store_batch")]
+    rts = sorted({r["record_type"] for r in db.records.find({"batch_id": {"$in": stores}}, {"record_type": 1})})
+    from . import governance
+    cfg = governance.config()
+    return {"batch_id": batch_id, "object_id": object_id, "name": (b or {}).get("name") or (objs[0]["name"] if objs else None),
+            "tables": len(objs), "unpublished_tables": sum(1 for o in objs if not o.get("published")),
+            "staged_rows": db.staged_rows.count_documents({"object_id": {"$in": [o["_id"] for o in objs]}}),
+            "records": db.records.count_documents({"batch_id": {"$in": stores}}), "loads": len(stores),
+            "quarantine_items": db.quarantine.count_documents({"batch_id": {"$in": stores}}),
+            "entities": rts, "products_affected": [p["name"] for p in cfg["products"] if set(p["entities"]) & set(rts)],
+            "confirm_with": DELETE_PHRASE}
+
+
+def delete_loaded(batch_id: Optional[str], object_id: Optional[str], confirm: str, user: str, reason: str = "") -> dict:
+    from . import governance
+    if not (user or "").strip():
+        raise ValueError("Say who is deleting (your name or role)")
+    if (confirm or "").strip() != DELETE_PHRASE:
+        raise ValueError(f"Type {DELETE_PHRASE} to confirm")
+    db = get_db()
+    preview = delete_loaded_preview(batch_id, object_id)
+    objs, b = _scope(batch_id, object_id)
+    ids = [o["_id"] for o in objs]
+    stores = [o["published"]["store_batch"] for o in objs if (o.get("published") or {}).get("store_batch")]
+    for coll in ("records", "raw", "quarantine"):
+        db[coll].delete_many({"batch_id": {"$in": stores}})
+    db.staged_rows.delete_many({"object_id": {"$in": ids}})
+    db.mapping_decisions.delete_many({"object_id": {"$in": ids}})
+    db.source_objects.delete_many({"_id": {"$in": ids}})
+    if b:
+        db.ingest_batches.delete_one({"_id": b["_id"]})
+        db.publish_runs.delete_many({"batch_id": b["_id"]})
+    # original files and source entries go only when nothing else still comes from them
+    for sid in {o["source_id"] for o in objs}:
+        if not db.records.count_documents({"source_id": sid}, limit=1) and not db.source_objects.count_documents({"source_id": sid}, limit=1):
+            db.bronze_files.delete_many({"source_id": sid})
+            db.sources.delete_one({"_id": sid})
+    pids = [p["id"] for p in governance.config()["products"] if p["name"] in preview["products_affected"]]
+    if pids:   # Gold built on removed data must be re-certified by its owner
+        db.certifications.delete_many({"_id": {"$in": pids}})
+    what = f"table {preview['name']}" if object_id else f"batch {preview['name']}"
+    governance.archive_decisions(f"data deleted: {what}", user.strip())
+    governance.audit("batch_delete" if not object_id else "table_delete", user.strip(),
+                     {k: preview[k] for k in ("batch_id", "object_id", "name", "tables", "records", "loads", "quarantine_items",
+                                              "entities", "products_affected")} | {"reason": reason, "certifications_withdrawn": pids})
+    if preview["entities"] and db.records.count_documents({}, limit=1):
+        governance.run(set(preview["entities"]))   # older versions of the same keys become current again
+    return {"deleted": preview, "certifications_withdrawn": pids}

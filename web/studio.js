@@ -22,12 +22,45 @@ function flash(msg, bad) {
 }
 const head = (eyebrow, title, sub) => `<div class="titlebar"><div><div class="mono eyebrow"><a href="#config" style="text-decoration:none">Configuration</a> // ${eyebrow}</div><h1>${title}</h1>${sub ? `<div class="mono" style="color:var(--muted)">${sub}</div>` : ""}</div></div>`;
 
+// ------------------------------------------------------------------ delete a batch or one table (confirmed, audited)
+async function confirmLoadedDelete(kind, id, onDone) {
+  const base = kind === "batch" ? `/api/batches/${id}` : `/api/objects/${id}`;
+  const pv = await api(base + "/delete-preview"), dlg = $("#delDlg");
+  $("#delTitle").textContent = kind === "batch" ? `Delete batch "${pv.name}"?` : `Delete "${pv.name}" from its batch?`;
+  $("#delBody").innerHTML = `<p>This permanently removes what ${kind === "batch" ? "this batch" : "this table"} loaded:</p><ul>
+    <li>${pv.tables} table(s) with ${num(pv.staged_rows, 0)} source rows${pv.unpublished_tables ? ` (${pv.unpublished_tables} not yet published)` : ""}</li>
+    <li>${num(pv.records, 0)} published record(s) from ${pv.loads} load(s), and ${num(pv.quarantine_items, 0)} quarantine item(s)</li>
+    <li>the original file(s), unless another load still uses them</li></ul>
+    ${pv.products_affected.length ? `<p>Affected Gold products (certification withdrawn, must be renewed): <b>${esc(pv.products_affected.join(", "))}</b></p>` : ""}
+    <p style="color:var(--ink2);font-size:13px">If an earlier load of the same records exists, it becomes the current version again. The deletion is kept in the audit log.</p>`;
+  $("#delPhrase").textContent = pv.confirm_with; $("#delConfirm").value = ""; $("#delErr").textContent = "";
+  $("#delUser").value = who() || localStorage.govUser || ""; $("#delReason").value = "";
+  const check = () => $("#delGo").disabled = !($("#delConfirm").value.trim() === pv.confirm_with && $("#delUser").value.trim());
+  $("#delConfirm").oninput = check; $("#delUser").oninput = check; check();
+  $("#delCancel").onclick = () => dlg.close();
+  $("#delGo").onclick = async () => {
+    $("#delGo").disabled = true; $("#delGo").textContent = "Deleting…";
+    try { await send(base + "/delete", "POST", {confirm: $("#delConfirm").value.trim(), user: $("#delUser").value.trim(), reason: $("#delReason").value});
+      localStorage.amxUser = $("#delUser").value.trim(); dlg.close(); loadAlerts(); onDone && onDone(); }
+    catch (e) { $("#delErr").textContent = e.message; check(); }
+    finally { $("#delGo").textContent = "Delete permanently"; }
+  };
+  dlg.showModal(); $("#delConfirm").focus();
+}
+window.confirmLoadedDelete = confirmLoadedDelete;
+
+async function publishTables(batchId, objectId, after) {
+  const u = needWho(); if (!u) return null;
+  return send(objectId ? `/api/objects/${objectId}/publish` : `/api/batches/${batchId}/publish`, "POST", {user: u}).then(r => { loadAlerts(); after && after(r); return r; });
+}
+window.publishTables = publishTables;
+
 // ------------------------------------------------------------------ batch
 async function viewBatch(v) {
   const id = location.hash.split("/")[1];
   const b = await api("/api/batches/" + id);
   const toDo = b.objects.filter(o => o.status !== "PUBLISHED"), ready = toDo.filter(o => o.status === "READY");
-  v.innerHTML = head("Ingestion batch", esc(b.name).toUpperCase(), `Loaded ${dt(b.created_at)} by ${esc(b.created_by)} · ${b.objects.length} source object(s) · ${num(b.rows, 0)} rows · ${b.mode === "auto" ? "publish without review" : "review before publishing"}`) +
+  v.innerHTML = `<div style="float:right;margin-top:8px"><button class="danger" id="delBatch">Delete batch…</button></div>` + head("Ingestion batch", esc(b.name).toUpperCase(), `Loaded ${dt(b.created_at)} by ${esc(b.created_by)} · ${b.objects.length} source object(s) · ${num(b.rows, 0)} rows · ${b.mode === "auto" ? "publish without review" : "review before publishing"}`) +
     `<div class="stats">${[["Sources", b.objects.length], ["Published", b.counts.PUBLISHED || 0], ["Ready", b.counts.READY || 0], ["Mapping required", (b.counts.MAPPING_REQUIRED || 0) + (b.counts.DRIFT || 0)]]
       .map(([l, n]) => `<div class="stat"><div class="l mono">${l}</div><div class="v">${n}</div></div>`).join("")}</div>
     ${(b.errors || []).length ? `<div class="panel" style="border-color:var(--critical)"><h2 class="mono">Files that could not be read</h2><ul>${b.errors.map(e => `<li>${esc(e.file)}: ${esc(e.error)}</li>`).join("")}</ul></div>` : ""}
@@ -35,7 +68,9 @@ async function viewBatch(v) {
     ${b.objects.map(o => `<tr><td><b>${esc(o.name)}</b>${o.direct ? `<div style="color:var(--muted);font-size:12px">read directly (${esc(o.direct)})</div>` : ""}${o.classification && o.classification.profile_reuse ? `<div style="color:var(--muted);font-size:12px">mapped by saved profile v${o.classification.profile_version}</div>` : ""}</td>
       <td>${esc(o.entity)}</td><td class="n">${o.direct ? "—" : num(o.confidence, 0) + "%"}</td><td class="n">${num(o.rows, 0)}</td><td class="n">${o.direct ? "—" : o.fields}</td>
       <td>${chip(o.status, OBJ)}</td><td style="font-size:12px;color:var(--ink2)">${o.status === "PUBLISHED" ? `${num((o.published || {}).records, 0)} records${o.published && o.published.grades ? " · " + Object.entries(o.published.grades).map(([g, n]) => `${n} ${g}`).join(", ") : ""}` : (o.gate || []).map(esc).join("<br>") || "Nothing: ready to publish"}</td>
-      <td>${o.direct ? "" : `<a class="tag" style="color:var(--accent);text-decoration:none" href="#studio/${o._id}">${o.status === "PUBLISHED" ? "View mapping" : "Open Mapping Studio"}</a>`}</td></tr>`).join("")}</table></div>
+      <td style="white-space:nowrap">${o.direct ? "" : `<a class="tag" style="color:var(--accent);text-decoration:none" href="#studio/${o._id}">${o.status === "PUBLISHED" ? "View mapping" : "Mapping Studio"}</a>`}
+        ${o.status === "READY" ? `<button class="plain" data-pub="${o._id}" style="padding:3px 8px;font-size:10px">Publish</button>` : ""}
+        <button class="plain" data-delobj="${o._id}" title="Delete this table and what it loaded" style="padding:3px 8px;font-size:10px;color:var(--critical)">Delete…</button></td></tr>`).join("")}</table></div>
     <div class="panel"><div class="row" style="justify-content:space-between"><div><h2 class="mono" style="margin:0">Validate, govern and publish</h2>
       <p style="color:var(--ink2);font-size:13px;margin:6px 0 0">${toDo.length ? `${ready.length} of ${toDo.length} unpublished object(s) are ready. Objects still needing mapping are held, not dropped.` : "Everything in this batch is published."}</p></div>
       <button id="pub" ${ready.length ? "" : "disabled"}>Validate, govern and publish</button></div><div id="stMsg"></div><div id="runs"></div></div>`;
@@ -44,6 +79,12 @@ async function viewBatch(v) {
     <table><tr><th>Stage</th><th>Result</th><th>What happened</th></tr>${(r.stages || []).map(s => `<tr><td class="mono">${esc(s.stage)}</td><td><span class="tag ${RUN[s.status] || ""}">${esc(s.status.replace("_", " "))}</span></td><td>${esc(s.detail)}
       ${(s.held || []).length ? `<ul style="margin:4px 0;color:var(--ink2)">${s.held.map(h => `<li>${esc(h.object)}: ${esc(h.reasons.join("; "))}</li>`).join("")}</ul>` : ""}</td></tr>`).join("")}</table>
     ${r.status !== "FAILED" ? `<p class="row" style="margin:8px 0 0"><a class="tag" style="color:var(--accent)" href="/governance#overview">Open data governance</a><a class="tag" style="color:var(--accent)" href="/supply">Open supply risk</a></p>` : ""}</details>`).join("");
+  $("#delBatch").onclick = () => confirmLoadedDelete("batch", id, () => { location.hash = "#config"; });
+  v.querySelectorAll("[data-delobj]").forEach(x => x.onclick = () => confirmLoadedDelete("object", x.dataset.delobj, () => viewBatch(v)));
+  v.querySelectorAll("[data-pub]").forEach(x => x.onclick = async () => {
+    x.disabled = true; x.textContent = "Publishing…";
+    try { const r = await publishTables(id, x.dataset.pub); await viewBatch(v); flash(`Table ${r.status.toLowerCase()}: ${num(r.records || 0, 0)} records`, r.status === "FAILED"); }
+    catch (e) { flash(e.message, true); x.disabled = false; x.textContent = "Publish"; } });
   $("#pub").onclick = async () => {
     const u = needWho(); if (!u) return;
     $("#pub").disabled = true; $("#stMsg").innerHTML = '<p style="color:var(--muted)">Validating, governing and publishing…</p>';

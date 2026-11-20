@@ -154,6 +154,56 @@ def publish_batch(batch_id: str, body: dict = Body(default={})):
         raise HTTPException(400, str(e))
 
 
+@app.get("/api/batches/{batch_id}/delete-preview")
+def batch_delete_preview(batch_id: str):
+    try:
+        return studio.delete_loaded_preview(batch_id=batch_id)
+    except KeyError:
+        raise HTTPException(404, "Batch not found")
+
+
+@app.post("/api/batches/{batch_id}/delete")
+def delete_batch(batch_id: str, body: dict = Body(...)):
+    """Delete everything this batch loaded. body: {confirm: "DELETE", user, reason?}"""
+    try:
+        return studio.delete_loaded(batch_id, None, body.get("confirm", ""), body.get("user") or "", body.get("reason") or "")
+    except KeyError:
+        raise HTTPException(404, "Batch not found")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
+@app.get("/api/objects/{object_id}/delete-preview")
+def object_delete_preview(object_id: str):
+    try:
+        return studio.delete_loaded_preview(object_id=object_id)
+    except KeyError:
+        raise HTTPException(404, "Source object not found")
+
+
+@app.post("/api/objects/{object_id}/delete")
+def delete_object(object_id: str, body: dict = Body(...)):
+    """Delete one table of a batch (staged or published). body: {confirm: "DELETE", user, reason?}"""
+    try:
+        return studio.delete_loaded(None, object_id, body.get("confirm", ""), body.get("user") or "", body.get("reason") or "")
+    except KeyError:
+        raise HTTPException(404, "Source object not found")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
+@app.post("/api/objects/{object_id}/publish")
+def publish_object(object_id: str, body: dict = Body(default={})):
+    """Validate, govern and publish one table. Recorded as a publish run of its batch."""
+    o = get_db().source_objects.find_one({"_id": object_id})
+    if not o:
+        raise HTTPException(404, "Source object not found")
+    try:
+        return studio.publish_batch(o["batch_id"], body.get("user") or "", only=[object_id])
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
 @app.get("/api/batches/{batch_id}/runs")
 def batch_runs(batch_id: str):
     return list(get_db().publish_runs.find({"batch_id": batch_id}).sort("started_at", -1))
