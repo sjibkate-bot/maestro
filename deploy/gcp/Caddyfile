@@ -1,0 +1,11 @@
+# HTTPS for Maestro-SC. Caddy gets and renews a Let's Encrypt certificate for MAESTRO_HOST.
+{$MAESTRO_HOST} {
+	encode zstd gzip
+	reverse_proxy app:8000
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+}

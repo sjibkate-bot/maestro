@@ -1,0 +1,43 @@
+# Maestro-SC on one Google Cloud VM: MongoDB, the app, and Caddy for HTTPS.
+# Start it with start.sh, which reads the secrets from Secret Manager; settings are in .env
+# next to this file. See docs/DEPLOY_GCP.md.
+name: maestro
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes: [mongo-data:/data/db]
+    # no published port: only the app can reach the database
+
+  app:
+    build: ../..
+    restart: unless-stopped
+    environment:
+      MONGO_URI: mongodb://mongo:27017
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AI_ENABLED: ${AI_ENABLED:-true}
+      AI_MODEL: ${AI_MODEL:-claude-opus-5-5}
+      RISK_FEEDS_ENABLED: ${RISK_FEEDS_ENABLED:-true}
+      AUTH_ENABLED: "true"
+      MAESTRO_ADMIN_USER: ${MAESTRO_ADMIN_USER:-admin}
+      MAESTRO_ADMIN_PASSWORD: ${MAESTRO_ADMIN_PASSWORD:-}
+      COOKIE_SECURE: "true"
+    depends_on: [mongo]
+    # no published port: only Caddy can reach the app
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      MAESTRO_HOST: ${MAESTRO_HOST:?set MAESTRO_HOST in deploy/gcp/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [app]
+
+volumes:
+  mongo-data: {}
+  caddy-data: {}
+  caddy-config: {}

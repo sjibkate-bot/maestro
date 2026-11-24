@@ -220,6 +220,8 @@ Open http://localhost:8000 and sign in as the administrator. Load the demo packs
 
 Tests: `pytest -q`
 
+**On Google Cloud:** [docs/DEPLOY_GCP.md](docs/DEPLOY_GCP.md) is a step-by-step guide to running it on one VM with HTTPS, sign-in and the secrets kept in Secret Manager (files in `deploy/gcp/`).
+
 ## Sign-in and admin console (M_12)
 
 Every page and API needs a signed-in operator.
