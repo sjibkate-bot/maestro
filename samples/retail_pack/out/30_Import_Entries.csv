@@ -1,0 +1,11 @@
+Entry Number,Port Of Entry,Container,Item Code,Shipper,Country Of Origin,Admissibility Status,Hold Reason,Entry Date
+EN-2026-4100,"Newark, NJ",MSKU7300000,SPC-CHL-400,Guntur Chilli Traders,IN,Held for sampling,Pesticide residue screening,2026-11-09
+EN-2026-4101,"Newark, NJ",MSKU7300137,RIC-BAS-10,Karnal Basmati Mills,IN,Released,,2026-11-12
+EN-2026-4102,"Newark, NJ",MSKU7300274,SPC-PEP-200,Kerala Spice Exporters,IN,Released,,2026-11-04
+EN-2026-4103,"Houston, TX",MSKU7300411,CCN-MLK-400,Ceylon Coconut Products,LK,Released,,2026-11-21
+EN-2026-4104,"Oakland, CA",MSKU7300548,NUT-CSH-1K,Dak Lak Pepper & Cashew,VN,Released,,2026-11-07
+EN-2026-4105,"Oakland, CA",MSKU7300685,FRZ-SHR-2,Ca Mau Seafood,VN,Document review,Country-of-origin labelling,2026-11-17
+EN-2026-4106,"Newark, NJ",MSKU7300822,GHE-COW-32,Anand Dairy Ghee,IN,Released,,2026-11-11
+EN-2026-4107,"Newark, NJ",MSKU7300959,MIX-BIR-50,Karachi Halal Foods,PK,Refused,Undeclared colour additive,2026-11-18
+EN-2026-4108,"Laredo, TX",MSKU7301096,MNG-PLP-850,Sinaloa Mango Pulp,MX,Released,,2026-11-16
+EN-2026-4109,"Newark, NJ",MSKU7301233,SPC-CIN-100,Galle Cinnamon Growers,LK,Held for sampling,Salmonella screening,2026-11-10

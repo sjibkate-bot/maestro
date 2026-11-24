@@ -1,0 +1,8 @@
+Scenario ID,Scenario Name,Description,Duration Days,Supply Loss Fraction,Cost Uplift Pct,Annual Probability Pct,Country,Lane
+S-RED,Red Sea / Suez closure,"Attacks force sailings from India, Sri Lanka and Pakistan to the US East Coast round the Cape: +14 days and fewer slots.",60,0.35,18,30,,suez-red-sea
+S-MON,Failed monsoon,"A weak monsoon and heatwave cut chilli, pulse and cumin crops by about 40%.",120,0.4,30,15,IN,
+S-RICE,Basmati export curbs,Government curbs cut basmati shipments by half for four months.,120,0.5,35,12,IN,
+S-PORT,US East & Gulf Coast port strike,Dockworkers strike for three weeks; containers on the Red Sea / Suez and Panama Canal routes wait offshore.,21,0.8,10,10,,
+S-MX,US tariff on Mexican produce,25% tariff on Mexican-origin food imports.,0,0.0,25,20,MX,
+S-LK,Sri Lanka fuel and currency crisis,Fuel shortages and power cuts halve factory output for two months.,60,0.5,15,8,LK,
+S-VN,Southern Vietnam typhoon,A typhoon floods the southern provinces; seafood and jasmine processing stops for a month.,30,0.9,5,12,VN,

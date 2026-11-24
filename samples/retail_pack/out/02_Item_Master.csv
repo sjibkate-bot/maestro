@@ -1,0 +1,20 @@
+Item Code,Description,Supplier,UoM,Lead Time Days,Commodity
+SPC-CHL-400,"Chilli powder 400 g, case of 20",Guntur Chilli Traders,CS,55,Red chilli powder
+SPC-PEP-200,"Black pepper whole 200 g, case of 24",Kerala Spice Exporters,CS,55,Black pepper & cardamom
+SPC-CRD-100,"Green cardamom 100 g, case of 24",Kerala Spice Exporters,CS,55,Black pepper & cardamom
+SPC-JRA-400,"Cumin seed 400 g (repacked), case of 20",Garden State Co-Packers,CS,7,Cumin repacking (home brand)
+RIC-BAS-10,"Basmati rice 10 lb, case of 4",Karnal Basmati Mills,CS,50,Basmati rice
+RIC-JAS-20,Jasmine rice 20 lb bag,Can Tho Rice Export,BAG,42,Jasmine rice
+DAL-TOOR-4,"Toor dal 4 lb, case of 10",Indore Pulses & Dals,CS,52,Toor & chana dal
+SNK-KHK-200,"Methi khakhra 200 g, case of 30",Rajkot Snack Foods,CS,48,Khakhra & namkeen snacks
+GHE-COW-32,"Pure cow ghee 32 oz, case of 12",Anand Dairy Ghee,CS,50,Cow ghee
+CCN-MLK-400,"Coconut milk 400 ml, case of 24",Ceylon Coconut Products,CS,45,Coconut milk
+TEA-BLK-450,"Ceylon black tea 450 g, case of 12",Kandy Tea Estates,CS,45,Ceylon black tea
+SPC-CIN-100,"Ceylon cinnamon sticks 100 g, case of 24",Galle Cinnamon Growers,CS,45,Ceylon cinnamon
+NUT-CSH-1K,"Cashews W320 1 kg, case of 10",Dak Lak Pepper & Cashew,CS,40,Cashew kernels
+FRZ-SHR-2,"Frozen shrimp 2 lb, case of 10",Ca Mau Seafood,CS,38,Frozen seafood (shrimp)
+MNG-PLP-850,"Mango pulp 850 g, case of 24",Sinaloa Mango Pulp,CS,12,Mango pulp
+FRZ-OKR-300,"Frozen cut okra 300 g, case of 24",Celaya Frozen Vegetables,CS,10,Frozen okra
+FRS-LIM-40,"Fresh limes, 40 lb carton",Veracruz Lime Farms,CTN,6,Fresh limes
+MIX-BIR-50,"Biryani masala mix 50 g, case of 48",Karachi Halal Foods,CS,55,Biryani & spice mixes
+FLR-ATA-20,Chapati atta 20 lb bag,Panhandle Flour Milling,BAG,7,Chapati atta flour

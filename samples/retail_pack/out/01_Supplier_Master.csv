@@ -1,0 +1,26 @@
+Supplier ID,Supplier Name,Site City,State / Province,Country,Tier,Supplies To,Commodity,Sole Source,Annual Spend,Lead Time Days,Buffer Days,Recovery Days,Critical
+GCT,Guntur Chilli Traders,Guntur,Andhra Pradesh,IN,1,,Red chilli powder,yes,9000000,55,18,120,yes
+KSE,Kerala Spice Exporters,Kochi,Kerala,IN,1,,Black pepper & cardamom,no,14000000,55,20,90,yes
+KBM,Karnal Basmati Mills,Karnal,Haryana,IN,1,,Basmati rice,yes,38000000,50,25,90,yes
+IPD,Indore Pulses & Dals,Indore,Madhya Pradesh,IN,1,,Toor & chana dal,no,22000000,52,20,60,yes
+RSF,Rajkot Snack Foods,Rajkot,Gujarat,IN,1,,Khakhra & namkeen snacks,no,12000000,48,15,45,no
+ADG,Anand Dairy Ghee,Anand,Gujarat,IN,1,,Cow ghee,yes,18000000,50,20,90,yes
+CCP,Ceylon Coconut Products,Kurunegala,North Western Province,LK,1,,Coconut milk,yes,11000000,45,15,75,no
+KTE,Kandy Tea Estates,Kandy,Central Province,LK,1,,Ceylon black tea,no,7000000,45,30,60,no
+GCG,Galle Cinnamon Growers,Galle,Southern Province,LK,1,,Ceylon cinnamon,yes,4000000,45,30,120,no
+DLP,Dak Lak Pepper & Cashew,Buon Ma Thuot,Dak Lak,VN,1,,Cashew kernels,no,9000000,40,20,60,no
+MRE,Can Tho Rice Export,Can Tho,Can Tho,VN,1,,Jasmine rice,no,16000000,42,20,45,no
+CMS,Ca Mau Seafood,Ca Mau,Ca Mau,VN,1,,Frozen seafood (shrimp),no,10000000,38,10,45,no
+SMP,Sinaloa Mango Pulp,Culiacán,Sinaloa,MX,1,,Mango pulp,no,8000000,12,10,30,no
+CFV,Celaya Frozen Vegetables,Celaya,Guanajuato,MX,1,,Frozen okra,yes,13000000,10,5,45,yes
+VLF,Veracruz Lime Farms,Martínez de la Torre,Veracruz,MX,1,,Fresh limes,no,5000000,6,4,21,no
+KHF,Karachi Halal Foods,Karachi,Sindh,PK,1,,Biryani & spice mixes,no,6000000,55,20,60,no
+GSC,Garden State Co-Packers,Secaucus,New Jersey,US,1,,Cumin repacking (home brand),yes,15000000,7,10,30,yes
+TXF,Panhandle Flour Milling,Amarillo,Texas,US,1,,Chapati atta flour,no,20000000,7,14,21,no
+UJS,Unjha Seed Traders,Unjha,Gujarat,IN,2,Garden State Co-Packers,Cumin seed,yes,,60,20,120,yes
+KCF,Kota Coriander Farmers,Kota,Rajasthan,IN,2,Garden State Co-Packers,Coriander seed,no,,45,30,40,no
+HPG,Kaithal Paddy Growers,Kaithal,Haryana,IN,2,Karnal Basmati Mills,Basmati paddy,no,,30,30,180,yes
+PFP,Pune Flexible Packaging,Pune,Maharashtra,IN,2,Rajkot Snack Foods,Laminated snack pouches,yes,,20,10,45,no
+CTC,Colombo Tin Can,Colombo,Western Province,LK,2,Ceylon Coconut Products,Tinplate cans,yes,,30,15,60,no
+AGP,An Giang Paddy Co-op,Long Xuyen,An Giang,VN,2,Can Tho Rice Export,Jasmine paddy,no,,20,20,90,no
+KMC,Kheda Milk Cooperative,Nadiad,Gujarat,IN,2,Anand Dairy Ghee,Cream & butterfat,no,,5,7,30,no

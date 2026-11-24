@@ -1,0 +1,11 @@
+Store No,Store Name,District,Country Code,Format,Opened,Served From
+1001,Lotus Grocers Edison,New Jersey,US,Supermarket,2009-04-01,DC-NJ
+1002,Lotus Grocers Jersey City,New Jersey,US,Supermarket,2014-09-15,DC-NJ
+1003,Chandni Market Queens,New York,US,Neighbourhood,2011-06-10,DC-NJ
+2001,Tulsi Fresh Devon Ave,Illinois,US,Neighbourhood,2006-03-20,DC-IL
+2002,Tulsi Fresh Naperville,Illinois,US,Supermarket,2018-11-02,DC-IL
+3001,Masala Mart Sugar Land,Texas,US,Supermarket,2012-08-08,DC-TX
+3002,Masala Mart Irving,Texas,US,Supermarket,2016-02-14,DC-TX
+4001,Spice Corner Fremont,California,US,Supermarket,2008-05-05,DC-CA
+4002,Spice Corner Sunnyvale,California,US,Neighbourhood,2019-07-21,DC-CA
+5001,Chandni Market Brampton,Ontario,CA,Supermarket,2013-10-01,DC-ON

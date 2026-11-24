@@ -1,0 +1,16 @@
+Material,Description,Supplier,UoM,Lead Time Days,Commodity
+API-MET,Metformin HCl API,Hyderabad API Labs,KG,30,Metformin API
+API-AMX,Amoxicillin trihydrate API,Vizag Fine Chemicals,KG,30,Amoxicillin API
+TAB-ATV-20,"Atorvastatin 20 mg tablets (1,000)",Baddi Formulations,K,35,Contract-made atorvastatin tablets
+EXC-MCC,Microcrystalline cellulose,Bharuch Cellulose,KG,55,Microcrystalline cellulose
+API-PAC,Paclitaxel API,Brianza Chemical Synthesis,G,30,Paclitaxel API
+EXC-LAC,Lactose monohydrate,Aargau Excipients,KG,21,Lactose & magnesium stearate
+API-HEP,Heparin sodium API (million units),Hubei Heparin Biochem,MU,45,Heparin sodium API
+FLT-022,0.22 µm sterile filter capsule,Suzhou Sterile Filters,EA,40,Sterile filter capsules
+VIAL-10R,Type I glass vial 10 ml,Mainz Pharma Glass,EA,35,Type I glass vials
+STOP-20,20 mm stopper with flip-off seal,Galway Stopper & Seal,EA,14,Rubber stoppers & seals
+MED-CHO,"Cell-culture media, 1,000 L batch",Tuas Bioprocess Media,EA,28,Cell-culture media
+DS-MAB,Monoclonal antibody drug substance,Incheon Biologics CDMO,G,45,Monoclonal antibody drug substance
+BLS-FOIL,"Blister lidding foil, roll",Carolina Blister Foil,ROLL,10,Blister lidding foil
+LBL-CTN,"Labels & cartons (1,000)",Caguas Labels & Cartons,K,7,Labels & cartons
+SHP-COLD,Insulated shipper with gel packs,Monterrey Cold Chain Packaging,EA,10,Insulated shippers

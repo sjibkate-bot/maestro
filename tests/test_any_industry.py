@@ -144,3 +144,15 @@ def test_governance_config_lists_registered_domains_and_rules():
     assert cfg["keys"]["store_sales"] == ["event", ["store_id", "sku", "sale_date"]]
     assert cfg["ranges"]["promotion.discount_pct"] == [0, 100]
     assert any(p["id"] == "retail_data" for p in cfg["products"])
+
+
+def test_retired_entity_synonyms_stop_matching():
+    """Synonyms are shared by field name: retiring the entity that added one must remove it again."""
+    from app.ai import provider
+    from app import registry as reg
+    c.post("/api/packs/life_sciences/enable", json={"user": "tester"})
+    assert "supplier" in provider._LOOKUP.get("auditee", [])
+    get_db().entity_registry.update_many({"pack": "life_sciences"}, {"$set": {"status": "RETIRED"}})
+    reg.load()
+    assert "auditee" not in provider._LOOKUP and "auditee" not in provider._SYNONYMS["supplier"]
+    assert "vendor" in provider._SYNONYMS["supplier"]          # built-in names stay

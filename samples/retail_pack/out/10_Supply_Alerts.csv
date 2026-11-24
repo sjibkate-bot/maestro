@@ -1,0 +1,9 @@
+Alert ID,Age Minutes,Source System,Severity,Node,Alert Text,Level,Status
+A-401,20,Import status feed,critical,GCT,Container of chilli powder held at Port Newark for sampling (pesticide residue).,3,escalated
+A-402,60,Carrier EDI,high,KBM,Liner reroutes India–US East Coast sailings via the Cape: +14 days on 6 bookings.,2,new
+A-403,95,News / OSINT,high,KBM,Reports that export curbs on rice may follow a poor monsoon.,2,new
+A-404,180,Supplier portal,high,CFV,Celaya plant reports a compressor failure; shipments delayed 4 days.,2,new
+A-405,300,Weather service,medium,CMS,Tropical storm forecast to cross southern Vietnam this week.,1,new
+A-406,420,Port authority,medium,CCP,Colombo port congestion: 3-day berthing delay.,1,acknowledged
+A-407,45,Union notice,high,KSE,Dockworkers' union sets a strike deadline for East and Gulf Coast ports; 4 pepper containers due at Newark.,2,new
+A-408,15,Price feed,low,UJS,Cumin price up 18% week on week at the Unjha market.,1,new

@@ -219,6 +219,15 @@ MONGO_URI=mongomock:// MAESTRO_ADMIN_PASSWORD=choose-a-long-passcode-1 uvicorn a
 ```
 Open http://localhost:8000 and sign in as the administrator. Load the demo packs in **Configuration**.
 
+**Demo data packs** (each folder has a builder, the files in `out/` and a 20-minute demo script):
+
+| Pack | Industry | Company (fictional) |
+|---|---|---|
+| [`samples/demo_pack/`](samples/demo_pack/README.md) | Aviation depot (MRO) | B-52 depot and fleet |
+| [`samples/auto_pack/`](samples/auto_pack/README.md) | Car manufacturing | Auremont Automotive: plants in Germany, the US and Mexico; 25 suppliers in 17 countries |
+| [`samples/retail_pack/`](samples/retail_pack/README.md) | Retail / grocery import | Saffron Trail Foods: South Asian grocery importer with 5 DCs in the US and Canada; buys from India, Sri Lanka, Vietnam and Mexico |
+| [`samples/pharma_pack/`](samples/pharma_pack/README.md) | Pharma | Veridia Pharmaceuticals: plants in New Jersey, Puerto Rico and Ireland; APIs from India, China and Italy |
+
 Tests: `pytest -q`
 
 **On Google Cloud:** [docs/DEPLOY_GCP.md](docs/DEPLOY_GCP.md) is a step-by-step guide to running it on one VM with HTTPS, sign-in and the secrets kept in Secret Manager (files in `deploy/gcp/`).

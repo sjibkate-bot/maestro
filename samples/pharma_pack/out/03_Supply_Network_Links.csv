@@ -1,0 +1,26 @@
+Upstream,Downstream,Material,Share Of Supply,Lane
+HAL,Plant Piscataway,Metformin API,0.6,india-us-air
+VFC,Plant Piscataway,Amoxicillin API,1.0,india-us-air
+BFL,Plant Piscataway,Contract-made atorvastatin tablets,1.0,india-us-air
+GCL,Plant Piscataway,Microcrystalline cellulose,0.6,suez-red-sea
+BCS,Plant Juncos,Paclitaxel API,1.0,transatlantic
+AEX,Plant Piscataway,Lactose & magnesium stearate,0.6,transatlantic
+HHB,Plant Juncos,Heparin sodium API,1.0,trans-pacific
+SSF,Plant Ringaskiddy,Sterile filter capsules,0.6,trans-pacific
+SSF,Plant Juncos,Sterile filter capsules,0.6,trans-pacific
+MPG,Plant Ringaskiddy,Type I glass vials,1.0,transatlantic
+MPG,Plant Juncos,Type I glass vials,1.0,transatlantic
+GSS,Plant Ringaskiddy,Rubber stoppers & seals,0.6,eu-road
+GSS,Plant Juncos,Rubber stoppers & seals,0.6,eu-road
+SBM,Plant Ringaskiddy,Cell-culture media,1.0,asia-eu-air
+ICD,Plant Ringaskiddy,Monoclonal antibody drug substance,1.0,asia-eu-air
+CBF,Plant Piscataway,Blister lidding foil,0.6,domestic
+PRC,Plant Juncos,Labels & cartons,0.6,domestic
+MXC,Plant Piscataway,Insulated shippers,0.6,us-mx
+MXC,Plant Juncos,Insulated shippers,0.6,us-mx
+ZPI,HAL,Metformin key starting material,0.9,china-india-sea
+SPG,VFC,6-APA penicillin intermediate,0.9,china-india-sea
+SPM,HHB,Crude heparin,0.5,domestic
+JSS,BCS,Process solvents,0.5,suez-red-sea
+YTB,BCS,Yew biomass,0.9,suez-red-sea
+MGT,MPG,Borosilicate glass tubing,0.9,eu-road

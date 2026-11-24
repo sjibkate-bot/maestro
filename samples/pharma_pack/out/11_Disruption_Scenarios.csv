@@ -1,0 +1,7 @@
+Scenario ID,Scenario Name,Description,Duration Days,Supply Loss Fraction,Cost Uplift Pct,Annual Probability Pct,Country,Lane
+S-KSM,Key starting material shortage,Lockdowns in China stop key starting materials; makers of metformin and amoxicillin API cut output by 60% for two months.,60,0.6,20,10,IN,
+S-HUR,Category 4 hurricane in Puerto Rico,Power and road outages stop Juncos and its island suppliers for five weeks.,35,0.8,10,8,PR,
+S-ASF,African swine fever outbreak,Pig herd losses cut crude heparin supply by half for three months.,90,0.5,40,10,CN,
+S-VIAL,Glass vial shortage,A vaccine demand surge takes borosilicate tubing and Type I vial capacity for three months.,90,0.4,30,8,DE,
+S-FDA,FDA import alert on an API site,Warning letter and import alert stop amoxicillin API for at least two months.,60,1.0,0,6,IN,
+S-AIR,Air cargo capacity crunch,Freighter capacity on India–US air freight falls by a third and rates double for six weeks.,45,0.2,8,15,,india-us-air

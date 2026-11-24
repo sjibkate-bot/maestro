@@ -1,0 +1,9 @@
+Risk ID,Affected Node,Likelihood,Impact,Title,Evidence,Owner,Status
+R-01,VFC,4,5,Sole source for amoxicillin API,One API site in Visakhapatnam; FDA inspection due; 12 days of cover.,Procurement – APIs,Open
+R-02,ZPI,4,4,China dependency for key starting materials,Both Indian API suppliers rely on Chinese starting materials.,Procurement – APIs,Open
+R-03,HHB,3,5,Heparin crude supply and adulteration,Crude heparin from porcine mucosa; contamination history; swine fever exposure.,Quality Assurance,Open
+R-04,MPG,3,5,One qualified vial supplier,Type I vials qualified from one plant; second-source validation 9 months away.,Sterile Operations,Mitigating
+R-05,ICD,2,5,Drug substance from one CDMO,All drug substance for the biologic from one Incheon facility.,Biologics Supply,Open
+R-06,BFL,4,3,Contract manufacturer data-integrity findings,Last audit: 3 data-integrity observations; reinspection pending.,Quality Assurance,Open
+R-07,PRC,3,4,Hurricane exposure in Puerto Rico,"Labels, cartons and the Juncos plant are all on the island.",Site Operations – Juncos,Open
+R-08,SBM,2,4,Cold-chain media shipments,Media ships at 2–8 °C by air through Frankfurt.,Biologics Supply,Open

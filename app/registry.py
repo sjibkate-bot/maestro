@@ -128,13 +128,34 @@ def _unapply(name: str) -> None:
     _applied.pop(name, None)
 
 
+_BASE_SYNONYMS: dict = {}
+
+
+def _reset_synonyms() -> None:
+    """Back to the built-in column names, so a retired entity's synonyms stop matching."""
+    from .ai import provider
+    if not _BASE_SYNONYMS:
+        return
+    provider._SYNONYMS.clear()
+    provider._SYNONYMS.update(copy.deepcopy(_BASE_SYNONYMS))
+    provider._LOOKUP.clear()
+    for field, syns in provider._SYNONYMS.items():
+        for s_ in syns:
+            provider._LOOKUP.setdefault(s_, []).append(field)
+
+
 def load() -> int:
     """Apply every active registered entity (called at start-up and after changes)."""
+    from .ai import provider
+    if not _BASE_SYNONYMS:
+        _BASE_SYNONYMS.update(copy.deepcopy(provider._SYNONYMS))   # built-in names, before any registration
     n = 0
     active = {d["name"]: d for d in get_db().entity_registry.find({"status": "ACTIVE"})}
-    for name in list(_applied):
-        if name not in active:
-            _unapply(name)
+    gone = [name for name in _applied if name not in active]
+    for name in gone:
+        _unapply(name)
+    if gone:   # synonyms are shared by field name, so rebuild them from the built-in set and what is still active
+        _reset_synonyms()
     for d in active.values():
         _apply(d)
         n += 1

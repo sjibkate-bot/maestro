@@ -229,7 +229,8 @@
      "description": "Supplier audited",
      "synonyms": [
       "vendor",
-      "suppliername"
+      "suppliername",
+      "auditee"
      ],
      "required": true
     },

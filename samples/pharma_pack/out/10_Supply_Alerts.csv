@@ -1,0 +1,9 @@
+Alert ID,Age Minutes,Source System,Severity,Node,Alert Text,Level,Status
+A-501,30,FDA data dashboard,critical,VFC,FDA Form 483 issued to the amoxicillin API site after inspection (7 observations).,3,escalated
+A-502,70,Supplier portal,high,ZPI,Starting-material supplier reports a shutdown for an environmental inspection in Taizhou.,2,new
+A-503,110,Weather service,high,PRC,Tropical storm watch for Puerto Rico; landfall possible in 72 hours.,2,new
+A-504,200,Cold-chain monitoring,high,SBM,Media shipment SBM-2291 logged 46 minutes above 8 °C at the Frankfurt hub.,2,new
+A-505,260,News / OSINT,medium,SPM,African swine fever cases reported in two Sichuan counties.,1,new
+A-506,400,Drug shortage list,medium,HAL,Metformin extended-release listed as in shortage; customers increase orders.,1,acknowledged
+A-507,20,Carrier EDI,medium,HAL,Freighter cancelled Hyderabad–Newark; API rebooked on the next flight (+3 days).,1,new
+A-508,15,Supplier quality,low,GSS,Stopper lot release delayed one day for retesting.,1,new

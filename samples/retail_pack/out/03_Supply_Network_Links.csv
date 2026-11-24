@@ -1,0 +1,74 @@
+Upstream,Downstream,Material,Share Of Supply,Lane
+GCT,DC Fremont,Red chilli powder,1.0,suez-red-sea
+GCT,DC Elk Grove Village,Red chilli powder,1.0,suez-red-sea
+GCT,DC Edison,Red chilli powder,1.0,suez-red-sea
+GCT,DC Mississauga,Red chilli powder,1.0,suez-red-sea
+GCT,DC Houston,Red chilli powder,1.0,suez-red-sea
+KSE,DC Fremont,Black pepper & cardamom,0.6,suez-red-sea
+KSE,DC Elk Grove Village,Black pepper & cardamom,0.6,suez-red-sea
+KSE,DC Edison,Black pepper & cardamom,0.6,suez-red-sea
+KSE,DC Mississauga,Black pepper & cardamom,0.6,suez-red-sea
+KBM,DC Fremont,Basmati rice,1.0,suez-red-sea
+KBM,DC Elk Grove Village,Basmati rice,1.0,suez-red-sea
+KBM,DC Edison,Basmati rice,1.0,suez-red-sea
+KBM,DC Mississauga,Basmati rice,1.0,suez-red-sea
+KBM,DC Houston,Basmati rice,1.0,suez-red-sea
+IPD,DC Fremont,Toor & chana dal,0.6,suez-red-sea
+IPD,DC Elk Grove Village,Toor & chana dal,0.6,suez-red-sea
+IPD,DC Edison,Toor & chana dal,0.6,suez-red-sea
+IPD,DC Mississauga,Toor & chana dal,0.6,suez-red-sea
+IPD,DC Houston,Toor & chana dal,0.6,suez-red-sea
+RSF,DC Fremont,Khakhra & namkeen snacks,0.6,suez-red-sea
+RSF,DC Elk Grove Village,Khakhra & namkeen snacks,0.6,suez-red-sea
+RSF,DC Edison,Khakhra & namkeen snacks,0.6,suez-red-sea
+ADG,DC Fremont,Cow ghee,1.0,suez-red-sea
+ADG,DC Elk Grove Village,Cow ghee,1.0,suez-red-sea
+ADG,DC Edison,Cow ghee,1.0,suez-red-sea
+ADG,DC Mississauga,Cow ghee,1.0,suez-red-sea
+ADG,DC Houston,Cow ghee,1.0,suez-red-sea
+CCP,DC Fremont,Coconut milk,1.0,suez-red-sea
+CCP,DC Edison,Coconut milk,1.0,suez-red-sea
+CCP,DC Mississauga,Coconut milk,1.0,suez-red-sea
+CCP,DC Houston,Coconut milk,1.0,suez-red-sea
+KTE,DC Edison,Ceylon black tea,0.6,suez-red-sea
+KTE,DC Mississauga,Ceylon black tea,0.6,suez-red-sea
+GCG,DC Fremont,Ceylon cinnamon,1.0,suez-red-sea
+GCG,DC Edison,Ceylon cinnamon,1.0,suez-red-sea
+DLP,DC Fremont,Cashew kernels,0.6,pacific
+DLP,DC Elk Grove Village,Cashew kernels,0.6,pacific
+DLP,DC Edison,Cashew kernels,0.6,pacific
+MRE,DC Fremont,Jasmine rice,0.6,panama
+MRE,DC Houston,Jasmine rice,0.6,panama
+CMS,DC Fremont,Frozen seafood (shrimp),0.6,pacific
+CMS,DC Houston,Frozen seafood (shrimp),0.6,pacific
+SMP,DC Elk Grove Village,Mango pulp,0.6,us-mx
+SMP,DC Edison,Mango pulp,0.6,us-mx
+SMP,DC Mississauga,Mango pulp,0.6,us-mx
+SMP,DC Houston,Mango pulp,0.6,us-mx
+CFV,DC Fremont,Frozen okra,1.0,us-mx
+CFV,DC Elk Grove Village,Frozen okra,1.0,us-mx
+CFV,DC Edison,Frozen okra,1.0,us-mx
+CFV,DC Houston,Frozen okra,1.0,us-mx
+VLF,DC Elk Grove Village,Fresh limes,0.6,us-mx
+VLF,DC Edison,Fresh limes,0.6,us-mx
+VLF,DC Houston,Fresh limes,0.6,us-mx
+KHF,DC Elk Grove Village,Biryani & spice mixes,0.6,suez-red-sea
+KHF,DC Edison,Biryani & spice mixes,0.6,suez-red-sea
+KHF,DC Mississauga,Biryani & spice mixes,0.6,suez-red-sea
+KHF,DC Houston,Biryani & spice mixes,0.6,suez-red-sea
+GSC,DC Fremont,Cumin repacking (home brand),1.0,domestic
+GSC,DC Elk Grove Village,Cumin repacking (home brand),1.0,domestic
+GSC,DC Edison,Cumin repacking (home brand),1.0,domestic
+GSC,DC Mississauga,Cumin repacking (home brand),1.0,domestic
+GSC,DC Houston,Cumin repacking (home brand),1.0,domestic
+TXF,DC Fremont,Chapati atta flour,0.6,domestic
+TXF,DC Elk Grove Village,Chapati atta flour,0.6,domestic
+TXF,DC Edison,Chapati atta flour,0.6,domestic
+TXF,DC Houston,Chapati atta flour,0.6,domestic
+UJS,GSC,Cumin seed,0.9,suez-red-sea
+KCF,GSC,Coriander seed,0.5,suez-red-sea
+HPG,KBM,Basmati paddy,0.5,domestic
+PFP,RSF,Laminated snack pouches,0.9,domestic
+CTC,CCP,Tinplate cans,0.9,domestic
+AGP,MRE,Jasmine paddy,0.5,domestic
+KMC,ADG,Cream & butterfat,0.5,domestic

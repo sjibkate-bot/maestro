@@ -1,0 +1,22 @@
+Supplier ID,Supplier Name,Site City,State / Province,Country,Tier,Supplies To,Commodity,Sole Source,Annual Spend,Lead Time Days,Buffer Days,Recovery Days,Critical
+HAL,Hyderabad API Labs,Hyderabad,Telangana,IN,1,,Metformin API,no,28000000,30,30,120,yes
+VFC,Vizag Fine Chemicals,Visakhapatnam,Andhra Pradesh,IN,1,,Amoxicillin API,yes,22000000,30,20,180,yes
+BFL,Baddi Formulations,Baddi,Himachal Pradesh,IN,1,,Contract-made atorvastatin tablets,yes,40000000,35,25,120,yes
+GCL,Bharuch Cellulose,Bharuch,Gujarat,IN,1,,Microcrystalline cellulose,no,6000000,55,40,60,no
+BCS,Brianza Chemical Synthesis,Monza,Lombardy,IT,1,,Paclitaxel API,yes,45000000,30,45,180,yes
+AEX,Aargau Excipients,Aarau,Aargau,CH,1,,Lactose & magnesium stearate,no,9000000,21,40,45,no
+HHB,Hubei Heparin Biochem,Wuhan,Hubei,CN,1,,Heparin sodium API,yes,34000000,45,20,180,yes
+SSF,Suzhou Sterile Filters,Suzhou,Jiangsu,CN,1,,Sterile filter capsules,no,11000000,40,25,90,yes
+MPG,Mainz Pharma Glass,Mainz,Rhineland-Palatinate,DE,1,,Type I glass vials,yes,18000000,35,15,150,yes
+GSS,Galway Stopper & Seal,Galway,Connacht,IE,1,,Rubber stoppers & seals,no,7000000,14,20,60,no
+SBM,Tuas Bioprocess Media,Tuas,West Region,SG,1,,Cell-culture media,yes,26000000,28,30,120,yes
+ICD,Incheon Biologics CDMO,Incheon,Incheon,KR,1,,Monoclonal antibody drug substance,yes,120000000,45,40,240,yes
+CBF,Carolina Blister Foil,Greensboro,North Carolina,US,1,,Blister lidding foil,no,8000000,10,15,30,no
+PRC,Caguas Labels & Cartons,Caguas,Puerto Rico,PR,1,,Labels & cartons,no,3000000,7,10,21,no
+MXC,Monterrey Cold Chain Packaging,Monterrey,Nuevo León,MX,1,,Insulated shippers,no,5000000,10,15,30,no
+ZPI,Taizhou Pharma Intermediates,Taizhou,Zhejiang,CN,2,Hyderabad API Labs,Metformin key starting material,yes,,40,25,120,yes
+SPG,Jining Penicillin Works,Jining,Shandong,CN,2,Vizag Fine Chemicals,6-APA penicillin intermediate,yes,,40,25,150,yes
+SPM,Chengdu Porcine Mucosa,Chengdu,Sichuan,CN,2,Hubei Heparin Biochem,Crude heparin,no,,20,20,180,yes
+JSS,Nantong Specialty Solvents,Nantong,Jiangsu,CN,2,Brianza Chemical Synthesis,Process solvents,no,,45,30,40,no
+YTB,Yunnan Taxus Biomass,Kunming,Yunnan,CN,3,Brianza Chemical Synthesis,Yew biomass,yes,,90,30,365,yes
+MGT,Mitterteich Glass Tubing,Mitterteich,Bavaria,DE,2,Mainz Pharma Glass,Borosilicate glass tubing,yes,,14,20,120,yes

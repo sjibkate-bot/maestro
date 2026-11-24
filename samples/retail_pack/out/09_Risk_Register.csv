@@ -1,0 +1,9 @@
+Risk ID,Affected Node,Likelihood,Impact,Title,Evidence,Owner,Status
+R-01,GCT,4,4,Single source for home-brand chilli powder,All chilli powder from one Guntur processor; 12 days of cover.,Category Manager – Spices,Open
+R-02,GCT,3,5,Pesticide residue and import holds,Two chilli lots sampled at the port in the last year; one held.,Food Safety & Compliance,Open
+R-03,KBM,3,5,Basmati export policy,Export curbs possible after a poor harvest; basmati is the top revenue line.,Category Manager – Rice,Open
+R-04,CFV,3,4,Frozen okra from one plant,One frozen-vegetable plant in Celaya; 5 days of cover.,Category Manager – Frozen,Mitigating
+R-05,CCP,3,3,Sri Lanka power and currency,Power cuts in 2022 stopped coconut milk output for weeks.,Purchasing – Sri Lanka,Open
+R-06,UJS,4,3,Cumin crop and price swings,Cumin prices doubled after a poor Gujarat harvest.,Category Manager – Spices,Open
+R-07,KHF,4,2,Pakistan: port and banking delays,Letters of credit and Karachi port delays add 2–3 weeks.,Purchasing – Pakistan,Open
+R-08,ADG,2,4,Ghee labelling for Canada,Bilingual labelling change due next quarter.,Regulatory,Open

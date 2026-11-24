@@ -1,0 +1,10 @@
+End Item,Parent,Child,Description,Quantity,Level
+PAC-INJ-300,PAC-INJ-300,BULK-PAC,Compounded bulk solution,1,1
+PAC-INJ-300,PAC-INJ-300,FILL-PAC,Filled & sealed vial,1,1
+PAC-INJ-300,PAC-INJ-300,PACK-PAC,Labelled & cartoned pack,1,1
+PAC-INJ-300,BULK-PAC,API-PAC,Paclitaxel API (g),0.3,2
+PAC-INJ-300,BULK-PAC,FLT-022,Sterile filter capsule,0.002,2
+PAC-INJ-300,FILL-PAC,VIAL-10R,Type I glass vial,1,2
+PAC-INJ-300,FILL-PAC,STOP-20,Stopper & seal,1,2
+PAC-INJ-300,PACK-PAC,LBL-CTN,"Label & carton (per 1,000)",0.001,2
+PAC-INJ-300,PACK-PAC,SHP-COLD,Insulated shipper (per 24),0.042,2

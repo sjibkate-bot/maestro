@@ -1,0 +1,10 @@
+Lane Code,Lane Name,Lane Risk Index
+india-us-air,India–US air freight,35
+china-india-sea,China–India sea freight,50
+trans-pacific,Trans-Pacific,30
+transatlantic,Transatlantic,15
+asia-eu-air,Asia–Europe air freight,25
+suez-red-sea,Red Sea / Suez,82
+eu-road,EU road network,8
+us-mx,US–Mexico border,40
+domestic,Domestic road / rail,6
