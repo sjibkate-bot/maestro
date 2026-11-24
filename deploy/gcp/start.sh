@@ -18,6 +18,10 @@ if [ "${AI_ENABLED:-true}" = "true" ]; then
   export ANTHROPIC_API_KEY
 fi
 
+# optional alert notifications: only if these secrets exist
+ALERT_WEBHOOK_URL="$(secret maestro-alert-webhook 2>/dev/null || true)"; export ALERT_WEBHOOK_URL
+SMTP_PASSWORD="$(secret maestro-smtp-password 2>/dev/null || true)"; export SMTP_PASSWORD
+
 docker compose up -d --build --remove-orphans
 docker compose ps
 echo

@@ -13,7 +13,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
-from . import amxg, analytics, auth, dataapi, governance, modules, packs, pdm, registry, risk_feeds, studio, supply_risk
+from . import alerts, amxg, analytics, auth, dataapi, governance, modules, packs, pdm, registry, risk_feeds, studio, supply_risk
 from .ai.claude import AIError
 from .ai.provider import get_provider
 from .connectors.files import ingest_file
@@ -28,6 +28,7 @@ async def lifespan(_app):
     registry.load()                # registered entities and enabled industry packs
     auth.ensure_bootstrap()        # default groups and the first administrator
     risk_feeds.start_scheduler()   # daily public risk feeds (RISK_FEEDS_ENABLED / RISK_FEEDS_HOUR)
+    alerts.start_notifier()        # Teams / Slack / email for new alerts, when a channel is configured
     yield
 
 
@@ -729,6 +730,55 @@ def maestro_fleet():
 @app.get("/api/maestro/alerts")
 def maestro_alerts():
     return pdm.alerts()
+
+
+# ---------------------------------------------------------------- Alert Center
+def _my_modules():
+    u = auth.CURRENT_USER.get()
+    return u["modules"] if u else None        # sign-in off: everything
+
+
+def _actor(body: dict) -> str:
+    u = auth.CURRENT_USER.get()
+    return (body.get("user") or "").strip() or (u["username"] if u else "")
+
+
+@app.get("/api/alerts")
+def alerts_list(status: Optional[str] = None, level: Optional[str] = None, category: Optional[str] = None):
+    """Every open alert the signed-in user's modules cover, with counts for the alert bar."""
+    return alerts.listing(_my_modules(), status, level, category)
+
+
+@app.post("/api/alerts/{key}/{action}")
+def alerts_act(key: str, action: str, body: dict = Body(default={})):
+    if action not in ("acknowledge", "assign", "resolve", "reopen"):
+        raise HTTPException(404, "Unknown action")
+    a = next((x for x in alerts.listing(_my_modules())["items"] if x["key"] == key), None)
+    if not a:
+        raise HTTPException(404, "No such alert (or not one you can see)")
+    try:
+        return alerts.act(key, action, _actor(body), body.get("owner") or "", body.get("due") or "", body.get("note") or "")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
+@app.get("/api/admin/alert-rules")
+def admin_alert_rules():
+    return {"rules": alerts.rules(), "categories": list(alerts.CATEGORIES), "channels": alerts.channels()}
+
+
+@app.put("/api/admin/alert-rules")
+def admin_alert_rules_set(body: dict = Body(...)):
+    try:
+        return {"rules": alerts.set_rules(body, _admin()), "channels": alerts.channels()}
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
+@app.post("/api/admin/alerts/notify")
+def admin_alerts_notify(body: dict = Body(default={})):
+    """Send now: new alerts at the notify levels, or {"test": true} for a test message."""
+    return alerts.notify(test=bool(body.get("test")))
 
 
 @app.get("/api/maestro/modules")

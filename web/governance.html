@@ -73,7 +73,7 @@ tr.click { cursor:pointer } tr.click:hover td { background:var(--soft) }
 </head>
 <body>
 <header><b>MAESTRO-SC</b><span class="t">Data Governance</span>
-  <nav><a href="/maestro">Maestro modules</a><a href="/supply">Supply</a><a href="/maestro#config">Configuration</a>
+  <nav><a href="/maestro">Maestro modules</a><a href="/maestro#alerts" id="alertsTop">Alerts</a><a href="/supply">Supply</a><a href="/maestro#config">Configuration</a>
     <span class="user"><label class="lab" for="who">Acting as</label><input id="who" placeholder="Your name / role" style="width:180px"></span></nav></header>
 <section class="kpis" id="kpis"></section>
 <nav class="tabs" id="tabs">
@@ -360,6 +360,11 @@ addEventListener("hashchange", route); route();
   nav.insertAdjacentHTML("beforeend", `<a href="/maestro#account" title="Your account">${me.display_name || me.username}</a><a href="#" id="signout">Sign out</a>`);
   document.getElementById("signout").onclick = async e => { e.preventDefault(); await fetch("/api/auth/logout", {method: "POST"}); location.href = "/login"; };
 })();
+</script>
+<script>
+// alert count beside the Alerts link (Alert Center lives in /maestro#alerts)
+fetch("/api/alerts?status=open&level=none").then(r => r.ok && r.json()).then(j => { const a = document.getElementById("alertsTop");
+  if (j && a) { a.textContent = `Alerts · ${j.counts.open}`; if (j.counts.critical) { a.style.color = "var(--critical, #d03b3b)"; a.title = `${j.counts.critical} critical`; } } }).catch(() => {});
 </script>
 </body>
 </html>

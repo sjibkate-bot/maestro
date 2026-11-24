@@ -246,13 +246,29 @@ Domains and data products come from the entity registry. A registered domain (re
 
 ## 5. Module APIs (already built)
 * **Supply risk:** `/api/supply/overview`, `suppliers`, `supplier?name=`, `network`, `coverage?buffer_days=`, `delivery`, `signals`, `plans`, `scenarios`, `whatif` (POST), `decisions`.
-* **Depot / MRO:** `/api/maestro/docks`, `gates`, `gate/{gate}?last_n=`, `machine`, `fleet`, `alerts`.
+* **Depot / MRO:** `/api/maestro/docks`, `gates`, `gate/{gate}?last_n=`, `machine`, `fleet`, `alerts` (aircraft alerts only; the Alert Center below covers every industry).
 * **AMXG:** `/api/amxg/hub`, `events`, `timelines`, `tiered`, `status`, `dockboard`, `bom`, `script/{tail}`.
 * **Risk feeds:** `/api/feeds`, `/api/feeds/run-all`, `/api/feeds/{id}/run`.
 * **Ask:** `POST /api/ask {question}` returns an answer with evidence and a decision-gate verdict.
 
+## 6. Alert Center (every industry)
+Alerts are computed from the governed data each time they are read, and filtered to the modules the signed-in user may see.
+
+| Call | |
+|---|---|
+| `GET /api/alerts?status=&level=&category=` | `{counts, items}`. `counts`: `open`, `critical`, `warning`, `info`, `new`, `acknowledged`, `resolved`, `by_category`. Each item: `key`, `level` (critical / warning / info), `category`, `subject`, `text`, `source`, `link` (the screen to open), `when`, `status` (NEW / ACKNOWLEDGED / RESOLVED), `owner`, `due`, `note`, `updated_by`, `updated_at`. `status=open` = not resolved. For the alert bar only, add `level=none` to get the counts without items. |
+| `POST /api/alerts/{key}/acknowledge` | Body `{user}` (defaults to the signed-in user) |
+| `POST /api/alerts/{key}/assign` | Body `{user, owner, due?}`; owner required |
+| `POST /api/alerts/{key}/resolve` | Body `{user, note}`; note required. A resolved alert that later gets worse comes back as NEW. |
+| `POST /api/alerts/{key}/reopen` | Body `{user}` |
+| `GET` / `PUT /api/admin/alert-rules` | Admin. `cover_critical_days`, `cover_warning_days`, `late_po_grace_days`, `supplier_levels` (Critical / High / Moderate), `notify_levels`, `categories` (true/false each). Returns which notification channels are configured. |
+| `POST /api/admin/alerts/notify` | Admin. `{}` sends new alerts at the notify levels now; `{"test": true}` sends a test message |
+
+Categories: Supplier alert (loaded alert files), Stock (days of cover, reorder point), Delivery (open order lines past promised date), Supplier risk (rating, sanctions match), Risk feed (hazard and unrest events where suppliers sit), Data quality (quarantine, drift, stale or uncertified products), Fleet & depot (faults, telemetry, AMREP, gate overruns). Every action is in the audit log.
+
+Notifications are configured on the server: `ALERT_WEBHOOK_URL` (Teams or Slack incoming webhook) and/or `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `ALERT_EMAIL_FROM`, `ALERT_EMAIL_TO`; `MAESTRO_PUBLIC_URL` for the link; checked every `ALERT_CHECK_MINUTES` (default 15). Each alert is sent once.
+
 ## Not in the API yet
-* **Authentication and roles.** Login, users, access requests and module permissions: every endpoint is open today, and `user` is self-declared.
 * **Storage.** MongoDB only; no Postgres or BigQuery.
 * **Incremental pulls.** "Since last pull" from ERPs and per-source schedules.
 * **Saved views.** Front-end dashboards and filters are not stored server-side.

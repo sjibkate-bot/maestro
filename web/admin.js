@@ -5,7 +5,7 @@ const send = (url, method, body) => fetch(url, {method, headers: {"Content-Type"
   .then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.detail || r.status); return j; });
 const head = (title, sub) => `<div class="titlebar"><div><div class="mono eyebrow">M_12 // Admin console</div><h1>${title}</h1>${sub ? `<div class="mono" style="color:var(--muted)">${sub}</div>` : ""}</div></div>`;
 const STATUS = {ACTIVE: "good", PENDING: "warning", DISABLED: "", REJECTED: "critical"};
-const TABS = [["requests", "Access requests"], ["users", "Users"], ["groups", "Groups & modules"], ["resets", "Passcode resets"], ["log", "Sign-in log"], ["modules", "Industry & modules"]];
+const TABS = [["requests", "Access requests"], ["users", "Users"], ["groups", "Groups & modules"], ["resets", "Passcode resets"], ["log", "Sign-in log"], ["modules", "Industry & modules"], ["alerts", "Alert rules"]];
 
 async function viewAdmin(v) {
   if (!(ME.modules || []).includes("admin")) { v.innerHTML = head("ADMIN CONSOLE") + '<p class="empty">Administrators only.</p>'; return; }
@@ -111,6 +111,34 @@ async function viewAdmin(v) {
     $("#modSave").onclick = async () => {
       const body = Object.fromEntries([...B.querySelectorAll("[data-mod]")].map(x => [x.dataset.mod, x.value]));
       try { await send("/api/admin/modules", "PUT", body); location.reload(); } catch (e) { msg(e.message, true); } };
+  }
+
+  if (tab === "alerts") {
+    const R = await api("/api/admin/alert-rules"), r = R.rules, ch = R.channels;
+    const box = (name, val, on) => `<label style="display:inline-flex;gap:4px;margin:2px 12px 2px 0;font-size:13px"><input type="checkbox" name="${name}" value="${esc(val)}" ${on ? "checked" : ""}>${esc(val)}</label>`;
+    const num = (name, label, help) => `<label style="display:block;margin:8px 0"><span class="mono" style="font-size:11px">${label}</span><br><input name="${name}" type="number" min="0" step="1" value="${r[name]}" style="width:90px"> <span style="color:var(--muted);font-size:12px">${help}</span></label>`;
+    B.innerHTML = `<form id="arForm"><div class="split"><div class="panel"><h2 class="mono">What raises an alert</h2>
+        ${num("cover_critical_days", "Stock: critical below (days of cover)", "red alert when an item has less cover than this")}
+        ${num("cover_warning_days", "Stock: warning below (days of cover)", "amber alert below this")}
+        ${num("late_po_grace_days", "Delivery: days late before alerting", "0 = alert as soon as a promised date passes")}
+        <p class="mono" style="font-size:11px;margin:12px 0 4px">Supplier ratings that raise an alert</p>${["Critical", "High", "Moderate"].map(x => box("supplier_levels", x, r.supplier_levels.includes(x))).join("")}
+        <p class="mono" style="font-size:11px;margin:12px 0 4px">Categories switched on</p>${R.categories.map(x => box("categories", x, r.categories[x])).join("<br>")}</div>
+      <div class="panel"><h2 class="mono">Notifications</h2>
+        <p style="margin-top:0">Teams or Slack webhook: ${ch.webhook ? '<span class="tag good">CONFIGURED</span>' : '<span class="tag">NOT SET</span>'}<br>Email: ${ch.email ? '<span class="tag good">CONFIGURED</span>' : '<span class="tag">NOT SET</span>'}</p>
+        <p style="color:var(--ink2);font-size:13px">Channels are set on the server, not here, because they hold secrets: <code>ALERT_WEBHOOK_URL</code> (a Teams or Slack incoming webhook), or <code>SMTP_HOST</code>, <code>SMTP_PORT</code>, <code>SMTP_USER</code>, <code>SMTP_PASSWORD</code>, <code>ALERT_EMAIL_FROM</code>, <code>ALERT_EMAIL_TO</code>. Optional: <code>MAESTRO_PUBLIC_URL</code> for the link in messages, <code>ALERT_CHECK_MINUTES</code> (default 15).</p>
+        <p class="mono" style="font-size:11px;margin:12px 0 4px">Notify on new alerts at these levels</p>${["critical", "warning", "info"].map(x => box("notify_levels", x, r.notify_levels.includes(x))).join("")}
+        <div class="row" style="margin-top:14px"><button type="button" class="plain" id="arTest" ${ch.webhook || ch.email ? "" : "disabled"}>Send a test message</button><button type="button" class="plain" id="arNow" ${ch.webhook || ch.email ? "" : "disabled"}>Send new alerts now</button></div></div></div>
+      <button>Save alert rules</button></form>`;
+    const f = $("#arForm"), checked = n => [...f.querySelectorAll(`input[name="${n}"]:checked`)].map(x => x.value);
+    f.onsubmit = async e => { e.preventDefault();
+      const body = {cover_critical_days: +f.cover_critical_days.value, cover_warning_days: +f.cover_warning_days.value, late_po_grace_days: +f.late_po_grace_days.value,
+                    supplier_levels: checked("supplier_levels"), notify_levels: checked("notify_levels"),
+                    categories: Object.fromEntries(R.categories.map(x => [x, checked("categories").includes(x)]))};
+      try { await send("/api/admin/alert-rules", "PUT", body); msg("Alert rules saved"); loadAlerts && loadAlerts(); } catch (err) { msg(err.message, true); } };
+    const fire = async test => { try { const j = await send("/api/admin/alerts/notify", "POST", {test});
+      const res = Object.entries(j.sent || {}).map(([k, v]) => `${k}: ${v === true ? "sent" : v}`).join(", ");
+      msg(test ? `Test: ${res || j.detail}` : `${j.alerts} new alert(s); ${res || j.detail || "nothing new to send"}`, Object.values(j.sent || {}).some(v => v !== true)); } catch (err) { msg(err.message, true); } };
+    $("#arTest").onclick = () => fire(true); $("#arNow").onclick = () => fire(false);
   }
 
   async function issueCode(u) {

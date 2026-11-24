@@ -33,6 +33,7 @@ nav a.on { border-color:var(--accent); color:var(--accent) }
 .alertbar { padding:8px 24px; border-bottom:1px solid var(--critical); color:var(--critical); display:flex; gap:10px; align-items:center }
 .alertbar .dot { width:7px; height:7px; border-radius:50%; background:var(--critical) }
 .alertbar span.n { color:var(--ink2) }
+.alertbar.calm { color:var(--ink2); border-bottom-color:var(--line) } .alertbar.calm .dot { background:var(--good, #0ca30c) }
 main { max-width:1320px; margin:0 auto; padding:28px 24px 80px }
 .eyebrow { color:var(--accent); font-weight:700 }
 h1 { font-size:38px; line-height:1.05; margin:6px 0 4px; letter-spacing:-.02em; font-weight:800 }
@@ -158,14 +159,15 @@ document.documentElement.dataset.theme = localStorage.theme || "light"; $("#them
 
 // ---------- alerts strip ----------
 async function loadAlerts() {
-  try { const a = await api("/api/maestro/alerts");
-    $("#alerttext").innerHTML = `${a.total} alerts active <span class="n">· ${a.critical} critical / ${a.warning} warning ▾</span>`;
+  try { const c = (await api("/api/alerts?status=open&level=none")).counts;
+    $("#alerttext").innerHTML = `${c.open} alerts open <span class="n">· ${c.critical} critical / ${c.warning} warning${c.new ? ` · ${c.new} new` : ""} ▾</span>`;
+    $("#alertbar").classList.toggle("calm", !c.critical);
   } catch { $("#alerttext").textContent = "Alerts unavailable"; }
 }
 
 // ---------- views ----------
 const MODULES = [
-  ["M_01", "Event management", "Monitor supply chain events and logistical windows in real-time.", "#alerts"],
+  ["M_01", "Event management", "Alert Center: supplier, stock, delivery, risk-feed, data-quality and fleet alerts to acknowledge, assign and resolve.", "#alerts"],
   ["M_02", "Supply analysis", "Supplier risk, network, single points of failure, stock coverage and mitigation.", "/supply"],
   ["M_03", "Tiered dashboards", "Gate and production-machine performance with trend and watch list.", "#machine"],
   ["M_04", "AMXG", "Aircraft Maintenance Cross-Group: events, timelines, docks, tiered dashboards, status report, machine health and concept boards.", "#amxg"],
@@ -392,12 +394,37 @@ async function viewFleet(v) {
     box.innerHTML = `<h3 style="font-size:14px">${esc(s.sensor)}</h3><div class="sub">${s.points.length} readings</div>`; $("#tele").appendChild(box); box.appendChild(telemetryChart(box, s)); }
 }
 
+// ---------- Alert Center: every industry's alerts, worked as a queue ----------
+const ALERT_LINK = href => href && href.startsWith("/maestro#") ? href.slice(8) : href;
 async function viewAlerts(v) {
-  const a = await api("/api/maestro/alerts");
-  v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">Event management</div><h1>ACTIVE ALERTS</h1>
-    <div class="mono" style="color:var(--muted)">${a.critical} critical · ${a.warning} warning</div></div></div>
-    <div class="panel"><table><tr><th>Level</th><th>Aircraft</th><th>Source</th><th>Detail</th><th>Logged</th></tr>
-    ${a.items.map(i => `<tr><td><span class="tag ${i.level}">${i.level === "critical" ? "▲" : "●"} ${i.level.toUpperCase()}</span></td><td><a href="#fleet/${encodeURIComponent(i.asset_id)}">${esc(i.asset_id)}</a></td><td>${esc(i.source)}</td><td>${esc(i.text)}</td><td>${i.when ? dt(i.when) : "—"}</td></tr>`).join("")}</table></div>`;
+  const q = new URLSearchParams(location.hash.split("?")[1] || ""), status = q.get("status") || "open", level = q.get("level") || "", cat = q.get("category") || "";
+  const a = await api(`/api/alerts?status=${status}${level ? "&level=" + level : ""}${cat ? "&category=" + encodeURIComponent(cat) : ""}`), c = a.counts;
+  const link = (k, val, label, on) => { const p = new URLSearchParams({status, level, category: cat}); p.set(k, val); [...p.keys()].forEach(x => !p.get(x) && x !== "status" && p.delete(x));
+    return `<a class="tag" href="#alerts?${p}" style="text-decoration:none;${on ? "color:var(--accent);border-color:var(--accent)" : "color:var(--ink2)"}">${label}</a>`; };
+  const who = () => ME.username || localStorage.amxUser || (localStorage.amxUser = prompt("Your name or role (recorded with the action):") || "");
+  v.innerHTML = `<div class="titlebar"><div><div class="mono eyebrow">M_01 // Event management</div><h1>ALERT CENTER</h1>
+    <div class="mono" style="color:var(--muted)">${c.open} open · ${c.critical} critical · ${c.warning} warning · ${c.new} new · ${c.acknowledged} being worked · ${c.resolved} resolved</div></div></div>
+    <div class="row" style="margin-bottom:8px">${link("status", "open", `Open · ${c.open}`, status === "open")}${link("status", "NEW", `New · ${c.new}`, status === "NEW")}${link("status", "ACKNOWLEDGED", `Being worked · ${c.acknowledged}`, status === "ACKNOWLEDGED")}${link("status", "RESOLVED", `Resolved · ${c.resolved}`, status === "RESOLVED")}
+      <span style="width:16px"></span>${link("level", "", "Every level", !level)}${link("level", "critical", "Critical", level === "critical")}${link("level", "warning", "Warning", level === "warning")}${link("level", "info", "Info", level === "info")}</div>
+    <div class="row" style="margin-bottom:14px">${link("category", "", "Every category", !cat)}${Object.entries(c.by_category).filter(([, n]) => n).map(([k, n]) => link("category", k, `${esc(k)} · ${n}`, cat === k)).join("")}</div>
+    <div id="alMsg"></div>
+    <div class="panel" style="padding:0;overflow:auto"><table><tr><th>Level</th><th>Category</th><th>About</th><th>Alert</th><th>Status</th><th></th></tr>
+    ${a.items.map(i => `<tr data-key="${i.key}"><td><span class="tag ${i.level}">${i.level === "critical" ? "▲" : i.level === "warning" ? "●" : "○"} ${i.level.toUpperCase()}</span></td>
+      <td style="font-size:12px">${esc(i.category)}<div style="color:var(--muted)">${esc(i.source)}</div></td>
+      <td>${i.link ? `<a href="${ALERT_LINK(i.link)}">${esc(i.subject)}</a>` : esc(i.subject)}</td><td>${esc(i.text)}${i.when ? `<div style="color:var(--muted);font-size:11px">${dt(i.when)}</div>` : ""}</td>
+      <td style="font-size:12px;white-space:nowrap">${i.status === "NEW" ? "<b>New</b>" : i.status === "ACKNOWLEDGED" ? "Being worked" : "Resolved"}${i.owner ? `<div>Owner: ${esc(i.owner)}${i.due ? ` · due ${esc(i.due)}` : ""}</div>` : ""}${i.note ? `<div style="color:var(--muted)">${esc(i.note)}</div>` : ""}${i.updated_by ? `<div style="color:var(--muted)">${esc(i.updated_by)}, ${dt(i.updated_at)}</div>` : ""}</td>
+      <td style="white-space:nowrap">${i.status === "RESOLVED" ? '<button class="plain" data-act="reopen">Reopen</button>' : `${i.status === "NEW" ? '<button class="plain" data-act="acknowledge">Acknowledge</button>' : ""}<button class="plain" data-act="assign">Assign</button><button class="plain" data-act="resolve">Resolve</button>`}</td></tr>`).join("")
+      || `<tr><td colspan="6" class="empty">${c.open || status !== "open" ? "Nothing matches these filters." : "No open alerts. Alerts come from loaded data: supplier alerts, stock cover, late orders, supplier ratings, risk feeds, data quality and fleet data."}</td></tr>`}</table></div>
+    <p class="mono" style="color:var(--muted);font-size:11px">Alerts are recomputed from the governed data. Thresholds and notifications (Teams, Slack, email) are set in Admin → Alert rules.</p>`;
+  v.querySelectorAll("[data-act]").forEach(b => b.onclick = async () => {
+    const key = b.closest("tr").dataset.key, act = b.dataset.act, body = {user: who()};
+    if (!body.user) return;
+    if (act === "assign") { body.owner = prompt("Assign to (name or role):", ""); if (!body.owner) return; body.due = prompt("Due date (YYYY-MM-DD, optional):", "") || ""; }
+    if (act === "resolve") { body.note = prompt("How was it resolved? (recorded)", ""); if (!body.note) return; }
+    try { const r = await fetch(`/api/alerts/${key}/${act}`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+      const j = await r.json(); if (!r.ok) throw new Error(j.detail || r.status); await viewAlerts(v); loadAlerts(); }
+    catch (e) { $("#alMsg").innerHTML = `<p style="color:var(--critical)">${esc(e.message)}</p>`; }
+  });
 }
 
 // Where each kind of data shows up after loading.

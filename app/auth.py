@@ -400,7 +400,7 @@ def sign_in_log(limit: int = 200) -> list[dict]:
 
 OPEN_PATHS = ("/login", "/request-access", "/reset-passcode", "/api/auth/", "/api/health", "/favicon")
 API_MODULE = [  # (prefix, module, methods or None for all)
-    ("/api/admin", "admin", None), ("/api/supply", "supply", None), ("/api/amxg", "amxg", None),
+    ("/api/admin", "admin", None), ("/api/alerts", None, None), ("/api/supply", "supply", None), ("/api/amxg", "amxg", None),
     ("/api/maestro/fleet", "fleet", None), ("/api/maestro/alerts", None, None), ("/api/maestro/modules", None, None), ("/api/maestro", "depot", None),
     ("/api/governance", "governance", None), ("/api/ask", "ai", None), ("/api/ingest", "configuration", None),
     ("/api/batches", "configuration", None), ("/api/objects", "configuration", None), ("/api/profiles", "configuration", None),

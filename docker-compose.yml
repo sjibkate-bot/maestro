@@ -15,6 +15,15 @@ services:
       MAESTRO_ADMIN_USER: ${MAESTRO_ADMIN_USER:-admin}  # first administrator, created when there are no users
       MAESTRO_ADMIN_PASSWORD: ${MAESTRO_ADMIN_PASSWORD:-}  # if empty, a random passcode is printed once in the app log
       COOKIE_SECURE: ${COOKIE_SECURE:-false}            # true when served over HTTPS
+      # Alert Center notifications (optional): a Teams/Slack incoming webhook and/or email
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      ALERT_EMAIL_FROM: ${ALERT_EMAIL_FROM:-}
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-}
+      MAESTRO_PUBLIC_URL: ${MAESTRO_PUBLIC_URL:-}        # link in alert messages, e.g. https://maestro.example.com
     depends_on: [mongo]
 volumes:
   mongo-data:

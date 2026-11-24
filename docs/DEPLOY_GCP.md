@@ -270,6 +270,20 @@ The certificate is renewed automatically about every 60 days, and renewal needs 
 
 ---
 
+## Alert notifications (optional)
+
+New alerts can be posted to a Teams or Slack channel, or emailed. Create an *incoming webhook* in Teams or Slack, then store its URL as a secret in Cloud Shell and let the VM read it:
+
+```bash
+read -rsp "Webhook URL: " V; echo; printf '%s' "$V" | gcloud secrets create maestro-alert-webhook --replication-policy=automatic --data-file=-; unset V
+```
+
+```bash
+gcloud secrets add-iam-policy-binding maestro-alert-webhook --member="serviceAccount:maestro-vm@${PROJECT}.iam.gserviceaccount.com" --role=roles/secretmanager.secretAccessor
+```
+
+For email, fill in the `SMTP_*` and `ALERT_EMAIL_*` lines in `/opt/maestro/deploy/gcp/.env` and store the SMTP password the same way as `maestro-smtp-password`. Then run `start.sh` again. In the app, **Admin → Alert rules → Send a test message** checks it.
+
 ## Troubleshooting
 
 | What you see | What to do |
