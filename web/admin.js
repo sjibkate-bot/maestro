@@ -5,7 +5,7 @@ const send = (url, method, body) => fetch(url, {method, headers: {"Content-Type"
   .then(async r => { const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.detail || r.status); return j; });
 const head = (title, sub) => `<div class="titlebar"><div><div class="mono eyebrow">M_12 // Admin console</div><h1>${title}</h1>${sub ? `<div class="mono" style="color:var(--muted)">${sub}</div>` : ""}</div></div>`;
 const STATUS = {ACTIVE: "good", PENDING: "warning", DISABLED: "", REJECTED: "critical"};
-const TABS = [["requests", "Access requests"], ["users", "Users"], ["groups", "Groups & modules"], ["resets", "Passcode resets"], ["log", "Sign-in log"]];
+const TABS = [["requests", "Access requests"], ["users", "Users"], ["groups", "Groups & modules"], ["resets", "Passcode resets"], ["log", "Sign-in log"], ["modules", "Industry & modules"]];
 
 async function viewAdmin(v) {
   if (!(ME.modules || []).includes("admin")) { v.innerHTML = head("ADMIN CONSOLE") + '<p class="empty">Administrators only.</p>'; return; }
@@ -85,6 +85,32 @@ async function viewAdmin(v) {
     B.innerHTML = `<div class="panel" style="padding:0;overflow:auto"><table><tr><th>When</th><th>Event</th><th>User</th><th>Result</th><th>Detail</th><th>From</th></tr>
       ${L.map(x => `<tr><td>${new Date(x.at).toLocaleString()}</td><td>${esc(x.event.replaceAll("_", " "))}</td><td>${esc(x.username)}</td>
         <td>${x.ok ? '<span class="tag good">OK</span>' : '<span class="tag critical">FAILED</span>'}</td><td>${esc(x.detail)}</td><td style="font-size:11px;color:var(--muted)">${esc(x.ip)}</td></tr>`).join("") || '<tr><td colspan=6 class="empty">No events</td></tr>'}</table></div>`;
+  }
+
+  if (tab === "modules") {
+    const [P, M] = await Promise.all([api("/api/packs"), api("/api/maestro/modules")]);
+    const yes = b => b ? '<span class="tag good">yes</span>' : '<span class="tag">no</span>';
+    B.innerHTML = `<div class="panel"><h2 class="mono">Industry packs</h2>
+      <p style="color:var(--ink2);margin-top:0">A pack adds the data types an industry uses (with their column names) and gives the Gold data products and owners in Governance that industry's names. Enabling a pack can't be undone from here.</p>
+      <table><tr><th>Pack</th><th>Adds data types</th><th>Renames in Governance</th><th>Status</th><th></th></tr>
+      ${P.map(p => `<tr><td><b>${esc(p.name)}</b><div style="font-size:12px;color:var(--muted)">${esc(p.description)}</div></td>
+        <td style="font-size:12px">${p.entities.map(e => esc(e.label || e.name)).join(", ") || "—"}</td>
+        <td style="font-size:12px">${p.governance_labels.length ? p.governance_labels.length + " product(s)" : "—"}</td>
+        <td>${p.enabled ? `<span class="tag good">ENABLED</span><div style="font-size:11px;color:var(--muted)">${esc(p.enabled_by)} · ${new Date(p.enabled_at).toLocaleDateString()}</div>` : '<span class="tag">off</span>'}</td>
+        <td>${p.enabled ? "" : `<button class="ghost" data-pack="${esc(p.id)}">Enable</button>`}</td></tr>`).join("")}</table></div>
+      <div class="panel"><h2 class="mono">Data-driven modules</h2>
+      <p style="color:var(--ink2);margin-top:0"><b>Auto</b> shows a module only when its kind of data is loaded, so a car maker doesn't see aircraft screens. <b>On</b> or <b>Off</b> overrides that for everyone. Who may open a module is still set by <a href="#admin/groups">groups</a>.</p>
+      <table><tr><th>Module</th><th>Data loaded</th><th>Shown now</th><th>Setting</th></tr>
+      ${Object.entries(M).map(([k, m]) => `<tr><td><b>${esc(m.label)}</b><div style="font-size:11px;color:var(--muted)">needs ${m.entities.map(esc).join(", ")}</div></td><td>${yes(m.has_data)}</td><td>${yes(m.visible)}</td>
+        <td><select data-mod="${k}">${["auto", "on", "off"].map(x => `<option value="${x}" ${m.mode === x ? "selected" : ""}>${x === "auto" ? "Auto (follow data)" : x === "on" ? "Always on" : "Always off"}</option>`).join("")}</select></td></tr>`).join("")}</table>
+      <button id="modSave" style="margin-top:10px">Save module settings</button></div>`;
+    B.querySelectorAll("[data-pack]").forEach(b => b.onclick = async () => {
+      if (!confirm("Enable this industry pack? It adds its data types and renames the Gold products in Governance.")) return;
+      try { await send(`/api/packs/${b.dataset.pack}/enable`, "POST", {user: ME.username || localStorage.amxUser || "admin"}); await viewAdmin(v); msg("Pack enabled"); }
+      catch (e) { msg(e.message, true); } });
+    $("#modSave").onclick = async () => {
+      const body = Object.fromEntries([...B.querySelectorAll("[data-mod]")].map(x => [x.dataset.mod, x.value]));
+      try { await send("/api/admin/modules", "PUT", body); location.reload(); } catch (e) { msg(e.message, true); } };
   }
 
   async function issueCode(u) {

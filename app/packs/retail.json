@@ -247,5 +247,23 @@
    ],
    "pack": "retail"
   }
- ]
+ ],
+ "governance": {
+  "products": {
+   "inventory_position": {
+    "name": "Store & DC Inventory",
+    "description": "On-hand stock by store and distribution centre, reorder points and item master."
+   },
+   "logistics": {
+    "name": "Store & DC Logistics",
+    "description": "Deliveries to stores and DCs, and customer orders, against promised dates."
+   }
+  },
+  "domains": {
+   "supply": {
+    "owner": "Merchandise & Supply Planning Manager",
+    "steward": "Merchandise Data Steward"
+   }
+  }
+ }
 }

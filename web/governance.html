@@ -118,7 +118,7 @@ function gauge(score, grade) {
 }
 
 function decisionPanel(d) {
-  const ask = `<form id="askf" style="display:flex;gap:8px;margin-top:14px"><input id="q" style="flex:1" placeholder="Ask about your data, e.g. Which aircraft are at risk of missing AMREP?"><button>Ask</button></form>`;
+  const ask = `<form id="askf" style="display:flex;gap:8px;margin-top:14px"><input id="q" style="flex:1" placeholder="Ask about your data, e.g. Which items are at risk of running short, and why?"><button>Ask</button></form>`;
   if (!d) return `<p class="empty">No open AI answer. Earlier answers are in <a href="#monitor">06 Monitor loop</a>.</p>${ask}`;
   const g = d.gate || {}, a = d.answer || {}, tr = d.data_trust || {};
   const V = {RECOMMEND: "Recommend", RECOMMEND_WITH_CAVEAT: "Recommend with caveat", ADVISORY: "Advisory only", WITHHOLD: "Withheld"}[g.verdict] || g.verdict;
@@ -223,7 +223,8 @@ const VIEWS = {
       <div class="card" style="overflow:auto"><div class="lab"><b>Content</b>${b.truncated ? " · first 200 rows" : ""}</div>${rows}</div>`;
   },
   async overview(v, o) {
-    const L = o.layers, ps = o.products;
+    const L = o.layers, allPs = o.products, idle = allPs.filter(p => !p.has_data), showIdle = sessionStorage.govShowIdle === "1";
+    const ps = showIdle ? allPs : allPs.filter(p => p.has_data);   // products for data nobody loaded stay out of the way
     const layer = (c, k, t, p, nums, href) => `<a class="layer" href="${href}" style="--c:${c};text-decoration:none;color:inherit"><div class="lab k">${k}</div><h2>${t}</h2><p>${p}</p><div class="nums">${nums.map(([a, b]) => `<div><b>${esc(a)}</b><span>${b}</span></div>`).join("")}</div></a>`;
     const W = o.awaiting_publish || {objects: 0, batches: []};
     const waiting = W.objects ? `<div class="card" style="border-left:3px solid var(--warning);margin-bottom:14px"><div class="lab"><b>Loaded, not yet published</b></div>
@@ -234,7 +235,9 @@ const VIEWS = {
       ${layer("var(--bronze)", "Bronze", "SOURCE DATA", "Raw as received from files, ERP, APIs and IoT. Original evidence and full lineage.", [[L.bronze.datasets, "batches"], [num(L.bronze.records), L.bronze.awaiting_rows ? `records (${num(L.bronze.awaiting_rows)} awaiting publish)` : "records"], [L.bronze.files, "files kept"]], "#batches")}<div class="arrow">→</div>
       ${layer("var(--silver)", "Silver", "CURATED DATA", "Filtered, de-duplicated, cleaned, matched to master data and scored A–D.", [[L.silver.datasets, "entities"], [num(L.silver.records), "records"], [num(L.silver.avg_trust, 2), "avg trust"]], "#drill?layer=silver")}<div class="arrow">→</div>
       ${layer("var(--gold)", "Gold", "DERIVED DATA", "Certified products built only from grade A/B Silver records.", [[L.gold.datasets, "products"], [num(L.gold.records), "records"], [num(L.gold.avg_trust, 2), "avg trust"]], "#drill?gold=1")}<div class="arrow">→</div>
-      ${layer("var(--accent)", "Decisions", "MAESTRO MODULES", "Docks, gates, fleet, supply analysis and AI read Gold products only.", [[L.decisions.total, "AI decisions"], [L.decisions.pending, "pending"], [L.gold.certified, "certified"]], "#monitor")}</div>
+      ${layer("var(--accent)", "Decisions", "MAESTRO MODULES", "The modules and the AI read Gold products only.", [[L.decisions.total, "AI decisions"], [L.decisions.pending, "pending"], [L.gold.certified, "certified"]], "#monitor")}</div>
+      ${idle.length ? `<p class="muted" style="font-size:12px;margin:0 0 8px">${showIdle ? `Showing every product, including ${idle.length} with no data loaded.` : `${idle.length} product(s) have no data loaded and are hidden: ${idle.map(p => esc(p.name)).join(", ")}.`}
+        <a class="dl" href="#" id="toggleIdle">${showIdle ? "Hide them" : "Show them"}</a></p>` : ""}
       <div class="grid3">${ps.map(p => `<div class="card prod"><div class="top"><div><div class="lab">Gold data product</div><h3><a class="dl" style="border:0" href="#drill?product=${p.id}">${esc(p.name)}</a></h3></div>${badge(p.grade, p.score)}</div>
         <p>${esc(p.description)}</p><div class="facts">
         <div class="fact"><div class="lab">Certification</div><div>${certPill(p.certification)}</div></div>
@@ -247,6 +250,8 @@ const VIEWS = {
       <div class="split"><div class="card"><div class="panel-h lab"><b>Data trust</b></div>${gauge(o.trust.score, o.trust.grade)}
         <p class="muted" style="text-align:center;font-size:12px;margin:0">Record-weighted score of the Gold products · six dimensions, weights set in 01 Plan &amp; govern</p></div>
       <div class="card"><div class="panel-h lab"><b>AI decision gate</b></div><div id="dec">${decisionPanel(o.latest_decision)}</div></div></div>`;
+    const tg = document.getElementById("toggleIdle");
+    if (tg) tg.onclick = e => { e.preventDefault(); sessionStorage.govShowIdle = showIdle ? "0" : "1"; route(); };
     document.querySelectorAll("[data-cert]").forEach(b => b.onclick = async () => { const u = who(); if (!u) return;
       const note = prompt(`Certify "${b.closest(".prod").querySelector("h3").textContent}" as data owner. Optional note:`, ""); if (note === null) return;
       try { await post(`/api/governance/products/${b.dataset.cert}/certify`, {user: u, note}); route(); } catch (e) { alert(e.message); } });

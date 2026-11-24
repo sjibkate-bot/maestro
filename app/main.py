@@ -13,7 +13,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
-from . import amxg, analytics, auth, dataapi, governance, packs, pdm, registry, risk_feeds, studio, supply_risk
+from . import amxg, analytics, auth, dataapi, governance, modules, packs, pdm, registry, risk_feeds, studio, supply_risk
 from .ai.claude import AIError
 from .ai.provider import get_provider
 from .connectors.files import ingest_file
@@ -729,6 +729,20 @@ def maestro_fleet():
 @app.get("/api/maestro/alerts")
 def maestro_alerts():
     return pdm.alerts()
+
+
+@app.get("/api/maestro/modules")
+def maestro_modules():
+    """Which data-driven modules (AMXG, docks/gates/machine, fleet) to show: loaded data or an admin switch."""
+    return modules.visibility()
+
+
+@app.put("/api/admin/modules")
+def admin_modules(body: dict = Body(...)):
+    try:
+        return modules.set_modes(body, _admin())
+    except ValueError as e:
+        raise HTTPException(422, str(e))
 
 
 # ---------------------------------------------------------------- AMXG modules

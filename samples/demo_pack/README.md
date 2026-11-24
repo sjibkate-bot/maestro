@@ -8,6 +8,8 @@ python samples/demo_pack/build_demo_pack.py
 
 Supply dates are set relative to the day you build, so rebuild the day before the demo.
 
+**Before the demo:** in **Admin → Industry & modules**, enable the **Aviation MRO / depot** pack. Governance then uses the aviation names and owners (Depot Flow & Gate Performance, Fleet Health & Reliability, AMXG Production Superintendent). Without it the names are industry-neutral.
+
 ## What is in it
 
 | # | File | Feeds | Source |

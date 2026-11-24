@@ -65,10 +65,27 @@ Rules the backend enforces:
 ### Industry packs
 | Call | |
 |---|---|
-| `GET /api/packs` | `manufacturing`, `retail`, `life_sciences`: their entities and whether each is enabled |
-| `POST /api/packs/{id}/enable` | Registers the pack's entities. Body: `{user}`. Safe to repeat. |
+| `GET /api/packs` | `manufacturing`, `retail`, `life_sciences`, `aviation_mro`: their entities, `governance_labels` (the product ids it renames) and whether each is enabled |
+| `POST /api/packs/{id}/enable` | Registers the pack's entities and applies its Governance names. Body: `{user}`. Safe to repeat. |
 
-Packs are JSON files in `app/packs/`. To add a new industry, add a file there. No code is needed.
+Packs are JSON files in `app/packs/`. To add a new industry, add a file there. No code is needed. A pack's optional `governance` block names the built-in Gold products and domain owners for that industry:
+
+```json
+"governance": {
+  "products": {"depot_flow": {"name": "Plant Flow & Station Performance", "description": "..."}},
+  "domains":  {"depot": {"owner": "Plant Operations Manager", "steward": "...", "sensitivity": "Internal"}}
+}
+```
+
+Without a pack the names are neutral (Process Flow & Gate Performance, Asset Health & Reliability, Operations Manager). When several packs are enabled, the most recently enabled one wins. Owners an admin sets in the governance config win over packs.
+
+### Which modules to show
+| Call | |
+|---|---|
+| `GET /api/maestro/modules` | For `amxg`, `depot` (docks, gates, machine) and `fleet`: `{label, mode, has_data, visible, entities}`. Any signed-in user. |
+| `PUT /api/admin/modules` | Admin. Body e.g. `{"amxg": "off", "fleet": "on"}`. Modes: `auto` (shown when its entities have records), `on`, `off`. Audited. |
+
+Hide menu items and home cards whose module has `visible: false`. Visibility isn't access: groups still decide who may open a module (`GET /api/auth/me` → `modules`).
 
 ---
 
@@ -218,7 +235,7 @@ Domains and data products come from the entity registry. A registered domain (re
 |---|---|
 | `GET /api/governance/overview` | Bronze / Silver / Gold counts, KPIs, products, latest AI decision |
 | `GET /api/governance/config` | Domains (with entities, owner, steward), required fields, keys, allowed values, weights, grade bands |
-| `GET /api/governance/products` | Data products: score, grade, certification, freshness, records, quarantine |
+| `GET /api/governance/products` | Data products: score, grade, certification, freshness, records, quarantine, `has_data`. Show only `has_data: true` by default (in the overview, rows waiting in Mapping Studio also count as data). |
 | `POST /api/governance/products/{id}/certify` | Owner certifies a product (`{user, note}`) |
 | `GET /api/governance/quarantine` · `POST /api/governance/quarantine/{id}/close` | Quarantine queue |
 | `GET /api/governance/drill?product=&record_type=&layer=&grade=` · `GET /api/governance/record/{id}` | Drill-down and lineage |

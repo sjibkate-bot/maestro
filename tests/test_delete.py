@@ -21,7 +21,7 @@ client = TestClient(app)
 def clean():
     db = get_db()
     for c in ("records", "raw", "sources", "mappings", "quarantine", "certifications", "decisions",
-              "audit", "drift", "bronze_files", "governance_config"):
+              "audit", "drift", "bronze_files", "governance_config", "packs", "settings"):
         db[c].delete_many({})
     provider_mod.get_provider.cache_clear()
     yield
@@ -60,7 +60,7 @@ def test_delete_one_source_from_every_layer():
     client.post("/api/governance/products/depot_flow/certify", json={"user": "Owner"})
     client.post("/api/governance/products/fleet_health/certify", json={"user": "Owner"})
     pv = client.get("/api/data/delete-preview", params={"source": "faults.csv"}).json()
-    assert pv["records"] == 1 and pv["quarantine_items"] == 1 and pv["products_affected"] == ["Fleet Health & Reliability"]
+    assert pv["records"] == 1 and pv["quarantine_items"] == 1 and pv["products_affected"] == ["Asset Health & Reliability"]
     r = client.post("/api/data/sources/faults.csv/delete", json={"confirm": "faults.csv", "user": "Tester", "reason": "test file"})
     assert r.status_code == 200 and r.json()["certifications_withdrawn"] == ["fleet_health"]
     db = get_db()

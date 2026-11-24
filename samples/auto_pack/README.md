@@ -82,7 +82,7 @@ The files are written to `samples/auto_pack/out/`.
 
 ### Optional: "any industry" (5 minutes)
 9. Load files **20, 21, 22 and 30** together. All four are held as **not recognised**: the system won't force body-shop work orders into purchase orders.
-10. Enable the manufacturing pack. There's no button for it yet, so open **`/docs` → POST `/api/packs/{pid}/enable`**, use `pid = manufacturing` and body `{"user": "SJ"}`.
+10. In **Admin → Industry & modules**, enable the **Manufacturing** pack. Governance now names the products and owners the way a plant does (for example Equipment Health & Reliability, Purchasing & Supply Chain Manager).
 11. Load 20, 21 and 22 again. They're now recognised as work orders, machines and quality inspections, and SAP column names such as `AUFNR` and `GAMNG` map automatically.
 12. On `30_Dealer_Order_Bank.csv`, use `GET /api/objects/{id}/propose-entity`, then `POST /api/objects/{id}/register-entity`. This is described in `docs/FRONTEND_API.md`; the UI buttons for it are with the front-end team. A new **dealer_order_bank** entity is created from the file, then publish.
 

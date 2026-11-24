@@ -1,0 +1,42 @@
+{
+ "id": "aviation_mro",
+ "name": "Aviation MRO / depot",
+ "description": "Aircraft depot maintenance (PDM) and fleet reliability. Uses the built-in aircraft, gate, fleet, ALC and BOM entities; gives the Gold products and owners their aviation names.",
+ "entities": [],
+ "governance": {
+  "products": {
+   "depot_flow": {
+    "name": "Depot Flow & Gate Performance",
+    "description": "Aircraft flow through the PDM gates, WIP plan and gate history."
+   },
+   "production_schedule": {
+    "name": "Production Schedule",
+    "description": "Induction, due (AMREP) and sell dates by tail."
+   },
+   "fleet_health": {
+    "name": "Fleet Health & Reliability",
+    "description": "Mission-capable status, subsystem health, telemetry and faults."
+   },
+   "alc_summary": {
+    "name": "ALC Production & Issues",
+    "description": "Weapon-system production vs goal, hours and yield, and open issues by organization."
+   },
+   "work_and_bom": {
+    "name": "Work Packages & BOM",
+    "description": "Gate work tasks by skill and work package, and the indentured bill of materials."
+   }
+  },
+  "domains": {
+   "depot": {
+    "owner": "AMXG Production Superintendent",
+    "steward": "Depot Scheduling Steward",
+    "sensitivity": "CUI"
+   },
+   "fleet": {
+    "owner": "Fleet Reliability Lead",
+    "steward": "Maintenance Data Steward",
+    "sensitivity": "CUI"
+   }
+  }
+ }
+}

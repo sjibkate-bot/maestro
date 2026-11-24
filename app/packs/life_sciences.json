@@ -273,5 +273,28 @@
    ],
    "pack": "life_sciences"
   }
- ]
+ ],
+ "governance": {
+  "products": {
+   "fleet_health": {
+    "name": "Equipment Health & Calibration",
+    "description": "Status, subsystem health, sensor telemetry and faults of manufacturing and lab equipment."
+   },
+   "logistics": {
+    "name": "Cold-Chain Logistics & Shipments",
+    "description": "Inbound and outbound shipments, including temperature-controlled lanes, against ETA."
+   }
+  },
+  "domains": {
+   "supply": {
+    "owner": "Supply Chain & Quality Manager",
+    "steward": "GxP Data Steward",
+    "sensitivity": "Confidential"
+   },
+   "fleet": {
+    "owner": "Engineering & Validation Lead",
+    "sensitivity": "Confidential"
+   }
+  }
+ }
 }

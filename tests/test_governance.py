@@ -71,7 +71,7 @@ def test_real_data_issues_are_found_but_not_quarantined():
     assert ps["depot_flow"]["grade"] == "A" and ps["fleet_health"]["certification"] == "PENDING"
     # gate graph still built from Gold and now carries its trust label
     g = client.get("/api/maestro/gate/Post Dock").json()
-    assert g["last_n_avg"] == 52.0 and g["trust"]["product"] == "Depot Flow & Gate Performance"
+    assert g["last_n_avg"] == 52.0 and g["trust"]["product"] == "Process Flow & Gate Performance"
 
 
 def test_hard_rule_quarantines_and_keeps_out_of_gold():

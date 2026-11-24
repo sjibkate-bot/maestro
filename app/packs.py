@@ -26,6 +26,7 @@ def list_packs() -> list[dict]:
         e = enabled.get(p["id"])
         out.append({"id": p["id"], "name": p["name"], "description": p["description"],
                     "entities": [{"name": x["name"], "label": x.get("label"), "fields": len(x["fields"])} for x in p["entities"]],
+                    "governance_labels": sorted((p.get("governance") or {}).get("products", {})),
                     "enabled": bool(e), "enabled_by": e and e.get("user"), "enabled_at": e and e.get("at")})
     return out
 
@@ -49,3 +50,25 @@ def enable(pid: str, user: str) -> dict:
     db.packs.update_one({"_id": pid}, {"$set": {"user": user, "at": now()}}, upsert=True)
     governance.audit("pack_enabled", user, {"pack": pid, "registered": done})
     return {"pack": pid, "registered": done, "unchanged": skipped}
+
+
+def apply_governance_labels(cfg: dict) -> dict:
+    """Give the built-in data products and domains the wording of the enabled industry packs.
+
+    A pack's optional "governance" block renames products ({"products": {id: {"name", "description"}}})
+    and sets domain owners ({"domains": {domain: {"owner", "steward", "sensitivity"}}}).
+    Packs apply in the order they were enabled, so the latest one wins."""
+    enabled = sorted(get_db().packs.find(), key=lambda d: (d.get("at") is None, d.get("at") or 0))
+    for e in enabled:
+        try:
+            gov = _load(e["_id"]).get("governance") or {}
+        except (KeyError, ValueError):
+            continue
+        for p in cfg["products"]:
+            label = gov.get("products", {}).get(p["id"])
+            if label:
+                p.update({k: v for k, v in label.items() if k in ("name", "description")})
+        for dom, label in gov.get("domains", {}).items():
+            if dom in cfg["domains"]:
+                cfg["domains"][dom].update({k: v for k, v in label.items() if k in ("owner", "steward", "sensitivity")})
+    return cfg

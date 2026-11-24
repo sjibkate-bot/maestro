@@ -349,5 +349,44 @@
    ],
    "pack": "manufacturing"
   }
- ]
+ ],
+ "governance": {
+  "products": {
+   "depot_flow": {
+    "name": "Plant Flow & Station Performance",
+    "description": "Orders or units moving through production stations (gates), WIP plan and station history."
+   },
+   "production_schedule": {
+    "name": "Production Schedule",
+    "description": "Start, due and completion dates per order or unit."
+   },
+   "fleet_health": {
+    "name": "Equipment Health & Reliability",
+    "description": "Machine status, subsystem health, sensor telemetry and faults."
+   },
+   "alc_summary": {
+    "name": "Plant Output & Issues",
+    "description": "Output against goal by line, hours and yield, and open issues by department."
+   },
+   "work_and_bom": {
+    "name": "Work Orders & BOM",
+    "description": "Work tasks by skill and work package, and the indentured bill of materials."
+   }
+  },
+  "domains": {
+   "depot": {
+    "owner": "Plant Operations Manager",
+    "steward": "Production Data Steward",
+    "sensitivity": "Internal"
+   },
+   "fleet": {
+    "owner": "Maintenance & Reliability Manager",
+    "steward": "Maintenance Data Steward",
+    "sensitivity": "Internal"
+   },
+   "supply": {
+    "owner": "Purchasing & Supply Chain Manager"
+   }
+  }
+ }
 }

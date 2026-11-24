@@ -41,11 +41,11 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "domains": {
         "depot": {"entities": ["asset_flow", "gate_event", "gate_plan", "production_schedule", "production_summary", "issue",
                                "bom_line", "work_task"],
-                  "owner": "AMXG Production Superintendent", "steward": "Depot Scheduling Steward",
-                  "sensitivity": "CUI"},
+                  "owner": "Operations Manager", "steward": "Operations Data Steward",
+                  "sensitivity": "Internal"},
         "fleet": {"entities": ["asset_status", "subsystem_health", "sensor_reading", "fault"],
-                  "owner": "Fleet Reliability Lead", "steward": "Maintenance Data Steward",
-                  "sensitivity": "CUI"},
+                  "owner": "Reliability Lead", "steward": "Maintenance Data Steward",
+                  "sensitivity": "Internal"},
         "supply": {"entities": ["inventory", "product", "purchase_order", "supplier", "sales_order", "shipment",
                                 "forecast", "supply_link"],
                    "owner": "Supply Chain Manager", "steward": "Supply Data Steward",
@@ -140,14 +140,14 @@ DEFAULT_CONFIG: dict[str, Any] = {
                  "Repair", "Queue to Restore", "Restore", "Queue to Post Dock", "Post Dock"],
     },
     "products": [
-        {"id": "depot_flow", "name": "Depot Flow & Gate Performance", "domain": "depot",
-         "description": "Aircraft flow through the PDM gates, WIP plan and gate history.",
+        {"id": "depot_flow", "name": "Process Flow & Gate Performance", "domain": "depot",
+         "description": "Assets or orders moving through process gates (stages), WIP plan and gate history.",
          "entities": ["asset_flow", "gate_event", "gate_plan"], "freshness_days": 7},
         {"id": "production_schedule", "name": "Production Schedule", "domain": "depot",
-         "description": "Induction, due (AMREP) and sell dates by tail.",
+         "description": "Start, due and finish dates per asset or order.",
          "entities": ["production_schedule"], "freshness_days": 30},
-        {"id": "fleet_health", "name": "Fleet Health & Reliability", "domain": "fleet",
-         "description": "Mission-capable status, subsystem health, telemetry and faults.",
+        {"id": "fleet_health", "name": "Asset Health & Reliability", "domain": "fleet",
+         "description": "Status, subsystem health, telemetry and faults of assets such as aircraft, machines or vehicles.",
          "entities": ["asset_status", "subsystem_health", "sensor_reading", "fault"], "freshness_days": 1},
         {"id": "inventory_position", "name": "Inventory Position", "domain": "supply",
          "description": "On-hand stock, reorder points and item master.",
@@ -158,11 +158,11 @@ DEFAULT_CONFIG: dict[str, Any] = {
         {"id": "logistics", "name": "Logistics & Shipments", "domain": "supply",
          "description": "Inbound and outbound shipments against ETA.",
          "entities": ["shipment", "sales_order"], "freshness_days": 3},
-        {"id": "alc_summary", "name": "ALC Production & Issues", "domain": "depot",
-         "description": "Weapon-system production vs goal, hours and yield, and open issues by organization.",
+        {"id": "alc_summary", "name": "Production Summary & Issues", "domain": "depot",
+         "description": "Production against goal, hours and yield, and open issues by organization.",
          "entities": ["production_summary", "issue"], "freshness_days": 30},
         {"id": "work_and_bom", "name": "Work Packages & BOM", "domain": "depot",
-         "description": "Gate work tasks by skill and work package, and the indentured bill of materials.",
+         "description": "Work tasks by skill and work package, and the indentured bill of materials.",
          "entities": ["work_task", "bom_line"], "freshness_days": 7},
         {"id": "risk_register", "name": "Risk Register & Network", "domain": "risk",
          "description": "Internal risk register, alerts, scenarios, country and lane risk, supply network links.",
@@ -184,6 +184,8 @@ GOLD_GRADES = ("A", "B")
 def config() -> dict:
     doc = get_db().governance_config.find_one({"_id": "active"})
     cfg = copy.deepcopy(DEFAULT_CONFIG)
+    from . import packs
+    packs.apply_governance_labels(cfg)     # industry wording from enabled packs; admin edits below win
     if doc:
         for k, v in doc.get("config", {}).items():
             cfg[k] = v
@@ -592,7 +594,7 @@ def products() -> list[dict]:
                         "owner": cfg["domains"].get(p["domain"], {}).get("owner"), "score": None, "grade": None,
                         "records": 0, "quarantined": 0, "excluded_c": 0, "freshness": "NO DATA", "last_loaded": None,
                         "certification": "NO DATA", "certified_by": None, "certified_at": None,
-                        "trust_label": "no data loaded"})
+                        "trust_label": "no data loaded", "has_data": False})
             continue
         gold = [r for r in live if r["layer"] == "silver" and r["trust"]["grade"] in GOLD_GRADES]
         excluded_c = sum(1 for r in live if r["layer"] == "silver" and r["trust"]["grade"] == "C")
@@ -624,7 +626,8 @@ def products() -> list[dict]:
                     "last_loaded": last, "certification": status,
                     "certified_by": cert.get("certified_by") if cert else None,
                     "certified_at": cert.get("certified_at") if cert else None,
-                    "trust_label": f"{grade} ({score})" + (" · " + " · ".join(flags) if flags else "") if grade else "no Gold data"})
+                    "trust_label": f"{grade} ({score})" + (" · " + " · ".join(flags) if flags else "") if grade else "no Gold data",
+                    "has_data": True})
     return out
 
 
@@ -800,6 +803,7 @@ def overview() -> dict:
     waiting = studio.awaiting_summary()
     for p in ps:   # rows of this product's entities loaded but not yet published
         p["awaiting_rows"] = sum(waiting["rows_by_entity"].get(e, 0) for e in p.get("entities", []))
+        p["has_data"] = p["has_data"] or p["awaiting_rows"] > 0   # the screen hides products with nothing loaded
     return {
         "kpis": {
             "datasets_governed": len(raw), "bronze_datasets": len({b["source_id"] for b in raw}),

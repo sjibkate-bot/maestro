@@ -44,7 +44,7 @@ def test_unknown_industry_data_is_not_forced_into_a_near_entity():
 
 
 def test_industry_packs_map_erp_headers_and_publish():
-    assert {p["id"] for p in c.get("/api/packs").json()} == {"manufacturing", "retail", "life_sciences"}
+    assert {p["id"] for p in c.get("/api/packs").json()} == {"manufacturing", "retail", "life_sciences", "aviation_mro"}
     for pid in ("manufacturing", "retail", "life_sciences"):
         r = c.post(f"/api/packs/{pid}/enable", json={"user": "tester"})
         assert r.status_code == 200, r.text
